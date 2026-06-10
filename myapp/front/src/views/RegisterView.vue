@@ -3,6 +3,7 @@ import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
+import axiosInstance from '../utils/axios'
 
 const router = useRouter()
 const loading = ref(false)
@@ -29,10 +30,21 @@ async function handleRegister() {
     return
   }
   loading.value = true
-  await new Promise(r => setTimeout(r, 800))
-  loading.value = false
-  message.success('Account created successfully! Please log in.')
-  router.push('/login')
+  try {
+    await axiosInstance.post('/api/v1/auth/register', {
+      username: form.username,
+      name: form.name,
+      email: form.email,
+      password: form.password,
+    })
+    message.success('Account created successfully! Please log in.')
+    router.push('/login')
+  } catch (err: any) {
+    const msg = err.response?.data?.message || 'Registration failed'
+    message.error(msg)
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 

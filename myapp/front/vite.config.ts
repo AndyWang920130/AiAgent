@@ -14,10 +14,15 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/proxy-api': {
-        target: 'https://demo.jousing.cn',
+      '/dev': {
+        target: 'http://localhost:8080',
         changeOrigin: true,
-        rewrite: path => path.replace(/^\/proxy-api/, ''),
+        rewrite: path => path.replace(/^\/dev/, ''),
+      },
+      '/test': {
+        target: 'https://aaa.com',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/test/, ''),
       },
     },
   },

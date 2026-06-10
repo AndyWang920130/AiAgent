@@ -9,6 +9,8 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   ToolOutlined,
+  UnorderedListOutlined,
+  PlusCircleOutlined,
 } from '@ant-design/icons-vue'
 import { theme as appTheme, toggleTheme } from '../utils/theme'
 import { clearAuth, getUser } from '../utils/auth'
@@ -18,7 +20,13 @@ const router = useRouter()
 const collapsed = ref(false)
 const user = getUser<{ username: string; name: string }>()
 
-const selectedKeys = ref<string[]>(['home'])
+const selectedKeys = ref<string[]>(['blog-list'])
+const openKeys = ref<string[]>(['home-sub'])
+
+const keyToPath: Record<string, string> = {
+  'blog-list': '/blog',
+  'blog-add': '/blog/add',
+}
 
 const antConfig = computed(() => ({
   algorithm: appTheme.value === 'dark' ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
@@ -31,7 +39,7 @@ function logout() {
 
 function navigate(key: string) {
   selectedKeys.value = [key]
-  router.push('/' + key)
+  router.push(keyToPath[key] || '/' + key)
 }
 </script>
 
@@ -46,13 +54,24 @@ function navigate(key: string) {
         </div>
         <a-menu
           v-model:selectedKeys="selectedKeys"
+          v-model:openKeys="openKeys"
           theme="dark"
           mode="inline"
         >
-          <a-menu-item key="home" @click="navigate('home')">
-            <HomeOutlined />
-            <span>Home</span>
-          </a-menu-item>
+          <a-sub-menu key="home-sub">
+            <template #title>
+              <HomeOutlined />
+              <span>Home</span>
+            </template>
+            <a-menu-item key="blog-list" @click="navigate('blog-list')">
+              <UnorderedListOutlined />
+              <span>Blog List</span>
+            </a-menu-item>
+            <a-menu-item key="blog-add" @click="navigate('blog-add')">
+              <PlusCircleOutlined />
+              <span>Add Blog</span>
+            </a-menu-item>
+          </a-sub-menu>
           <a-menu-item key="tools" @click="navigate('tools')">
             <ToolOutlined />
             <span>Tools</span>

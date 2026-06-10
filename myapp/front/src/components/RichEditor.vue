@@ -9,7 +9,7 @@ import { Underline } from '@tiptap/extension-underline'
 import { TextAlign } from '@tiptap/extension-text-align'
 import { Placeholder } from '@tiptap/extension-placeholder'
 import { Extension } from '@tiptap/core'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import {
   BoldOutlined,
@@ -28,7 +28,7 @@ import {
   MinusOutlined,
 } from '@ant-design/icons-vue'
 
-const props = defineProps<{ placeholder?: string }>()
+const props = defineProps<{ modelValue?: string; placeholder?: string }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
 // FontSize extension
@@ -49,6 +49,7 @@ const FontSize = Extension.create({
 })
 
 const editor = useEditor({
+  content: props.modelValue ?? '',
   extensions: [
     StarterKit,
     TextStyle,
@@ -63,6 +64,13 @@ const editor = useEditor({
   onUpdate({ editor }) {
     emit('update:modelValue', editor.getHTML())
   },
+})
+
+watch(() => props.modelValue, (val) => {
+  if (!editor.value) return
+  if (val !== editor.value.getHTML()) {
+    editor.value.commands.setContent(val ?? '', false)
+  }
 })
 
 const FONT_SIZES = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px', '36px']

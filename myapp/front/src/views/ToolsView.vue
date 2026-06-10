@@ -2,10 +2,8 @@
 import {
   CalendarOutlined,
   CalculatorOutlined,
-  SwapOutlined,
   FunctionOutlined,
   CodeOutlined,
-  FileProtectOutlined,
   QrcodeOutlined,
   GlobalOutlined,
 } from '@ant-design/icons-vue'
@@ -26,13 +24,6 @@ const tools = [
     icon: CalculatorOutlined,
   },
   {
-    key: 'unit-conv',
-    label: 'Unit Conversion',
-    desc: '单位换算',
-    url: 'https://www.23bei.com/tool-3.html',
-    icon: SwapOutlined,
-  },
-  {
     key: 'base-conv',
     label: 'Scientific / Base Conversion',
     desc: '进制转换',
@@ -44,20 +35,6 @@ const tools = [
     label: 'JSON Formatter',
     desc: 'JSON 格式化 / 校验',
     url: 'https://www.json.cn',
-    icon: CodeOutlined,
-  },
-  {
-    key: 'base64',
-    label: 'Base64 Encode / Decode',
-    desc: 'Base64 编码 / 解码',
-    url: 'https://c.runoob.com/front-end/693/',
-    icon: FileProtectOutlined,
-  },
-  {
-    key: 'regex',
-    label: 'Regex Tester',
-    desc: '正则表达式测试',
-    url: 'https://c.runoob.com/front-end/854/',
     icon: CodeOutlined,
   },
   {

@@ -16,10 +16,6 @@ const captchaUuid = ref('')
 
 const form = reactive({ username: '', password: '', captcha: '' })
 
-const MOCK_USERS = [
-  { username: 'admin', password: 'admin', name: 'Administrator' },
-  { username: 'user', password: 'password', name: 'Demo User' },
-]
 
 const antConfig = computed(() => ({
   algorithm: appTheme.value === 'dark' ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
@@ -105,19 +101,22 @@ async function handleLogin() {
     return
   }
   loading.value = true
-  await new Promise(r => setTimeout(r, 800))
-  const found = MOCK_USERS.find(
-    u => u.username === form.username && u.password === form.password
-  )
-  loading.value = false
-  if (found) {
-    saveAuth(`mock-token-${found.username}`, { username: found.username, name: found.name })
-    message.success(`Welcome, ${found.name}!`)
+  try {
+    const res = await axiosInstance.post('/api/v1/auth/login', {
+      username: form.username,
+      password: form.password,
+    })
+    const { token, user } = res.data
+    saveAuth(token, user)
+    message.success(`Welcome, ${user.name}!`)
     router.push('/home')
-  } else {
-    message.error('Invalid username or password')
+  } catch (err: any) {
+    const msg = err.response?.data?.message || 'Invalid username or password'
+    message.error(msg)
     form.captcha = ''
     fetchCaptcha()
+  } finally {
+    loading.value = false
   }
 }
 </script>

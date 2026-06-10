@@ -3,6 +3,7 @@ import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import RichEditor from '../components/RichEditor.vue'
+import { addPost } from '../stores/blog'
 
 const router = useRouter()
 
@@ -12,6 +13,7 @@ const form = reactive({
   tag: '',
   tagColor: 'blue',
   content: '',
+  excerpt: '',
 })
 
 const categories = ['Frontend', 'Backend', 'Language', 'DevOps']
@@ -25,15 +27,22 @@ async function handleSubmit() {
     return
   }
   submitting.value = true
-  // TODO: call API to save the blog post
   await new Promise(r => setTimeout(r, 600))
+  addPost({
+    title: form.title,
+    category: form.category,
+    tag: form.tag,
+    tagColor: form.tagColor,
+    content: form.content,
+    excerpt: form.excerpt || form.title,
+  })
   submitting.value = false
   message.success('Blog post created!')
-  router.push('/home')
+  router.push('/blog')
 }
 
 function handleCancel() {
-  router.push('/home')
+  router.push('/blog')
 }
 </script>
 
