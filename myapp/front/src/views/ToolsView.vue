@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   CalendarOutlined,
   CalculatorOutlined,
@@ -8,50 +10,52 @@ import {
   GlobalOutlined,
 } from '@ant-design/icons-vue'
 
-const tools = [
+const { t } = useI18n()
+
+const tools = computed(() => [
   {
     key: 'calendar',
-    label: 'Calendar',
-    desc: '万年历 — 日历查询',
+    label: t('tools.calendar'),
+    desc: t('tools.calendarDesc'),
     url: 'https://wannianrili.bmcx.com',
     icon: CalendarOutlined,
   },
   {
     key: 'calculator',
-    label: 'Calculator',
-    desc: '在线计算器',
+    label: t('tools.calculator'),
+    desc: t('tools.calculatorDesc'),
     url: 'https://www.23bei.com/tool-1.html',
     icon: CalculatorOutlined,
   },
   {
     key: 'base-conv',
-    label: 'Scientific / Base Conversion',
-    desc: '进制转换',
+    label: t('tools.baseConv'),
+    desc: t('tools.baseConvDesc'),
     url: 'https://c.runoob.com/front-end/58/',
     icon: FunctionOutlined,
   },
   {
     key: 'json-fmt',
-    label: 'JSON Formatter',
-    desc: 'JSON 格式化 / 校验',
+    label: t('tools.jsonFmt'),
+    desc: t('tools.jsonFmtDesc'),
     url: 'https://www.json.cn',
     icon: CodeOutlined,
   },
   {
     key: 'qrcode',
-    label: 'QR Code Generator',
-    desc: '草料二维码生成',
+    label: t('tools.qrcode'),
+    desc: t('tools.qrcodeDesc'),
     url: 'https://cli.im/',
     icon: QrcodeOutlined,
   },
   {
     key: 'ip-lookup',
-    label: 'IP Lookup',
-    desc: 'IP 地址查询',
+    label: t('tools.ipLookup'),
+    desc: t('tools.ipLookupDesc'),
     url: 'https://www.ip138.com',
     icon: GlobalOutlined,
   },
-]
+])
 
 function openTool(url: string) {
   window.open(url, '_blank', 'noopener,noreferrer')
@@ -60,7 +64,7 @@ function openTool(url: string) {
 
 <template>
   <div>
-    <h2 style="margin-bottom: 24px">Tools</h2>
+    <h2 style="margin-bottom: 24px">{{ t('tools.title') }}</h2>
     <a-row :gutter="[16, 16]">
       <a-col
         v-for="tool in tools"

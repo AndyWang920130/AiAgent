@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue'
 import { useRouter, RouterView } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import {
   HomeOutlined,
   UserOutlined,
@@ -11,11 +12,16 @@ import {
   ToolOutlined,
   UnorderedListOutlined,
   PlusCircleOutlined,
+  TranslationOutlined,
 } from '@ant-design/icons-vue'
 import { theme as appTheme, toggleTheme } from '../utils/theme'
 import { clearAuth, getUser } from '../utils/auth'
 import { theme as antTheme } from 'ant-design-vue'
+import { setLocale, getLocale } from '../i18n'
+import antZhCN from 'ant-design-vue/es/locale/zh_CN'
+import antEnUS from 'ant-design-vue/es/locale/en_US'
 
+const { t, locale } = useI18n()
 const router = useRouter()
 const collapsed = ref(false)
 const user = getUser<{ username: string; name: string }>()
@@ -30,6 +36,7 @@ const keyToPath: Record<string, string> = {
 
 const antConfig = computed(() => ({
   algorithm: appTheme.value === 'dark' ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
+  locale: locale.value === 'zh-CN' ? antZhCN : antEnUS,
 }))
 
 function logout() {
@@ -41,10 +48,14 @@ function navigate(key: string) {
   selectedKeys.value = [key]
   router.push(keyToPath[key] || '/' + key)
 }
+
+function toggleLang() {
+  setLocale(getLocale() === 'zh-CN' ? 'en-US' : 'zh-CN')
+}
 </script>
 
 <template>
-  <a-config-provider :theme="antConfig">
+  <a-config-provider :theme="antConfig" :locale="antConfig.locale">
     <a-layout style="min-height: 100vh">
       <!-- Sider -->
       <a-layout-sider v-model:collapsed="collapsed" collapsible :trigger="null" :width="220">
@@ -61,24 +72,24 @@ function navigate(key: string) {
           <a-sub-menu key="home-sub">
             <template #title>
               <HomeOutlined />
-              <span>Home</span>
+              <span>{{ t('menu.home') }}</span>
             </template>
             <a-menu-item key="blog-list" @click="navigate('blog-list')">
               <UnorderedListOutlined />
-              <span>Blog List</span>
+              <span>{{ t('menu.blogList') }}</span>
             </a-menu-item>
             <a-menu-item key="blog-add" @click="navigate('blog-add')">
               <PlusCircleOutlined />
-              <span>Add Blog</span>
+              <span>{{ t('menu.addBlog') }}</span>
             </a-menu-item>
           </a-sub-menu>
           <a-menu-item key="tools" @click="navigate('tools')">
             <ToolOutlined />
-            <span>Tools</span>
+            <span>{{ t('menu.tools') }}</span>
           </a-menu-item>
           <a-menu-item key="personal" @click="navigate('personal')">
             <UserOutlined />
-            <span>Personal</span>
+            <span>{{ t('menu.personal') }}</span>
           </a-menu-item>
         </a-menu>
       </a-layout-sider>
@@ -101,10 +112,16 @@ function navigate(key: string) {
             />
           </div>
           <div class="header-right">
-            <a-tooltip :title="appTheme === 'dark' ? 'Switch to Light' : 'Switch to Dark'">
+            <a-tooltip :title="appTheme === 'dark' ? t('theme.switchToLight') : t('theme.switchToDark')">
               <a-button type="text" @click="toggleTheme">
                 <BulbOutlined />
-                {{ appTheme === 'dark' ? 'Light' : 'Dark' }}
+                {{ appTheme === 'dark' ? t('theme.light') : t('theme.dark') }}
+              </a-button>
+            </a-tooltip>
+            <a-tooltip :title="locale === 'zh-CN' ? t('lang.en') : t('lang.zh')">
+              <a-button type="text" @click="toggleLang">
+                <TranslationOutlined />
+                {{ locale === 'zh-CN' ? t('lang.en') : t('lang.zh') }}
               </a-button>
             </a-tooltip>
             <a-dropdown>
@@ -115,11 +132,11 @@ function navigate(key: string) {
               <template #overlay>
                 <a-menu>
                   <a-menu-item key="personal" @click="router.push('/personal')">
-                    <UserOutlined /> Profile
+                    <UserOutlined /> {{ t('header.profile') }}
                   </a-menu-item>
                   <a-menu-divider />
                   <a-menu-item key="logout" @click="logout">
-                    <LogoutOutlined /> Logout
+                    <LogoutOutlined /> {{ t('header.logout') }}
                   </a-menu-item>
                 </a-menu>
               </template>
@@ -136,7 +153,7 @@ function navigate(key: string) {
         </a-layout-content>
 
         <a-layout-footer style="text-align: center; opacity: 0.5">
-          MyApp ©2025
+          {{ t('footer.copyright') }}
         </a-layout-footer>
       </a-layout>
     </a-layout>

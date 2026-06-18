@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
 import {
   EditOutlined,
@@ -11,6 +12,7 @@ import {
 } from '@ant-design/icons-vue'
 import { getPost, deletePost } from '../stores/blog'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 
@@ -19,13 +21,13 @@ const post = computed(() => getPost(Number(route.params.id)))
 function handleDelete() {
   if (!post.value) return
   Modal.confirm({
-    title: 'Delete Post',
-    content: `Are you sure you want to delete "${post.value.title}"?`,
-    okText: 'Delete',
+    title: t('blog.deleteTitle'),
+    content: t('blog.deleteContent', { title: post.value.title }),
+    okText: t('blog.delete'),
     okType: 'danger',
     onOk() {
       deletePost(post.value!.id)
-      message.success('Post deleted')
+      message.success(t('blog.deleted'))
       router.push('/blog')
     },
   })
@@ -39,11 +41,11 @@ function handleDelete() {
         <template #extra>
           <a-button @click="router.push('/blog/' + post.id + '/edit')">
             <template #icon><EditOutlined /></template>
-            Edit
+            {{ t('blog.edit') }}
           </a-button>
           <a-button danger @click="handleDelete">
             <template #icon><DeleteOutlined /></template>
-            Delete
+            {{ t('blog.delete') }}
           </a-button>
         </template>
         <template #tags>
@@ -65,9 +67,9 @@ function handleDelete() {
       </a-card>
     </template>
 
-    <a-result v-else status="404" title="Post not found" sub-title="The post you are looking for does not exist.">
+    <a-result v-else status="404" :title="t('blog.notFound')" :sub-title="t('blog.notFoundDesc')">
       <template #extra>
-        <a-button type="primary" @click="router.push('/blog')">Back to List</a-button>
+        <a-button type="primary" @click="router.push('/blog')">{{ t('blog.backToList') }}</a-button>
       </template>
     </a-result>
   </div>

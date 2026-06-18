@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import { ref, reactive } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import {
   RocketOutlined,
   TrophyOutlined,
@@ -14,13 +15,14 @@ import {
   EditOutlined,
 } from '@ant-design/icons-vue'
 
+const { t } = useI18n()
 const router = useRouter()
 
-const stats = reactive([
-  { title: 'Total Posts', value: 128, icon: RocketOutlined, color: '#1890ff', change: 12, up: true },
-  { title: 'Followers', value: 3840, icon: StarOutlined, color: '#52c41a', change: 8, up: true },
-  { title: 'Achievements', value: 47, icon: TrophyOutlined, color: '#faad14', change: 3, up: true },
-  { title: 'Streak Days', value: 21, icon: ThunderboltOutlined, color: '#eb2f96', change: 2, up: false },
+const stats = computed(() => [
+  { title: t('home.totalPosts'), value: 128, icon: RocketOutlined, color: '#1890ff', change: 12, up: true },
+  { title: t('home.followers'), value: 3840, icon: StarOutlined, color: '#52c41a', change: 8, up: true },
+  { title: t('home.achievements'), value: 47, icon: TrophyOutlined, color: '#faad14', change: 3, up: true },
+  { title: t('home.streakDays'), value: 21, icon: ThunderboltOutlined, color: '#eb2f96', change: 2, up: false },
 ])
 
 const posts = ref([
@@ -86,8 +88,8 @@ const filteredPosts = () =>
     <!-- Welcome banner -->
     <div class="welcome-banner">
       <div class="banner-content">
-        <h1>👋 Welcome to MyApp</h1>
-        <p>Your personal tech blog & knowledge hub. Explore, learn, and grow every day.</p>
+        <h1>{{ t('home.welcome') }}</h1>
+        <p>{{ t('home.tagline') }}</p>
       </div>
     </div>
 
@@ -115,15 +117,15 @@ const filteredPosts = () =>
     </a-row>
 
     <!-- Posts -->
-    <a-card title="📝 Latest Posts" :bordered="false">
+    <a-card :title="t('home.latestPosts')" :bordered="false">
       <template #extra>
         <a-space>
           <a-tabs v-model:activeKey="activeTab" size="small">
-            <a-tab-pane v-for="cat in categories" :key="cat" :tab="cat === 'all' ? 'All' : cat" />
+            <a-tab-pane v-for="cat in categories" :key="cat" :tab="cat === 'all' ? t('home.all') : cat" />
           </a-tabs>
           <a-button type="primary" size="small" @click="router.push('/blog/add')">
             <template #icon><EditOutlined /></template>
-            Write Post
+            {{ t('home.writePost') }}
           </a-button>
         </a-space>
       </template>

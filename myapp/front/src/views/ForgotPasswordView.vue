@@ -1,9 +1,11 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { MailOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 
+const { t } = useI18n()
 const router = useRouter()
 const loading = ref(false)
 const sent = ref(false)
@@ -11,7 +13,7 @@ const email = ref('')
 
 async function handleSubmit() {
   if (!email.value) {
-    message.warning('Please enter your email')
+    message.warning(t('forgot.enterEmail'))
     return
   }
   loading.value = true
@@ -26,19 +28,19 @@ async function handleSubmit() {
     <a-card class="forgot-card">
       <div class="forgot-header">
         <div class="app-logo">🔑</div>
-        <h2>Reset Password</h2>
-        <p class="subtitle">Enter your email and we'll send a reset link</p>
+        <h2>{{ t('forgot.title') }}</h2>
+        <p class="subtitle">{{ t('forgot.subtitle') }}</p>
       </div>
 
       <template v-if="!sent">
         <a-form layout="vertical" @finish="handleSubmit">
-          <a-form-item label="Email Address" required>
-            <a-input v-model:value="email" size="large" placeholder="your@email.com">
+          <a-form-item :label="t('forgot.emailAddress')" required>
+            <a-input v-model:value="email" size="large" :placeholder="t('register.emailPlaceholder')">
               <template #prefix><MailOutlined /></template>
             </a-input>
           </a-form-item>
           <a-button type="primary" html-type="submit" size="large" block :loading="loading">
-            Send Reset Link
+            {{ t('forgot.sendResetLink') }}
           </a-button>
         </a-form>
       </template>
@@ -46,17 +48,17 @@ async function handleSubmit() {
       <template v-else>
         <a-result
           status="success"
-          title="Check your inbox!"
-          :sub-title="`We sent a reset link to ${email}`"
+          :title="t('forgot.checkInbox')"
+          :sub-title="t('forgot.sentLink', { email })"
         >
           <template #extra>
-            <a-button type="primary" @click="router.push('/login')">Back to Login</a-button>
+            <a-button type="primary" @click="router.push('/login')">{{ t('forgot.backToLogin') }}</a-button>
           </template>
         </a-result>
       </template>
 
       <div class="back-link" v-if="!sent">
-        <router-link to="/login">← Back to login</router-link>
+        <router-link to="/login">{{ t('forgot.backLink') }}</router-link>
       </div>
     </a-card>
   </div>

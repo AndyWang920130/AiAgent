@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import {
-  UserOutlined,
   MailOutlined,
   EditOutlined,
   LogoutOutlined,
@@ -14,6 +14,7 @@ import {
 import { message, Modal } from 'ant-design-vue'
 import { clearAuth, getUser } from '../utils/auth'
 
+const { t } = useI18n()
 const router = useRouter()
 
 const storedUser = getUser<{ username: string; name: string }>()
@@ -34,37 +35,37 @@ const passwordForm = reactive({ current: '', next: '', confirm: '' })
 const showPasswordModal = ref(false)
 
 const activityData = [
-  { label: 'Posts Written', value: 128, icon: FileTextOutlined, color: '#1890ff' },
-  { label: 'Likes Received', value: 3840, icon: HeartOutlined, color: '#eb2f96' },
-  { label: 'Achievements', value: 47, icon: TrophyOutlined, color: '#faad14' },
+  { label: () => t('personal.postsWritten'), value: 128, icon: FileTextOutlined, color: '#1890ff' },
+  { label: () => t('personal.likesReceived'), value: 3840, icon: HeartOutlined, color: '#eb2f96' },
+  { label: () => t('personal.achievements'), value: 47, icon: TrophyOutlined, color: '#faad14' },
 ]
 
 function saveProfile() {
   Object.assign(profile, editForm)
   editMode.value = false
-  message.success('Profile updated successfully')
+  message.success(t('personal.profileUpdated'))
 }
 
 function changePassword() {
   if (!passwordForm.current || !passwordForm.next) {
-    message.warning('Please fill in all fields')
+    message.warning(t('personal.fillAllFields'))
     return
   }
   if (passwordForm.next !== passwordForm.confirm) {
-    message.error('New passwords do not match')
+    message.error(t('personal.passwordsNoMatch'))
     return
   }
   showPasswordModal.value = false
   Object.assign(passwordForm, { current: '', next: '', confirm: '' })
-  message.success('Password changed successfully')
+  message.success(t('personal.passwordChanged'))
 }
 
 function logout() {
   Modal.confirm({
-    title: 'Sign Out',
-    content: 'Are you sure you want to sign out?',
-    okText: 'Yes, sign out',
-    cancelText: 'Cancel',
+    title: t('personal.signOutTitle'),
+    content: t('personal.signOutContent'),
+    okText: t('personal.yesSignOut'),
+    cancelText: t('personal.cancel'),
     onOk() {
       clearAuth()
       router.push('/login')
@@ -94,20 +95,20 @@ function logout() {
             <div class="meta-item"><MailOutlined /> {{ profile.email }}</div>
             <div class="meta-item">📍 {{ profile.location }}</div>
             <div class="meta-item">🔗 {{ profile.website }}</div>
-            <div class="meta-item">📅 Joined {{ profile.joinDate }}</div>
+            <div class="meta-item">📅 {{ t('personal.joined') }} {{ profile.joinDate }}</div>
           </div>
 
           <a-divider />
 
           <div class="action-buttons">
             <a-button type="primary" block @click="editMode = true">
-              <EditOutlined /> Edit Profile
+              <EditOutlined /> {{ t('personal.editProfile') }}
             </a-button>
             <a-button block @click="showPasswordModal = true" style="margin-top: 8px">
-              <LockOutlined /> Change Password
+              <LockOutlined /> {{ t('personal.changePassword') }}
             </a-button>
             <a-button danger block @click="logout" style="margin-top: 8px">
-              <LogoutOutlined /> Sign Out
+              <LogoutOutlined /> {{ t('personal.signOut') }}
             </a-button>
           </div>
         </a-card>
@@ -117,78 +118,78 @@ function logout() {
       <a-col :xs="24" :lg="16">
         <!-- Activity stats -->
         <a-row :gutter="[16, 16]" style="margin-bottom: 24px">
-          <a-col :span="8" v-for="item in activityData" :key="item.label">
+          <a-col :span="8" v-for="item in activityData" :key="item.label()">
             <a-card :bordered="false" class="activity-card" style="text-align: center">
               <component :is="item.icon" :style="{ fontSize: '28px', color: item.color }" />
               <div class="activity-value" :style="{ color: item.color }">{{ item.value }}</div>
-              <div class="activity-label">{{ item.label }}</div>
+              <div class="activity-label">{{ item.label() }}</div>
             </a-card>
           </a-col>
         </a-row>
 
         <!-- Edit Profile Form -->
-        <a-card v-if="editMode" title="Edit Profile" :bordered="false">
+        <a-card v-if="editMode" :title="t('personal.editProfileTitle')" :bordered="false">
           <a-form layout="vertical">
             <a-row :gutter="16">
               <a-col :span="12">
-                <a-form-item label="Full Name">
+                <a-form-item :label="t('personal.fullName')">
                   <a-input v-model:value="editForm.name" />
                 </a-form-item>
               </a-col>
               <a-col :span="12">
-                <a-form-item label="Username">
+                <a-form-item :label="t('personal.username')">
                   <a-input v-model:value="editForm.username" />
                 </a-form-item>
               </a-col>
             </a-row>
-            <a-form-item label="Email">
+            <a-form-item :label="t('personal.email')">
               <a-input v-model:value="editForm.email">
                 <template #prefix><MailOutlined /></template>
               </a-input>
             </a-form-item>
-            <a-form-item label="Bio">
+            <a-form-item :label="t('personal.bio')">
               <a-textarea v-model:value="editForm.bio" :rows="3" />
             </a-form-item>
             <a-row :gutter="16">
               <a-col :span="12">
-                <a-form-item label="Location">
+                <a-form-item :label="t('personal.location')">
                   <a-input v-model:value="editForm.location" />
                 </a-form-item>
               </a-col>
               <a-col :span="12">
-                <a-form-item label="Website">
+                <a-form-item :label="t('personal.website')">
                   <a-input v-model:value="editForm.website" />
                 </a-form-item>
               </a-col>
             </a-row>
             <div style="display: flex; gap: 8px">
-              <a-button type="primary" @click="saveProfile">Save Changes</a-button>
-              <a-button @click="editMode = false">Cancel</a-button>
+              <a-button type="primary" @click="saveProfile">{{ t('personal.saveChanges') }}</a-button>
+              <a-button @click="editMode = false">{{ t('personal.cancel') }}</a-button>
             </div>
           </a-form>
         </a-card>
 
         <!-- Recent Activity -->
-        <a-card v-else title="📊 Recent Activity" :bordered="false">
+        <a-card v-else :title="t('personal.recentActivity')" :bordered="false">
           <a-timeline>
             <a-timeline-item color="blue">
-              <b>Published</b> — "Getting Started with Vue 3 Composition API"
+              <b>{{ t('personal.activity.published') }}</b> — "Getting Started with Vue 3 Composition API"
               <div style="color: #888; font-size: 13px">2025-06-01</div>
             </a-timeline-item>
             <a-timeline-item color="green">
-              <b>Received 89 likes</b> on Vue 3 post
+              <b>{{ t('personal.activity.received89Likes') }}</b> on Vue 3 post
               <div style="color: #888; font-size: 13px">2025-06-02</div>
             </a-timeline-item>
             <a-timeline-item color="gold">
-              <b>Achievement unlocked</b> — "Prolific Writer" 🏆
+              <b>{{ t('personal.activity.achievementUnlocked') }}</b> — "Prolific Writer" 🏆
               <div style="color: #888; font-size: 13px">2025-05-30</div>
             </a-timeline-item>
             <a-timeline-item color="blue">
-              <b>Published</b> — "TypeScript Best Practices in 2025"
+              <b>{{ t('personal.activity.published') }}</b> — "TypeScript Best Practices in 2025"
               <div style="color: #888; font-size: 13px">2025-05-22</div>
             </a-timeline-item>
             <a-timeline-item>
-              <b>Joined</b> MyApp — welcome aboard! 🎉
+              <b>{{ t('personal.activity.joined') }}</b>
               <div style="color: #888; font-size: 13px">2024-01-15</div>
             </a-timeline-item>
           </a-timeline>
@@ -197,15 +198,21 @@ function logout() {
     </a-row>
 
     <!-- Change Password Modal -->
-    <a-modal v-model:open="showPasswordModal" title="Change Password" @ok="changePassword" ok-text="Update Password">
+    <a-modal
+      v-model:open="showPasswordModal"
+      :title="t('personal.changePassword')"
+      :ok-text="t('personal.updatePassword')"
+      :cancel-text="t('personal.cancel')"
+      @ok="changePassword"
+    >
       <a-form layout="vertical" style="margin-top: 16px">
-        <a-form-item label="Current Password">
+        <a-form-item :label="t('personal.currentPassword')">
           <a-input-password v-model:value="passwordForm.current" />
         </a-form-item>
-        <a-form-item label="New Password">
+        <a-form-item :label="t('personal.newPassword')">
           <a-input-password v-model:value="passwordForm.next" />
         </a-form-item>
-        <a-form-item label="Confirm New Password">
+        <a-form-item :label="t('personal.confirmNewPassword')">
           <a-input-password v-model:value="passwordForm.confirm" />
         </a-form-item>
       </a-form>

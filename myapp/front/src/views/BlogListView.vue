@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
 import {
   EyeOutlined,
@@ -10,6 +11,7 @@ import {
 } from '@ant-design/icons-vue'
 import { posts, deletePost, type Post } from '../stores/blog'
 
+const { t } = useI18n()
 const router = useRouter()
 
 const searchText = ref('')
@@ -24,24 +26,24 @@ const filteredPosts = computed(() =>
   })
 )
 
-const columns = [
-  { title: 'Title', dataIndex: 'title', key: 'title', ellipsis: true },
-  { title: 'Category', dataIndex: 'category', key: 'category', width: 120 },
-  { title: 'Tag', dataIndex: 'tag', key: 'tag', width: 110 },
-  { title: 'Date', dataIndex: 'date', key: 'date', width: 120, sorter: (a: Post, b: Post) => a.date.localeCompare(b.date) },
-  { title: 'Views', dataIndex: 'views', key: 'views', width: 90, sorter: (a: Post, b: Post) => a.views - b.views },
-  { title: 'Actions', key: 'actions', width: 140, fixed: 'right' },
-]
+const columns = computed(() => [
+  { title: t('blog.colTitle'), dataIndex: 'title', key: 'title', ellipsis: true },
+  { title: t('blog.colCategory'), dataIndex: 'category', key: 'category', width: 120 },
+  { title: t('blog.colTag'), dataIndex: 'tag', key: 'tag', width: 110 },
+  { title: t('blog.colDate'), dataIndex: 'date', key: 'date', width: 120, sorter: (a: Post, b: Post) => a.date.localeCompare(b.date) },
+  { title: t('blog.colViews'), dataIndex: 'views', key: 'views', width: 90, sorter: (a: Post, b: Post) => a.views - b.views },
+  { title: t('blog.colActions'), key: 'actions', width: 140, fixed: 'right' },
+])
 
 function handleDelete(id: number, title: string) {
   Modal.confirm({
-    title: 'Delete Post',
-    content: `Are you sure you want to delete "${title}"?`,
-    okText: 'Delete',
+    title: t('blog.deleteTitle'),
+    content: t('blog.deleteContent', { title }),
+    okText: t('blog.delete'),
     okType: 'danger',
     onOk() {
       deletePost(id)
-      message.success('Post deleted')
+      message.success(t('blog.deleted'))
     },
   })
 }
@@ -50,24 +52,24 @@ function handleDelete(id: number, title: string) {
 <template>
   <div class="blog-list-view">
     <a-card :bordered="false">
-      <template #title>📋 Blog List</template>
+      <template #title>{{ t('blog.listTitle') }}</template>
       <template #extra>
         <a-button type="primary" @click="router.push('/blog/add')">
           <template #icon><PlusOutlined /></template>
-          Add Post
+          {{ t('blog.addPost') }}
         </a-button>
       </template>
 
       <div class="filter-bar">
         <a-input-search
           v-model:value="searchText"
-          placeholder="Search by title..."
+          :placeholder="t('blog.searchPlaceholder')"
           style="width: 280px"
           allow-clear
         />
         <a-select
           v-model:value="selectedCategory"
-          placeholder="All categories"
+          :placeholder="t('blog.allCategories')"
           allow-clear
           style="width: 180px"
         >
@@ -91,17 +93,17 @@ function handleDelete(id: number, title: string) {
           </template>
           <template v-else-if="column.key === 'actions'">
             <a-space>
-              <a-tooltip title="View">
+              <a-tooltip :title="t('blog.view')">
                 <a-button size="small" @click="router.push('/blog/' + record.id)">
                   <template #icon><EyeOutlined /></template>
                 </a-button>
               </a-tooltip>
-              <a-tooltip title="Edit">
+              <a-tooltip :title="t('blog.edit')">
                 <a-button size="small" type="primary" @click="router.push('/blog/' + record.id + '/edit')">
                   <template #icon><EditOutlined /></template>
                 </a-button>
               </a-tooltip>
-              <a-tooltip title="Delete">
+              <a-tooltip :title="t('blog.delete')">
                 <a-button size="small" danger @click="handleDelete(record.id, record.title)">
                   <template #icon><DeleteOutlined /></template>
                 </a-button>

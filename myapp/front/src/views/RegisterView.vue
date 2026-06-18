@@ -1,10 +1,12 @@
 <script lang="ts" setup>
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import axiosInstance from '../utils/axios'
 
+const { t } = useI18n()
 const router = useRouter()
 const loading = ref(false)
 
@@ -18,15 +20,15 @@ const form = reactive({
 
 async function handleRegister() {
   if (!form.username || !form.password || !form.name) {
-    message.warning('Please fill in all required fields')
+    message.warning(t('register.fillAllFields'))
     return
   }
   if (form.password !== form.confirmPassword) {
-    message.error('Passwords do not match')
+    message.error(t('register.passwordsNoMatch'))
     return
   }
   if (form.password.length < 6) {
-    message.error('Password must be at least 6 characters')
+    message.error(t('register.passwordTooShort'))
     return
   }
   loading.value = true
@@ -37,10 +39,10 @@ async function handleRegister() {
       email: form.email,
       password: form.password,
     })
-    message.success('Account created successfully! Please log in.')
+    message.success(t('register.accountCreated'))
     router.push('/login')
   } catch (err: any) {
-    const msg = err.response?.data?.message || 'Registration failed'
+    const msg = err.response?.data?.message || t('register.failed')
     message.error(msg)
   } finally {
     loading.value = false
@@ -53,49 +55,49 @@ async function handleRegister() {
     <a-card class="register-card">
       <div class="register-header">
         <div class="app-logo">🚀</div>
-        <h2>Create Account</h2>
-        <p class="subtitle">Join us today</p>
+        <h2>{{ t('register.title') }}</h2>
+        <p class="subtitle">{{ t('register.subtitle') }}</p>
       </div>
 
       <a-form layout="vertical" @finish="handleRegister">
-        <a-form-item label="Full Name" required>
-          <a-input v-model:value="form.name" size="large" placeholder="Your full name">
+        <a-form-item :label="t('register.fullName')" required>
+          <a-input v-model:value="form.name" size="large" :placeholder="t('register.fullNamePlaceholder')">
             <template #prefix><UserOutlined /></template>
           </a-input>
         </a-form-item>
 
-        <a-form-item label="Username" required>
-          <a-input v-model:value="form.username" size="large" placeholder="Choose a username">
+        <a-form-item :label="t('register.username')" required>
+          <a-input v-model:value="form.username" size="large" :placeholder="t('register.usernamePlaceholder')">
             <template #prefix><UserOutlined /></template>
           </a-input>
         </a-form-item>
 
-        <a-form-item label="Email">
-          <a-input v-model:value="form.email" size="large" placeholder="your@email.com">
+        <a-form-item :label="t('register.email')">
+          <a-input v-model:value="form.email" size="large" :placeholder="t('register.emailPlaceholder')">
             <template #prefix><MailOutlined /></template>
           </a-input>
         </a-form-item>
 
-        <a-form-item label="Password" required>
-          <a-input-password v-model:value="form.password" size="large" placeholder="Min 6 characters">
+        <a-form-item :label="t('register.password')" required>
+          <a-input-password v-model:value="form.password" size="large" :placeholder="t('register.passwordPlaceholder')">
             <template #prefix><LockOutlined /></template>
           </a-input-password>
         </a-form-item>
 
-        <a-form-item label="Confirm Password" required>
-          <a-input-password v-model:value="form.confirmPassword" size="large" placeholder="Repeat password">
+        <a-form-item :label="t('register.confirmPassword')" required>
+          <a-input-password v-model:value="form.confirmPassword" size="large" :placeholder="t('register.confirmPasswordPlaceholder')">
             <template #prefix><LockOutlined /></template>
           </a-input-password>
         </a-form-item>
 
         <a-button type="primary" html-type="submit" size="large" block :loading="loading">
-          Create Account
+          {{ t('register.createAccount') }}
         </a-button>
       </a-form>
 
       <div class="login-link">
-        Already have an account?
-        <router-link to="/login">Sign in</router-link>
+        {{ t('register.hasAccount') }}
+        <router-link to="/login">{{ t('register.signIn') }}</router-link>
       </div>
     </a-card>
   </div>

@@ -1,12 +1,17 @@
 <script lang="ts" setup>
 import { reactive, ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { UserOutlined, LockOutlined, BulbOutlined, ReloadOutlined, SafetyOutlined } from '@ant-design/icons-vue'
+import { useI18n } from 'vue-i18n'
+import { UserOutlined, LockOutlined, BulbOutlined, ReloadOutlined, SafetyOutlined, TranslationOutlined } from '@ant-design/icons-vue'
 import { message, theme as antTheme } from 'ant-design-vue'
 import { saveAuth } from '../utils/auth'
 import { theme as appTheme, toggleTheme } from '../utils/theme'
 import axiosInstance from '../utils/axios'
+import { setLocale, getLocale } from '../i18n'
+import antZhCN from 'ant-design-vue/es/locale/zh_CN'
+import antEnUS from 'ant-design-vue/es/locale/en_US'
 
+const { t, locale } = useI18n()
 const router = useRouter()
 const loading = ref(false)
 const captchaLoading = ref(false)
@@ -16,9 +21,9 @@ const captchaUuid = ref('')
 
 const form = reactive({ username: '', password: '', captcha: '' })
 
-
 const antConfig = computed(() => ({
   algorithm: appTheme.value === 'dark' ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
+  locale: locale.value === 'zh-CN' ? antZhCN : antEnUS,
 }))
 
 async function fetchCaptcha() {
@@ -30,7 +35,7 @@ async function fetchCaptcha() {
     captchaUuid.value = uuid || ''
     captchaAnswer.value = code || ''
   } catch {
-    message.error('Failed to load captcha, please refresh')
+    message.error(t('login.failedCaptcha'))
   } finally {
     captchaLoading.value = false
   }
@@ -47,7 +52,6 @@ function drawCaptcha(code: string) {
   ctx.fillStyle = appTheme.value === 'dark' ? '#2a2a2a' : '#f5f5f5'
   ctx.fillRect(0, 0, W, H)
 
-  // noise lines
   for (let i = 0; i < 4; i++) {
     ctx.strokeStyle = `hsla(${Math.random() * 360},50%,60%,0.6)`
     ctx.lineWidth = 1.5
@@ -61,7 +65,6 @@ function drawCaptcha(code: string) {
     ctx.stroke()
   }
 
-  // characters
   const palette = ['#e74c3c', '#2980b9', '#27ae60', '#8e44ad', '#e67e22', '#16a085']
   code.toUpperCase().split('').forEach((char, i) => {
     ctx.save()
@@ -73,7 +76,6 @@ function drawCaptcha(code: string) {
     ctx.restore()
   })
 
-  // noise dots
   for (let i = 0; i < 40; i++) {
     ctx.fillStyle = `rgba(128,128,128,0.25)`
     ctx.fillRect(Math.random() * W, Math.random() * H, 2, 2)
@@ -87,15 +89,15 @@ onMounted(fetchCaptcha)
 
 async function handleLogin() {
   if (!form.username || !form.password) {
-    message.warning('Please enter username and password')
+    message.warning(t('login.fillUsernamePassword'))
     return
   }
   if (!form.captcha) {
-    message.warning('Please enter the verification code')
+    message.warning(t('login.fillCaptcha'))
     return
   }
   if (form.captcha.toUpperCase() !== captchaAnswer.value.toUpperCase()) {
-    message.error('Incorrect verification code')
+    message.error(t('login.wrongCaptcha'))
     form.captcha = ''
     fetchCaptcha()
     return
@@ -108,10 +110,10 @@ async function handleLogin() {
     })
     const { token, user } = res.data
     saveAuth(token, user)
-    message.success(`Welcome, ${user.name}!`)
+    message.success(t('login.welcome', { name: user.name }))
     router.push('/home')
   } catch (err: any) {
-    const msg = err.response?.data?.message || 'Invalid username or password'
+    const msg = err.response?.data?.message || t('login.invalidCredentials')
     message.error(msg)
     form.captcha = ''
     fetchCaptcha()
@@ -119,53 +121,61 @@ async function handleLogin() {
     loading.value = false
   }
 }
+
+function toggleLang() {
+  setLocale(getLocale() === 'zh-CN' ? 'en-US' : 'zh-CN')
+}
 </script>
 
 <template>
-  <a-config-provider :theme="antConfig">
+  <a-config-provider :theme="antConfig" :locale="antConfig.locale">
     <div class="login-page">
       <div class="theme-btn">
         <a-button type="text" @click="toggleTheme">
           <BulbOutlined />
-          {{ appTheme === 'dark' ? 'Light Mode' : 'Dark Mode' }}
+          {{ appTheme === 'dark' ? t('login.lightMode') : t('login.darkMode') }}
+        </a-button>
+        <a-button type="text" @click="toggleLang">
+          <TranslationOutlined />
+          {{ locale === 'zh-CN' ? t('lang.en') : t('lang.zh') }}
         </a-button>
       </div>
 
       <a-card class="login-card">
         <div class="login-header">
           <div class="app-logo">🚀</div>
-          <h2>Welcome Back</h2>
-          <p class="subtitle">Sign in to your account</p>
+          <h2>{{ t('login.title') }}</h2>
+          <p class="subtitle">{{ t('login.subtitle') }}</p>
         </div>
 
         <a-form layout="vertical" :model="form" @finish="handleLogin">
-          <a-form-item label="Username" name="username">
+          <a-form-item :label="t('login.username')" name="username">
             <a-input
               v-model:value="form.username"
               size="large"
-              placeholder="Enter username (default: admin)"
+              :placeholder="t('login.usernamePlaceholder')"
               allow-clear
             >
               <template #prefix><UserOutlined /></template>
             </a-input>
           </a-form-item>
 
-          <a-form-item label="Password" name="password">
+          <a-form-item :label="t('login.password')" name="password">
             <a-input-password
               v-model:value="form.password"
               size="large"
-              placeholder="Enter password (default: admin)"
+              :placeholder="t('login.passwordPlaceholder')"
             >
               <template #prefix><LockOutlined /></template>
             </a-input-password>
           </a-form-item>
 
-          <a-form-item label="Verification Code" name="captcha">
+          <a-form-item :label="t('login.captcha')" name="captcha">
             <div class="captcha-row">
               <a-input
                 v-model:value="form.captcha"
                 size="large"
-                placeholder="4-character code"
+                :placeholder="t('login.captchaPlaceholder')"
                 :maxlength="4"
                 autocomplete="off"
               >
@@ -177,7 +187,6 @@ async function handleLogin() {
                   width="130"
                   height="44"
                   class="captcha-canvas"
-                  title="Click to refresh"
                   @click="fetchCaptcha"
                 />
               </a-spin>
@@ -188,8 +197,8 @@ async function handleLogin() {
           </a-form-item>
 
           <div class="form-links">
-            <a-checkbox>Remember me</a-checkbox>
-            <router-link to="/forgot-password">Forgot password?</router-link>
+            <a-checkbox>{{ t('login.rememberMe') }}</a-checkbox>
+            <router-link to="/forgot-password">{{ t('login.forgotPassword') }}</router-link>
           </div>
 
           <a-button
@@ -200,20 +209,20 @@ async function handleLogin() {
             :loading="loading"
             style="margin-top: 8px"
           >
-            Sign In
+            {{ t('login.signIn') }}
           </a-button>
         </a-form>
 
-        <a-divider>or</a-divider>
+        <a-divider>{{ t('login.or') }}</a-divider>
 
         <div class="register-link">
-          Don't have an account?
-          <router-link to="/register">Register now</router-link>
+          {{ t('login.noAccount') }}
+          <router-link to="/register">{{ t('login.registerNow') }}</router-link>
         </div>
 
         <div class="hint">
           <a-alert
-            message="Demo credentials: admin / admin"
+            :message="t('login.demoCredentials')"
             type="info"
             show-icon
             style="margin-top: 16px"
@@ -237,6 +246,8 @@ async function handleLogin() {
   position: fixed;
   top: 16px;
   right: 16px;
+  display: flex;
+  gap: 4px;
 }
 .login-card {
   width: 100%;
