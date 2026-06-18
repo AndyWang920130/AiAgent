@@ -20,6 +20,7 @@ const router = createRouter({
         { path: 'blog/add', name: 'add-blog', component: () => import('../views/AddBlogView.vue') },
         { path: 'blog/:id', name: 'blog-detail', component: () => import('../views/BlogDetailView.vue') },
         { path: 'blog/:id/edit', name: 'blog-edit', component: () => import('../views/BlogEditView.vue') },
+        { path: 'notifications', name: 'notifications', component: () => import('../views/NotificationView.vue') },
       ],
     },
   ],
