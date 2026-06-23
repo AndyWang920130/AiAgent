@@ -18,6 +18,7 @@ import {
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   CloseCircleOutlined,
+  DesktopOutlined,
 } from '@ant-design/icons-vue'
 import { theme as appTheme, toggleTheme } from '../utils/theme'
 import { clearAuth, getUser } from '../utils/auth'
@@ -45,6 +46,8 @@ const openKeys = ref<string[]>(['home-sub'])
 const keyToPath: Record<string, string> = {
   'blog-list': '/blog',
   'blog-add': '/blog/add',
+  'device-list': '/device',
+  'device-add': '/device/add',
 }
 
 const themeConfig = computed(() => ({
@@ -123,6 +126,20 @@ function formatPopoverTime(timeStr: string): string {
             <a-menu-item key="blog-add" @click="navigate('blog-add')">
               <PlusCircleOutlined />
               <span>{{ t('menu.addBlog') }}</span>
+            </a-menu-item>
+          </a-sub-menu>
+          <a-sub-menu key="device-sub">
+            <template #title>
+              <DesktopOutlined />
+              <span>{{ t('menu.device') }}</span>
+            </template>
+            <a-menu-item key="device-list" @click="navigate('device-list')">
+              <UnorderedListOutlined />
+              <span>{{ t('menu.deviceList') }}</span>
+            </a-menu-item>
+            <a-menu-item key="device-add" @click="navigate('device-add')">
+              <PlusCircleOutlined />
+              <span>{{ t('menu.addDevice') }}</span>
             </a-menu-item>
           </a-sub-menu>
           <a-menu-item key="tools" @click="navigate('tools')">

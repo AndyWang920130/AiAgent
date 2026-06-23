@@ -1,4 +1,4 @@
-package com.example.myapp.web.vm;
+package com.example.myapp.web.rest.vm;
 
 public class Greeting {
     private long count;

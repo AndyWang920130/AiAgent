@@ -14,13 +14,13 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/dev': {
-        target: 'http://localhost:8080',
+      '/dev/': {
+        target: 'http://localhost:8080/',
         changeOrigin: true,
         rewrite: path => path.replace(/^\/dev/, ''),
       },
-      '/test': {
-        target: 'https://aaa.com',
+      '/test/': {
+        target: 'https://aaa.com/',
         changeOrigin: true,
         rewrite: path => path.replace(/^\/test/, ''),
       },

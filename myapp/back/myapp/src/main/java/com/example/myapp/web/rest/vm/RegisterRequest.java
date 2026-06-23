@@ -1,4 +1,4 @@
-package com.example.myapp.web.vm;
+package com.example.myapp.web.rest.vm;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

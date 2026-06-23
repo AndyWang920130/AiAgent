@@ -1,12 +1,12 @@
-package com.example.myapp.web;
+package com.example.myapp.web.rest;
 
 import com.example.myapp.security.InMemoryUserStore;
 import com.example.myapp.security.InMemoryUserStore.StoredUser;
 import com.example.myapp.security.JwtUtil;
-import com.example.myapp.web.vm.AuthResponse;
-import com.example.myapp.web.vm.LoginRequest;
-import com.example.myapp.web.vm.RegisterRequest;
-import com.example.myapp.web.vm.UserInfo;
+import com.example.myapp.web.rest.vm.AuthResponse;
+import com.example.myapp.web.rest.vm.LoginRequest;
+import com.example.myapp.web.rest.vm.RegisterRequest;
+import com.example.myapp.web.rest.vm.UserInfo;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
