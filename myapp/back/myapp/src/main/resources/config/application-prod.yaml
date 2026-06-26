@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: myapp
+  datasource:
+    url: jdbc:mysql://localhost:16011/twsny_prod
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 123456
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+
+server:
+  port: 8080
+
+app:
+  jwt:
+    # Base64-encoded secret — at least 32 bytes (256 bits) for HS256
+    secret: dGhpcy1pcy1hLXZlcnktbG9uZy1zZWNyZXQta2V5LWZvci1qd3Qtc2lnbmluZw==
+    expiration: 86400000   # 1 day in ms
+  cors:
+    allowed-origins: http://localhost:5173

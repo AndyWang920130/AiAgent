@@ -1,0 +1,131 @@
+package com.example.myapp.web.rest;
+
+import com.example.myapp.service.BlogService;
+import com.example.myapp.service.dto.BlogDTO;
+import com.example.myapp.service.dto.UserDTO;
+import com.example.myapp.utils.PageUtils;
+import com.example.myapp.web.rest.errors.BadRequestAlertException;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+/**
+ * REST controller for managing Blog.
+ */
+@RestController
+@RequestMapping("/api/v1")
+public class BlogResource {
+
+    private static final Logger LOG = LoggerFactory.getLogger(BlogResource.class);
+
+    private static final String ENTITY_NAME = "blog";
+
+    private final BlogService blogService;
+
+    public BlogResource(BlogService blogService) {
+        this.blogService = blogService;
+    }
+
+    /**
+     * POST /blogs : Create a new blog.
+     */
+    @PostMapping("/blogs")
+    public ResponseEntity<BlogDTO> createBlog(@Valid @RequestBody BlogDTO blogDTO) throws URISyntaxException {
+        LOG.debug("REST request to save Blog : {}", blogDTO);
+        if (blogDTO.getId() != null) {
+            throw new BadRequestAlertException("A new blog cannot already have an ID", ENTITY_NAME, "idexists");
+        }
+        BlogDTO result = blogService.save(blogDTO);
+        return ResponseEntity
+            .created(new URI("/api/v1/blogs/" + result.getId()))
+            .body(result);
+    }
+
+    /**
+     * PUT /blogs/{id} : Updates an existing blog.
+     */
+    @PutMapping("/blogs/{id}")
+    public ResponseEntity<BlogDTO> updateBlog(
+        @PathVariable(value = "id", required = false) final Long id,
+        @Valid @RequestBody BlogDTO blogDTO
+    ) {
+        LOG.debug("REST request to update Blog : {}, {}", id, blogDTO);
+        if (blogDTO.getId() == null) {
+            throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
+        }
+        if (!Objects.equals(id, blogDTO.getId())) {
+            throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
+        }
+        BlogDTO result = blogService.update(blogDTO);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * PATCH /blogs/{id} : Partial updates given fields of an existing blog.
+     */
+    @PatchMapping(value = "/blogs/{id}", consumes = { "application/json", "application/merge-patch+json" })
+    public ResponseEntity<BlogDTO> partialUpdateBlog(
+        @PathVariable(value = "id", required = false) final Long id,
+        @NotNull @RequestBody BlogDTO blogDTO
+    ) {
+        LOG.debug("REST request to partial update Blog partially : {}, {}", id, blogDTO);
+        if (blogDTO.getId() == null) {
+            throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
+        }
+        if (!Objects.equals(id, blogDTO.getId())) {
+            throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
+        }
+        Optional<BlogDTO> result = blogService.partialUpdate(blogDTO);
+        return result
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * GET /blogs : Get all the blogs.
+     */
+    @GetMapping("/blogs")
+    public ResponseEntity<List<BlogDTO>> getAllBlogs(Pageable pageable) {
+        LOG.debug("REST request to get a page of Blogs");
+        Page<BlogDTO> page = blogService.findAll(pageable);
+        HttpHeaders headers = PageUtils.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
+        return ResponseEntity.ok().headers(headers).body(page.getContent());
+    }
+
+    /**
+     * GET /blogs/{id} : Get the blog by id.
+     */
+    @GetMapping("/blogs/{id}")
+    public ResponseEntity<BlogDTO> getBlog(@PathVariable("id") Long id) {
+        LOG.debug("REST request to get Blog : {}", id);
+        Optional<BlogDTO> blogDTO = blogService.findOne(id);
+        return blogDTO
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * DELETE /blogs/{id} : Delete the blog by id.
+     */
+    @DeleteMapping("/blogs/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public ResponseEntity<Void> deleteBlog(@PathVariable("id") Long id) {
+        LOG.debug("REST request to delete Blog : {}", id);
+        blogService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+}

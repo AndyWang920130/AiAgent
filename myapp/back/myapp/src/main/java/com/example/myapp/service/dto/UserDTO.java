@@ -3,17 +3,17 @@ package com.example.myapp.service.dto;
 
 import com.example.myapp.contants.enumeration.Gender;
 import com.example.myapp.contants.enumeration.UserType;
-import com.example.myapp.domain.MyAppUser;
+import com.example.myapp.domain.User;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
 
 /**
- * A DTO for the {@link MyAppUser } entity.
+ * A DTO for the {@link User } entity.
  */
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class MyAppUserDTO implements Serializable {
+public class UserDTO implements Serializable {
 
     @NotNull
     private Long id;
@@ -203,15 +203,15 @@ public class MyAppUserDTO implements Serializable {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof MyAppUserDTO)) {
+        if (!(o instanceof UserDTO)) {
             return false;
         }
 
-        MyAppUserDTO myAppUserDTO = (MyAppUserDTO) o;
+        UserDTO userDTO = (UserDTO) o;
         if (this.id == null) {
             return false;
         }
-        return Objects.equals(this.id, myAppUserDTO.id);
+        return Objects.equals(this.id, userDTO.id);
     }
 
     @Override

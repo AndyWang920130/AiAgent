@@ -93,6 +93,12 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>8.0.23</version> <!-- 请使用 8.0 以上版本 -->
+		</dependency>
+
 		<!-- mapstruct -->
 		<dependency>
 			<groupId>org.mapstruct</groupId>

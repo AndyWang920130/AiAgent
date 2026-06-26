@@ -1,6 +1,6 @@
 package com.example.myapp.repository;
 
-import com.example.myapp.domain.MyAppUser;
+import com.example.myapp.domain.User;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.stereotype.Repository;
 
@@ -9,4 +9,4 @@ import org.springframework.stereotype.Repository;
  */
 @SuppressWarnings("unused")
 @Repository
-public interface MyAppUserRepository extends JpaRepository<MyAppUser, Long> {}
+public interface UserRepository extends JpaRepository<User, Long> {}

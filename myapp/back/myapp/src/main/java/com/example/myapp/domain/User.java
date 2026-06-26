@@ -11,9 +11,9 @@ import java.time.Instant;
  * The user entity.
  */
 @Entity
-@Table(name = "my_app_user")
+@Table(name = "twsny_user")
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class MyAppUser implements Serializable {
+public class User implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -91,7 +91,7 @@ public class MyAppUser implements Serializable {
         return this.id;
     }
 
-    public MyAppUser id(Long id) {
+    public User id(Long id) {
         this.setId(id);
         return this;
     }
@@ -104,7 +104,7 @@ public class MyAppUser implements Serializable {
         return this.login;
     }
 
-    public MyAppUser login(String login) {
+    public User login(String login) {
         this.setLogin(login);
         return this;
     }
@@ -117,7 +117,7 @@ public class MyAppUser implements Serializable {
         return this.realName;
     }
 
-    public MyAppUser realName(String realName) {
+    public User realName(String realName) {
         this.setRealName(realName);
         return this;
     }
@@ -130,7 +130,7 @@ public class MyAppUser implements Serializable {
         return this.nickName;
     }
 
-    public MyAppUser nickName(String nickName) {
+    public User nickName(String nickName) {
         this.setNickName(nickName);
         return this;
     }
@@ -143,7 +143,7 @@ public class MyAppUser implements Serializable {
         return this.password;
     }
 
-    public MyAppUser password(String password) {
+    public User password(String password) {
         this.setPassword(password);
         return this;
     }
@@ -156,7 +156,7 @@ public class MyAppUser implements Serializable {
         return this.gender;
     }
 
-    public MyAppUser gender(Gender gender) {
+    public User gender(Gender gender) {
         this.setGender(gender);
         return this;
     }
@@ -169,7 +169,7 @@ public class MyAppUser implements Serializable {
         return this.userType;
     }
 
-    public MyAppUser userType(UserType userType) {
+    public User userType(UserType userType) {
         this.setUserType(userType);
         return this;
     }
@@ -182,7 +182,7 @@ public class MyAppUser implements Serializable {
         return this.phoneNumber;
     }
 
-    public MyAppUser phoneNumber(String phoneNumber) {
+    public User phoneNumber(String phoneNumber) {
         this.setPhoneNumber(phoneNumber);
         return this;
     }
@@ -195,7 +195,7 @@ public class MyAppUser implements Serializable {
         return this.email;
     }
 
-    public MyAppUser email(String email) {
+    public User email(String email) {
         this.setEmail(email);
         return this;
     }
@@ -208,7 +208,7 @@ public class MyAppUser implements Serializable {
         return this.avatar;
     }
 
-    public MyAppUser avatar(String avatar) {
+    public User avatar(String avatar) {
         this.setAvatar(avatar);
         return this;
     }
@@ -221,7 +221,7 @@ public class MyAppUser implements Serializable {
         return this.description;
     }
 
-    public MyAppUser description(String description) {
+    public User description(String description) {
         this.setDescription(description);
         return this;
     }
@@ -234,7 +234,7 @@ public class MyAppUser implements Serializable {
         return this.deleted;
     }
 
-    public MyAppUser deleted(Boolean deleted) {
+    public User deleted(Boolean deleted) {
         this.setDeleted(deleted);
         return this;
     }
@@ -247,7 +247,7 @@ public class MyAppUser implements Serializable {
         return this.deleteReason;
     }
 
-    public MyAppUser deleteReason(String deleteReason) {
+    public User deleteReason(String deleteReason) {
         this.setDeleteReason(deleteReason);
         return this;
     }
@@ -260,7 +260,7 @@ public class MyAppUser implements Serializable {
         return this.createdBy;
     }
 
-    public MyAppUser createdBy(String createdBy) {
+    public User createdBy(String createdBy) {
         this.setCreatedBy(createdBy);
         return this;
     }
@@ -273,7 +273,7 @@ public class MyAppUser implements Serializable {
         return this.createdDate;
     }
 
-    public MyAppUser createdDate(Instant createdDate) {
+    public User createdDate(Instant createdDate) {
         this.setCreatedDate(createdDate);
         return this;
     }
@@ -286,7 +286,7 @@ public class MyAppUser implements Serializable {
         return this.lastModifiedBy;
     }
 
-    public MyAppUser lastModifiedBy(String lastModifiedBy) {
+    public User lastModifiedBy(String lastModifiedBy) {
         this.setLastModifiedBy(lastModifiedBy);
         return this;
     }
@@ -299,7 +299,7 @@ public class MyAppUser implements Serializable {
         return this.lastModifiedDate;
     }
 
-    public MyAppUser lastModifiedDate(Instant lastModifiedDate) {
+    public User lastModifiedDate(Instant lastModifiedDate) {
         this.setLastModifiedDate(lastModifiedDate);
         return this;
     }
@@ -315,10 +315,10 @@ public class MyAppUser implements Serializable {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof MyAppUser)) {
+        if (!(o instanceof User)) {
             return false;
         }
-        return getId() != null && getId().equals(((MyAppUser) o).getId());
+        return getId() != null && getId().equals(((User) o).getId());
     }
 
     @Override
