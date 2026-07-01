@@ -11,6 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -99,7 +101,7 @@ public class BlogResource {
      * GET /blogs : Get all the blogs.
      */
     @GetMapping("/blogs")
-    public ResponseEntity<List<BlogDTO>> getAllBlogs(Pageable pageable) {
+    public ResponseEntity<List<BlogDTO>> getAllBlogs(@PageableDefault(sort = {"id"}, direction = Sort.Direction.DESC) Pageable pageable) {
         LOG.debug("REST request to get a page of Blogs");
         Page<BlogDTO> page = blogService.findAll(pageable);
         HttpHeaders headers = PageUtils.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
@@ -116,6 +118,16 @@ public class BlogResource {
         return blogDTO
             .map(ResponseEntity::ok)
             .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * POST /blogs/{id}/view : Increment view count.
+     */
+    @PostMapping("/blogs/{id}/view")
+    public ResponseEntity<Void> incrementView(@PathVariable("id") Long id) {
+        LOG.debug("REST request to increment view count for Blog : {}", id);
+        blogService.incrementViewCount(id);
+        return ResponseEntity.ok().build();
     }
 
     /**

@@ -1,16 +1,17 @@
 <script lang="ts" setup>
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import RichEditor from '../components/RichEditor.vue'
-import { getPost, updatePost } from '../stores/blog'
+import { getPost, updatePost, type Post } from '../stores/blog'
 
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 
-const post = computed(() => getPost(Number(route.params.id)))
+const post = ref<Post | undefined>(undefined)
+const loadingPost = ref(false)
 
 const form = reactive({
   title: '',
@@ -18,17 +19,26 @@ const form = reactive({
   tag: '',
   tagColor: 'blue',
   content: '',
+  excerpt: '',
 })
 
-watch(post, (p) => {
-  if (p) {
-    form.title = p.title
-    form.category = p.category
-    form.tag = p.tag
-    form.tagColor = p.tagColor
-    form.content = p.content
+onMounted(async () => {
+  loadingPost.value = true
+  try {
+    const found = await getPost(Number(route.params.id))
+    if (found) {
+      post.value = found
+      form.title = found.title
+      form.category = found.category
+      form.tag = found.tag
+      form.tagColor = found.tagColor
+      form.content = found.content
+      form.excerpt = found.excerpt
+    }
+  } finally {
+    loadingPost.value = false
   }
-}, { immediate: true })
+})
 
 const categories = ['Frontend', 'Backend', 'Language', 'DevOps']
 const tagColors = ['blue', 'green', 'orange', 'purple', 'red', 'cyan', 'geekblue']
@@ -40,75 +50,88 @@ async function handleSubmit() {
     return
   }
   submitting.value = true
-  await new Promise(r => setTimeout(r, 400))
-  updatePost(Number(route.params.id), { ...form })
-  submitting.value = false
-  message.success(t('editBlog.updated'))
-  router.push('/blog/' + route.params.id)
+  try {
+    await updatePost(Number(route.params.id), {
+      title: form.title,
+      category: form.category,
+      tag: form.tag,
+      tagColor: form.tagColor,
+      content: form.content,
+      excerpt: form.excerpt,
+    })
+    message.success(t('editBlog.updated'))
+    router.push('/blog/' + route.params.id)
+  } catch {
+    message.error(t('editBlog.updateFailed') || 'Failed to update post')
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
 <template>
   <div class="blog-edit-view">
-    <template v-if="post">
-      <a-page-header
-        :title="t('editBlog.pageTitle')"
-        :sub-title="t('editBlog.pageSubtitle')"
-        @back="router.push('/blog/' + post.id)"
-      />
-      <a-card :bordered="false" class="form-card">
-        <a-form layout="vertical" :model="form" @finish="handleSubmit">
-          <a-form-item :label="t('editBlog.titleLabel')" required>
-            <a-input v-model:value="form.title" :placeholder="t('editBlog.titlePlaceholder')" size="large" />
-          </a-form-item>
+    <a-spin :spinning="loadingPost">
+      <template v-if="post">
+        <a-page-header
+          :title="t('editBlog.pageTitle')"
+          :sub-title="t('editBlog.pageSubtitle')"
+          @back="router.push('/blog/' + post.id)"
+        />
+        <a-card :bordered="false" class="form-card">
+          <a-form layout="vertical" :model="form" @finish="handleSubmit">
+            <a-form-item :label="t('editBlog.titleLabel')" required>
+              <a-input v-model:value="form.title" :placeholder="t('editBlog.titlePlaceholder')" size="large" />
+            </a-form-item>
 
-          <a-row :gutter="16">
-            <a-col :span="8">
-              <a-form-item :label="t('editBlog.category')" required>
-                <a-select v-model:value="form.category" :placeholder="t('editBlog.categoryPlaceholder')" size="large">
-                  <a-select-option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</a-select-option>
-                </a-select>
-              </a-form-item>
-            </a-col>
-            <a-col :span="8">
-              <a-form-item :label="t('editBlog.tag')">
-                <a-input v-model:value="form.tag" :placeholder="t('editBlog.tagPlaceholder')" size="large" />
-              </a-form-item>
-            </a-col>
-            <a-col :span="8">
-              <a-form-item :label="t('editBlog.tagColor')">
-                <a-select v-model:value="form.tagColor" size="large">
-                  <a-select-option v-for="color in tagColors" :key="color" :value="color">
-                    <a-tag :color="color">{{ color }}</a-tag>
-                  </a-select-option>
-                </a-select>
-              </a-form-item>
-            </a-col>
-          </a-row>
+            <a-row :gutter="16">
+              <a-col :span="8">
+                <a-form-item :label="t('editBlog.category')" required>
+                  <a-select v-model:value="form.category" :placeholder="t('editBlog.categoryPlaceholder')" size="large">
+                    <a-select-option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</a-select-option>
+                  </a-select>
+                </a-form-item>
+              </a-col>
+              <a-col :span="8">
+                <a-form-item :label="t('editBlog.tag')">
+                  <a-input v-model:value="form.tag" :placeholder="t('editBlog.tagPlaceholder')" size="large" />
+                </a-form-item>
+              </a-col>
+              <a-col :span="8">
+                <a-form-item :label="t('editBlog.tagColor')">
+                  <a-select v-model:value="form.tagColor" size="large">
+                    <a-select-option v-for="color in tagColors" :key="color" :value="color">
+                      <a-tag :color="color">{{ color }}</a-tag>
+                    </a-select-option>
+                  </a-select>
+                </a-form-item>
+              </a-col>
+            </a-row>
 
-          <a-form-item :label="t('editBlog.content')" required>
-            <RichEditor v-model="form.content" :placeholder="t('editBlog.contentPlaceholder')" />
-          </a-form-item>
+            <a-form-item :label="t('editBlog.content')" required>
+              <RichEditor v-model="form.content" :placeholder="t('editBlog.contentPlaceholder')" />
+            </a-form-item>
 
-          <a-form-item>
-            <a-space>
-              <a-button type="primary" html-type="submit" :loading="submitting" size="large">
-                {{ t('editBlog.update') }}
-              </a-button>
-              <a-button size="large" @click="router.push('/blog/' + post.id)">
-                {{ t('editBlog.cancel') }}
-              </a-button>
-            </a-space>
-          </a-form-item>
-        </a-form>
-      </a-card>
-    </template>
-
-    <a-result v-else status="404" :title="t('editBlog.notFound')">
-      <template #extra>
-        <a-button type="primary" @click="router.push('/blog')">{{ t('editBlog.backToList') }}</a-button>
+            <a-form-item>
+              <a-space>
+                <a-button type="primary" html-type="submit" :loading="submitting" size="large">
+                  {{ t('editBlog.update') }}
+                </a-button>
+                <a-button size="large" @click="router.push('/blog/' + post.id)">
+                  {{ t('editBlog.cancel') }}
+                </a-button>
+              </a-space>
+            </a-form-item>
+          </a-form>
+        </a-card>
       </template>
-    </a-result>
+
+      <a-result v-else-if="!loadingPost" status="404" :title="t('editBlog.notFound')">
+        <template #extra>
+          <a-button type="primary" @click="router.push('/blog')">{{ t('editBlog.backToList') }}</a-button>
+        </template>
+      </a-result>
+    </a-spin>
   </div>
 </template>
 

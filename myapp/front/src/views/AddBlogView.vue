@@ -29,18 +29,22 @@ async function handleSubmit() {
     return
   }
   submitting.value = true
-  await new Promise(r => setTimeout(r, 600))
-  addPost({
-    title: form.title,
-    category: form.category,
-    tag: form.tag,
-    tagColor: form.tagColor,
-    content: form.content,
-    excerpt: form.excerpt || form.title,
-  })
-  submitting.value = false
-  message.success(t('addBlog.created'))
-  router.push('/blog')
+  try {
+    await addPost({
+      title: form.title,
+      category: form.category,
+      tag: form.tag,
+      tagColor: form.tagColor,
+      content: form.content,
+      excerpt: form.excerpt || form.title,
+    })
+    message.success(t('addBlog.created'))
+    router.push('/blog')
+  } catch {
+    message.error(t('addBlog.createFailed') || 'Failed to create post')
+  } finally {
+    submitting.value = false
+  }
 }
 
 function handleCancel() {

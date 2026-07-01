@@ -35,6 +35,19 @@ public class BlogDTO implements Serializable {
 
     private Long viewCount;
 
+    private Long likes;
+
+    private Long commentCount;
+
+    @Size(max = 50)
+    private String category;
+
+    @Size(max = 50)
+    private String tag;
+
+    @Size(max = 50)
+    private String tagColor;
+
     private Boolean deleted;
 
     private String createdBy;
@@ -115,6 +128,46 @@ public class BlogDTO implements Serializable {
 
     public void setDeleted(Boolean deleted) {
         this.deleted = deleted;
+    }
+
+    public Long getLikes() {
+        return likes;
+    }
+
+    public void setLikes(Long likes) {
+        this.likes = likes;
+    }
+
+    public Long getCommentCount() {
+        return commentCount;
+    }
+
+    public void setCommentCount(Long commentCount) {
+        this.commentCount = commentCount;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public String getTag() {
+        return tag;
+    }
+
+    public void setTag(String tag) {
+        this.tag = tag;
+    }
+
+    public String getTagColor() {
+        return tagColor;
+    }
+
+    public void setTagColor(String tagColor) {
+        this.tagColor = tagColor;
     }
 
     public String getCreatedBy() {

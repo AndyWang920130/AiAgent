@@ -11,7 +11,7 @@ import java.io.Serializable;
 @Entity
 @Table(name = "twsny_blog")
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class Blog extends AbstractAuditingEntity implements Serializable {
+public class Blog extends AbstractAuditingEntity {
 
     private static final long serialVersionUID = 1L;
 
@@ -48,6 +48,24 @@ public class Blog extends AbstractAuditingEntity implements Serializable {
 
     @Column(name = "view_count")
     private Long viewCount;
+
+    @Column(name = "likes")
+    private Long likes;
+
+    @Column(name = "comment_count")
+    private Long commentCount;
+
+    @Size(max = 50)
+    @Column(name = "category", length = 50)
+    private String category;
+
+    @Size(max = 50)
+    @Column(name = "tag", length = 50)
+    private String tag;
+
+    @Size(max = 50)
+    @Column(name = "tag_color", length = 50)
+    private String tagColor;
 
     @Column(name = "deleted")
     private Boolean deleted;
@@ -167,6 +185,71 @@ public class Blog extends AbstractAuditingEntity implements Serializable {
 
     public void setDeleted(Boolean deleted) {
         this.deleted = deleted;
+    }
+
+    public Long getLikes() {
+        return this.likes;
+    }
+
+    public Blog likes(Long likes) {
+        this.setLikes(likes);
+        return this;
+    }
+
+    public void setLikes(Long likes) {
+        this.likes = likes;
+    }
+
+    public Long getCommentCount() {
+        return this.commentCount;
+    }
+
+    public Blog commentCount(Long commentCount) {
+        this.setCommentCount(commentCount);
+        return this;
+    }
+
+    public void setCommentCount(Long commentCount) {
+        this.commentCount = commentCount;
+    }
+
+    public String getCategory() {
+        return this.category;
+    }
+
+    public Blog category(String category) {
+        this.setCategory(category);
+        return this;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public String getTag() {
+        return this.tag;
+    }
+
+    public Blog tag(String tag) {
+        this.setTag(tag);
+        return this;
+    }
+
+    public void setTag(String tag) {
+        this.tag = tag;
+    }
+
+    public String getTagColor() {
+        return this.tagColor;
+    }
+
+    public Blog tagColor(String tagColor) {
+        this.setTagColor(tagColor);
+        return this;
+    }
+
+    public void setTagColor(String tagColor) {
+        this.tagColor = tagColor;
     }
 
     @Override

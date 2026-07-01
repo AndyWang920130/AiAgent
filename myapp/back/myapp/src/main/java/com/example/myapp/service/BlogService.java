@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import com.example.myapp.utils.SecurityUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +41,7 @@ public class BlogService {
     public BlogDTO save(BlogDTO blogDTO) {
         LOG.debug("Request to save Blog : {}", blogDTO);
         Blog blog = blogMapper.toEntity(blogDTO);
+        blog.setCreatedBy(SecurityUtil.getCurrentUsername());
         blog = blogRepository.save(blog);
         return blogMapper.toDto(blog);
     }
@@ -108,5 +110,12 @@ public class BlogService {
     public void delete(Long id) {
         LOG.debug("Request to delete Blog : {}", id);
         blogRepository.deleteById(id);
+    }
+
+    public void incrementViewCount(Long id) {
+        blogRepository.findById(id).ifPresent(blog -> {
+            blog.setViewCount((blog.getViewCount() == null ? 0L : blog.getViewCount()) + 1);
+            blogRepository.save(blog);
+        });
     }
 }

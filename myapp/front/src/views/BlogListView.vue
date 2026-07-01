@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
@@ -9,7 +9,7 @@ import {
   DeleteOutlined,
   PlusOutlined,
 } from '@ant-design/icons-vue'
-import { posts, deletePost, type Post } from '../stores/blog'
+import { posts, loading, fetchPosts, deletePost, type Post } from '../stores/blog'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -17,6 +17,8 @@ const router = useRouter()
 const searchText = ref('')
 const selectedCategory = ref<string | undefined>(undefined)
 const categories = ['Frontend', 'Backend', 'Language', 'DevOps']
+
+onMounted(() => fetchPosts())
 
 const filteredPosts = computed(() =>
   posts.value.filter(p => {
@@ -41,8 +43,8 @@ function handleDelete(id: number, title: string) {
     content: t('blog.deleteContent', { title }),
     okText: t('blog.delete'),
     okType: 'danger',
-    onOk() {
-      deletePost(id)
+    async onOk() {
+      await deletePost(id)
       message.success(t('blog.deleted'))
     },
   })
@@ -80,6 +82,7 @@ function handleDelete(id: number, title: string) {
       <a-table
         :columns="columns"
         :data-source="filteredPosts"
+        :loading="loading"
         :row-key="(r: Post) => r.id"
         :pagination="{ pageSize: 10, showSizeChanger: false }"
         :scroll="{ x: 800 }"

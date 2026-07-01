@@ -8,6 +8,7 @@ export default {
   },
   menu: {
     home: 'Home',
+    blog: 'Blog',
     blogList: 'Blog List',
     addBlog: 'Add Blog',
     tools: 'Tools',

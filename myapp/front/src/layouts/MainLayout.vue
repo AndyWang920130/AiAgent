@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
-import { useRouter, RouterView } from 'vue-router'
+import { ref, computed, watch } from 'vue'
+import { useRouter, useRoute, RouterView } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
   HomeOutlined,
@@ -36,19 +36,37 @@ import {
 
 const { t, locale } = useI18n()
 const router = useRouter()
+const route = useRoute()
 const collapsed = ref(false)
 const bellOpen = ref(false)
 const user = getUser<{ username: string; name: string }>()
 
-const selectedKeys = ref<string[]>(['blog-list'])
-const openKeys = ref<string[]>(['home-sub'])
-
 const keyToPath: Record<string, string> = {
+  'home': '/home',
   'blog-list': '/blog',
   'blog-add': '/blog/add',
   'device-list': '/device',
   'device-add': '/device/add',
 }
+
+const pathToKey: Record<string, string> = Object.fromEntries(
+  Object.entries(keyToPath).map(([k, v]) => [v, k])
+)
+
+function resolveSelectedKey(path: string): string {
+  if (pathToKey[path]) return pathToKey[path]
+  for (const [p, k] of Object.entries(pathToKey)) {
+    if (path.startsWith(p + '/')) return k
+  }
+  return 'home'
+}
+
+const selectedKeys = ref<string[]>([resolveSelectedKey(route.path)])
+const openKeys = ref<string[]>(['home-sub'])
+
+watch(() => route.path, path => {
+  selectedKeys.value = [resolveSelectedKey(path)]
+})
 
 const themeConfig = computed(() => ({
   algorithm: appTheme.value === 'dark' ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
@@ -104,7 +122,7 @@ function formatPopoverTime(timeStr: string): string {
     <a-layout style="min-height: 100vh">
       <!-- Sider -->
       <a-layout-sider v-model:collapsed="collapsed" collapsible :trigger="null" :width="220">
-        <div class="logo">
+        <div class="logo" @click="navigate('home')">
           <span v-if="!collapsed">🚀 MyApp</span>
           <span v-else>🚀</span>
         </div>
@@ -114,10 +132,14 @@ function formatPopoverTime(timeStr: string): string {
           theme="dark"
           mode="inline"
         >
+          <a-menu-item key="home" @click="navigate('home')">
+            <HomeOutlined />
+            <span>{{ t('menu.home') }}</span>
+          </a-menu-item>
           <a-sub-menu key="home-sub">
             <template #title>
-              <HomeOutlined />
-              <span>{{ t('menu.home') }}</span>
+              <UnorderedListOutlined />
+              <span>{{ t('menu.blog') }}</span>
             </template>
             <a-menu-item key="blog-list" @click="navigate('blog-list')">
               <UnorderedListOutlined />
@@ -311,6 +333,8 @@ function formatPopoverTime(timeStr: string): string {
   font-size: 18px;
   font-weight: bold;
   background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  user-select: none;
 }
 .app-header {
   padding: 0 16px;

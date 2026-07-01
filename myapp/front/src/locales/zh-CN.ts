@@ -8,6 +8,7 @@ export default {
   },
   menu: {
     home: '首页',
+    blog: '博客',
     blogList: '博客列表',
     addBlog: '添加博客',
     tools: '工具',
