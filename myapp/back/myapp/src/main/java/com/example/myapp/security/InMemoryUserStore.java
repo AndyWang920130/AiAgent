@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 @Component
+@Deprecated
 public class InMemoryUserStore {
 
     private final ConcurrentMap<String, StoredUser> users = new ConcurrentHashMap<>();

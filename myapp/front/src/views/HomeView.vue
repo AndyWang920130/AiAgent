@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { posts, loading, fetchPosts } from '../stores/blog'
 import {
   RocketOutlined,
   TrophyOutlined,
@@ -25,62 +26,21 @@ const stats = computed(() => [
   { title: t('home.streakDays'), value: 21, icon: ThunderboltOutlined, color: '#eb2f96', change: 2, up: false },
 ])
 
-const posts = ref([
-  {
-    id: 1,
-    title: 'Getting Started with Vue 3 Composition API',
-    excerpt: 'The Composition API is one of the most exciting features in Vue 3. It provides a flexible way to organize component logic...',
-    category: 'Frontend',
-    date: '2025-06-01',
-    views: 1240,
-    likes: 89,
-    comments: 23,
-    tag: 'Vue',
-    tagColor: 'green',
-  },
-  {
-    id: 2,
-    title: 'Building Scalable APIs with Spring Boot',
-    excerpt: 'Spring Boot makes it easy to create stand-alone, production-grade Spring applications with minimal configuration...',
-    category: 'Backend',
-    date: '2025-05-28',
-    views: 980,
-    likes: 64,
-    comments: 15,
-    tag: 'Java',
-    tagColor: 'orange',
-  },
-  {
-    id: 3,
-    title: 'TypeScript Best Practices in 2025',
-    excerpt: 'TypeScript has become the go-to choice for large-scale JavaScript applications. Here are the patterns that matter most...',
-    category: 'Language',
-    date: '2025-05-22',
-    views: 2100,
-    likes: 142,
-    comments: 37,
-    tag: 'TypeScript',
-    tagColor: 'blue',
-  },
-  {
-    id: 4,
-    title: 'Docker & Kubernetes: A Practical Guide',
-    excerpt: 'Containerization has revolutionized how we deploy applications. Learn how to effectively use Docker and K8s together...',
-    category: 'DevOps',
-    date: '2025-05-15',
-    views: 1560,
-    likes: 98,
-    comments: 29,
-    tag: 'DevOps',
-    tagColor: 'purple',
-  },
+const activeTab = ref('all')
+
+onMounted(() => fetchPosts())
+
+const categories = computed(() => [
+  'all',
+  ...Array.from(new Set(posts.value.map(p => p.category).filter(Boolean))),
 ])
 
-const activeTab = ref('all')
-const categories = ['all', 'Frontend', 'Backend', 'Language', 'DevOps']
-
-const filteredPosts = () =>
-  activeTab.value === 'all' ? posts.value : posts.value.filter(p => p.category === activeTab.value)
+const latestPosts = computed(() => {
+  const source = activeTab.value === 'all'
+    ? posts.value
+    : posts.value.filter(p => p.category === activeTab.value)
+  return source.slice(0, 4)
+})
 </script>
 
 <template>
@@ -130,13 +90,13 @@ const filteredPosts = () =>
         </a-space>
       </template>
 
-      <a-list :data-source="filteredPosts()" item-layout="vertical">
+      <a-list :data-source="latestPosts" :loading="loading" item-layout="vertical">
         <template #renderItem="{ item }">
           <a-list-item>
             <a-list-item-meta>
               <template #title>
                 <div class="post-title-row">
-                  <span class="post-title">{{ item.title }}</span>
+                  <span class="post-title" @click="router.push('/blog/' + item.id)">{{ item.title }}</span>
                   <a-tag :color="item.tagColor">{{ item.tag }}</a-tag>
                 </div>
               </template>

@@ -1,7 +1,7 @@
 package com.example.myapp.web.rest;
 
-import com.example.myapp.security.InMemoryUserStore;
-import com.example.myapp.security.InMemoryUserStore.StoredUser;
+import com.example.myapp.domain.User;
+import com.example.myapp.repository.UserRepository;
 import com.example.myapp.security.JwtUtil;
 import com.example.myapp.web.rest.vm.AuthResponse;
 import com.example.myapp.web.rest.vm.LoginRequest;
@@ -26,9 +26,8 @@ import java.util.Map;
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
-
-    private final InMemoryUserStore userStore;
     private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
 
@@ -40,20 +39,23 @@ public class AuthController {
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(401).body(Map.of("message", "Invalid username or password"));
         }
-        StoredUser user = userStore.findByUsername(req.username()).orElseThrow();
+        User user = userRepository.findOneByLogin(req.username()).orElseThrow();
         String token = jwtUtil.generate(req.username(), List.of("ROLE_USER"));
-        return ResponseEntity.ok(new AuthResponse(token, new UserInfo(user.username(), user.name(), user.email())));
+        return ResponseEntity.ok(new AuthResponse(token, new UserInfo(user.getLogin(), user.getRealName(), user.getEmail())));
     }
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
-        if (userStore.exists(req.username())) {
+        if (userRepository.existsByLogin(req.username())) {
             return ResponseEntity.badRequest().body(Map.of("message", "Username already taken"));
         }
-        userStore.save(new StoredUser(
-                req.username(), req.name(),
-                req.email() != null ? req.email() : "",
-                passwordEncoder.encode(req.password())));
+        userRepository.save(new User()
+                .login(req.username())
+                .realName(req.name())
+                .nickName(req.name())
+                .email(req.email() != null ? req.email() : "")
+                .password(passwordEncoder.encode(req.password()))
+                .deleted(false));
         return ResponseEntity.ok(Map.of("message", "Registration successful"));
     }
 }

@@ -2,9 +2,9 @@ package com.example.myapp.config;
 
 import com.example.myapp.contants.enumeration.BlogStatus;
 import com.example.myapp.domain.Blog;
+import com.example.myapp.domain.User;
 import com.example.myapp.repository.BlogRepository;
-import com.example.myapp.security.InMemoryUserStore;
-import com.example.myapp.security.InMemoryUserStore.StoredUser;
+import com.example.myapp.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,14 +14,14 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DataInitializer {
 
-    private final InMemoryUserStore userStore;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final BlogRepository blogRepository;
 
     @PostConstruct
     void init() {
-        userStore.save(new StoredUser("admin", "Administrator", "admin@example.com", passwordEncoder.encode("admin")));
-        userStore.save(new StoredUser("user", "Demo User", "user@example.com", passwordEncoder.encode("password")));
+        createUserIfMissing("admin", "Administrator", "admin@example.com", "admin");
+        createUserIfMissing("user", "Demo User", "user@example.com", "password");
 
         if (blogRepository.count() == 0) {
             blogRepository.save(new Blog()
@@ -80,5 +80,18 @@ public class DataInitializer {
                 .commentCount(29L)
                 .deleted(false));
         }
+    }
+
+    private void createUserIfMissing(String login, String name, String email, String password) {
+        if (userRepository.existsByLogin(login)) {
+            return;
+        }
+        userRepository.save(new User()
+            .login(login)
+            .realName(name)
+            .nickName(name)
+            .email(email)
+            .password(passwordEncoder.encode(password))
+            .deleted(false));
     }
 }
