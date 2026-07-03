@@ -4,11 +4,11 @@ import com.example.myapp.domain.Blog;
 import com.example.myapp.repository.BlogRepository;
 import com.example.myapp.service.dto.BlogDTO;
 import com.example.myapp.service.mapper.BlogMapper;
+import com.example.myapp.utils.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import com.example.myapp.utils.SecurityUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,8 +40,13 @@ public class BlogService {
      */
     public BlogDTO save(BlogDTO blogDTO) {
         LOG.debug("Request to save Blog : {}", blogDTO);
+        String currentUsername = SecurityUtil.getCurrentUsername();
         Blog blog = blogMapper.toEntity(blogDTO);
-        blog.setCreatedBy(SecurityUtil.getCurrentUsername());
+        blog.setCreatedBy(currentUsername);
+        blog.setLastModifiedBy(currentUsername);
+        if (isBlank(blog.getAuthor())) {
+            blog.setAuthor(currentUsername);
+        }
         blog = blogRepository.save(blog);
         return blogMapper.toDto(blog);
     }
@@ -54,7 +59,12 @@ public class BlogService {
      */
     public BlogDTO update(BlogDTO blogDTO) {
         LOG.debug("Request to update Blog : {}", blogDTO);
+        String currentUsername = SecurityUtil.getCurrentUsername();
         Blog blog = blogMapper.toEntity(blogDTO);
+        blog.setLastModifiedBy(currentUsername);
+        if (isBlank(blog.getAuthor())) {
+            blog.setAuthor(currentUsername);
+        }
         blog = blogRepository.save(blog);
         return blogMapper.toDto(blog);
     }
@@ -72,6 +82,11 @@ public class BlogService {
             .findById(blogDTO.getId())
             .map(existingBlog -> {
                 blogMapper.partialUpdate(existingBlog, blogDTO);
+                String currentUsername = SecurityUtil.getCurrentUsername();
+                existingBlog.setLastModifiedBy(currentUsername);
+                if (isBlank(existingBlog.getAuthor())) {
+                    existingBlog.setAuthor(currentUsername);
+                }
                 return existingBlog;
             })
             .map(blogRepository::save)
@@ -115,7 +130,12 @@ public class BlogService {
     public void incrementViewCount(Long id) {
         blogRepository.findById(id).ifPresent(blog -> {
             blog.setViewCount((blog.getViewCount() == null ? 0L : blog.getViewCount()) + 1);
+            blog.setLastModifiedBy(SecurityUtil.getCurrentUsername());
             blogRepository.save(blog);
         });
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }

@@ -27,7 +27,7 @@ public class Blog extends AbstractAuditingEntity {
 
     @NotNull
     @Lob
-    @Column(name = "content", nullable = false)
+    @Column(name = "content", nullable = false, columnDefinition = "longtext")
     private String content;
 
     @Size(max = 500)
