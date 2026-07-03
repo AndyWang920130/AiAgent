@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import { Image } from '@tiptap/extension-image'
@@ -69,7 +69,7 @@ const editor = useEditor({
 watch(() => props.modelValue, (val) => {
   if (!editor.value) return
   if (val !== editor.value.getHTML()) {
-    editor.value.commands.setContent(val ?? '', false)
+    editor.value.commands.setContent(val ?? '', { emitUpdate: false })
   }
 })
 
@@ -346,7 +346,7 @@ defineExpose({ getHTML: () => editor.value?.getHTML() ?? '' })
 </style>
 
 <style>
-/* Global — TipTap renders outside scoped context */
+/* Global 鈥?TipTap renders outside scoped context */
 .ProseMirror {
   outline: none;
   min-height: 330px;

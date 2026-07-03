@@ -1,11 +1,15 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { resolve } from 'path'
+import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
+
+const root = fileURLToPath(new URL('.', import.meta.url))
 
 export default defineConfig({
+  root,
   plugins: [vue()],
   resolve: {
-    alias: { '@': resolve(__dirname, 'src') },
+    alias: { '@': resolve(root, 'src') },
   },
   css: {
     preprocessorOptions: {
@@ -27,3 +31,5 @@ export default defineConfig({
     },
   },
 })
+
+
