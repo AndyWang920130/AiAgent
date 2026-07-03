@@ -1,7 +1,7 @@
 services:
   mysql:
     image: mysql:8.0
-    container_name: myapp-mysql
+    container_name: myapp-mysql-prod
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: twsny_prod
@@ -25,7 +25,7 @@ services:
     build:
       context: ../../../../../../..
       dockerfile: back/myapp/src/main/resources/deploy/docker/backend.Dockerfile
-    container_name: myapp-backend
+    container_name: myapp-backend-prod
     restart: unless-stopped
     depends_on:
       mysql:
@@ -48,7 +48,7 @@ services:
     build:
       context: ../../../../../../..
       dockerfile: back/myapp/src/main/resources/deploy/docker/frontend.Dockerfile
-    container_name: myapp-nginx
+    container_name: myapp-nginx-prod
     restart: unless-stopped
     depends_on:
       backend:
