@@ -4,8 +4,8 @@ Run commands from the project root.
 
 This deployment uses one shared `docker-compose.yaml`. Environment differences are controlled by env files:
 
-- `env.prod`: Spring profile `prod`, database `twsny_prod`, MySQL host port `16011`, nginx port `80`
-- `env.test`: Spring profile `test`, database `twsny_test`, MySQL host port `16012`, nginx port `8081`
+- `env.prod`: Spring profile `prod`, database `twsny_prod`, MySQL host port `16012`, nginx port `80`
+- `env.test`: Spring profile `test`, database `twsny_test`, MySQL host port `16011`, nginx port `8081`
 
 Prod and test are fully isolated at the Docker layer. Each environment gets its own MySQL container, Docker volume, database name, backend container, nginx container, and host ports.
 
@@ -72,13 +72,13 @@ APP_ENV=prod
 SPRING_PROFILE=prod
 MYSQL_DATABASE=twsny_prod
 MYSQL_ROOT_PASSWORD=123456
-MYSQL_PORT=16011
+MYSQL_PORT=16012
 HTTP_PORT=80
 APP_CORS_ALLOWED_ORIGINS=http://localhost,http://localhost:80
 COMPOSE_PROJECT_NAME=myapp-prod
 ```
 
-For test, use `APP_ENV=test`, `SPRING_PROFILE=test`, `MYSQL_DATABASE=twsny_test`, `MYSQL_PORT=16012`, `HTTP_PORT=8081`, and `COMPOSE_PROJECT_NAME=myapp-test`.
+For test, use `APP_ENV=test`, `SPRING_PROFILE=test`, `MYSQL_DATABASE=twsny_test`, `MYSQL_PORT=16011`, `HTTP_PORT=8081`, `APP_CORS_ALLOWED_ORIGINS=http://localhost:8081,http://127.0.0.1:8081,http://*:8081,https://*:8081`, and `COMPOSE_PROJECT_NAME=myapp-test`.
 
 ## Running prod and test at the same time
 
@@ -90,8 +90,8 @@ Prod and test can run at the same time from the same Compose file because their 
 - Test MySQL volume: `myapp-mysql-data-test`
 - Prod database: `twsny_prod`
 - Test database: `twsny_test`
-- Prod MySQL host port: `16011`
-- Test MySQL host port: `16012`
+- Prod MySQL host port: `16012`
+- Test MySQL host port: `16011`
 
 ## MySQL initialization
 

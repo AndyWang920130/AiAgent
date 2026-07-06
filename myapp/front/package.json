@@ -7,8 +7,10 @@
     "dev": "vite",
     "dev:test": "vite --mode test",
     "typecheck": "vue-tsc -b",
-    "build": "vue-tsc -b && vite build",
+    "build": "vue-tsc -b && vite build --mode prod",
     "build:fast": "vite build",
+    "build:prod": "vue-tsc -b && vite build --mode prod",
+    "build:prod:fast": "vite build --mode prod",
     "build:test": "vue-tsc -b && vite build --mode test",
     "build:test:fast": "vite build --mode test",
     "preview": "vite preview"

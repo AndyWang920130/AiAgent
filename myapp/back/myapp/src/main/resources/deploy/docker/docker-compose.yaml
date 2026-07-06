@@ -48,6 +48,8 @@ services:
     build:
       context: ../../../../../../..
       dockerfile: back/myapp/src/main/resources/deploy/docker/frontend.Dockerfile
+      args:
+        VITE_MODE: ${APP_ENV:-prod}
     container_name: myapp-nginx-${APP_ENV:-prod}
     restart: unless-stopped
     depends_on:
