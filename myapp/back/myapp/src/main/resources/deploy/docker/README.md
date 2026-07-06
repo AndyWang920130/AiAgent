@@ -4,11 +4,10 @@ Run commands from the project root.
 
 This deployment uses one shared `docker-compose.yaml`. Environment differences are controlled by env files:
 
-- `env.prod`: Spring profile `prod`, database `twsny_prod`, nginx port `80`
-- `env.test`: Spring profile `test`, database `twsny_test`, nginx port `8081`
+- `env.prod`: Spring profile `prod`, database `twsny_prod`, MySQL host port `16011`, nginx port `80`
+- `env.test`: Spring profile `test`, database `twsny_test`, MySQL host port `16012`, nginx port `8081`
 
-MySQL is initialized with both databases by `mysql-init.sql`.
-
+Prod and test are fully isolated at the Docker layer. Each environment gets its own MySQL container, Docker volume, database name, backend container, nginx container, and host ports.
 
 ## China mirror acceleration
 
@@ -35,6 +34,7 @@ Then restart Docker:
 sudo systemctl daemon-reload
 sudo systemctl restart docker
 ```
+
 ## Start prod
 
 ```bash
@@ -78,19 +78,23 @@ APP_CORS_ALLOWED_ORIGINS=http://localhost,http://localhost:80
 COMPOSE_PROJECT_NAME=myapp-prod
 ```
 
+For test, use `APP_ENV=test`, `SPRING_PROFILE=test`, `MYSQL_DATABASE=twsny_test`, `MYSQL_PORT=16012`, `HTTP_PORT=8081`, and `COMPOSE_PROJECT_NAME=myapp-test`.
+
 ## Running prod and test at the same time
 
-The single Compose file can deploy either environment by changing `--env-file`.
+Prod and test can run at the same time from the same Compose file because their env files select different Docker resources:
 
-Running both at the same time with one shared MySQL container needs extra orchestration because two Compose projects cannot both own the same `mysql` service/container. The usual options are:
-
-- Run only one app environment per server with this file.
-- Run both app environments in one Compose project using separate service names.
-- Make MySQL an external/shared service and deploy prod/test app stacks separately against it.
+- Prod MySQL container: `myapp-mysql-prod`
+- Test MySQL container: `myapp-mysql-test`
+- Prod MySQL volume: `myapp-mysql-data-prod`
+- Test MySQL volume: `myapp-mysql-data-test`
+- Prod database: `twsny_prod`
+- Test database: `twsny_test`
+- Prod MySQL host port: `16011`
+- Test MySQL host port: `16012`
 
 ## MySQL initialization
 
-`mysql-init.sql` creates and seeds both databases: `twsny_prod` and `twsny_test`.
+The MySQL image creates the database named by `MYSQL_DATABASE`. The schema and seed data come from `back/myapp/src/main/resources/db/mysql/initial.sql` and are applied only to that environment's database on first volume creation.
 
-MySQL only runs initialization scripts when the `mysql-data` volume is first created. If you already started the old deployment and the volume exists, create the missing database manually or remove the volume before starting again.
-
+MySQL only runs initialization scripts when its data volume is first created. If you already started an older deployment and want the new isolation, stop the affected stack and migrate or remove the old volume intentionally before starting again.

@@ -2,7 +2,7 @@ spring:
   application:
     name: myapp
   datasource:
-    url: jdbc:mysql://localhost:16011/twsny_prod
+    url: jdbc:mysql://localhost:16012/twsny_prod
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
     password: 123456
