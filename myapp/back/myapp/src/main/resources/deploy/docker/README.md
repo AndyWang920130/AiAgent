@@ -9,6 +9,32 @@ This deployment uses one shared `docker-compose.yaml`. Environment differences a
 
 MySQL is initialized with both databases by `mysql-init.sql`.
 
+
+## China mirror acceleration
+
+The deploy Dockerfiles already configure these build-time mirrors:
+
+- Maven: `https://maven.aliyun.com/repository/central` via `maven-settings.xml`
+- npm: `https://registry.npmmirror.com`
+- Alpine packages: `https://mirrors.aliyun.com/alpine`
+
+Base image pulls such as `mysql:8.0`, `node:22-alpine`, `nginx:1.27-alpine`, and `maven:3.9.8-eclipse-temurin-17-alpine` are controlled by the Docker daemon, not by the Dockerfile. On a China server, configure Docker registry mirrors in `/etc/docker/daemon.json`, for example:
+
+```json
+{
+  "registry-mirrors": [
+    "https://docker.m.daocloud.io",
+    "https://docker.1ms.run"
+  ]
+}
+```
+
+Then restart Docker:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+```
 ## Start prod
 
 ```bash
@@ -67,3 +93,4 @@ Running both at the same time with one shared MySQL container needs extra orches
 `mysql-init.sql` creates and seeds both databases: `twsny_prod` and `twsny_test`.
 
 MySQL only runs initialization scripts when the `mysql-data` volume is first created. If you already started the old deployment and the volume exists, create the missing database manually or remove the volume before starting again.
+
