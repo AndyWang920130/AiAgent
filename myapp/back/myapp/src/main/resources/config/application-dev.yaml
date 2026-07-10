@@ -3,29 +3,30 @@ spring:
     name: myapp
 
   # H2 in-memory database config. Keep disabled when you want UI changes saved to MySQL.
-#  datasource:
-#    url: jdbc:h2:mem:testdb
-#    driver-class-name: org.h2.Driver
-#    username: sa
-#    password:
-#  h2:
-#    console:
-#      enabled: true
-#      path: /h2-console
-#  jpa:
-#    hibernate:
-#      ddl-auto: create-drop
-#    show-sql: true
-
   datasource:
-    url: jdbc:mysql://115.120.239.132:16011/twsny_test?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: 123456
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     show-sql: true
+
+  # test database
+#  datasource:
+#    url: jdbc:mysql://115.120.239.132:16011/twsny_test?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+#    username: root
+#    password: 123456
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#    show-sql: true
 
 server:
   port: 8080

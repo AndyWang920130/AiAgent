@@ -48,6 +48,22 @@ CREATE TABLE IF NOT EXISTS `twsny_blog` (
   KEY `idx_twsny_blog_deleted` (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `twsny_blog_config` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `type` varchar(50) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `config_value` varchar(50) DEFAULT NULL,
+  `description` varchar(500) DEFAULT NULL,
+  `sort_order` int DEFAULT 0,
+  `created_by` varchar(50) NOT NULL DEFAULT 'system',
+  `created_date` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  `last_modified_by` varchar(50) DEFAULT NULL,
+  `last_modified_date` datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_twsny_blog_config_type_name` (`type`, `name`),
+  KEY `idx_twsny_blog_config_type` (`type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 INSERT IGNORE INTO `twsny_user`
   (`id`, `login`, `real_name`, `nick_name`, `password`, `email`, `deleted`, `created_by`, `created_date`, `last_modified_by`, `last_modified_date`)
 VALUES
@@ -62,7 +78,27 @@ VALUES
   (3, 'TypeScript Best Practices in 2025', 'TypeScript has become the go-to choice for large-scale JavaScript applications. Here are the patterns that matter most...', '<p>TypeScript has become the go-to choice for large-scale JavaScript applications. Here are the patterns that matter most in 2025.</p><ul><li>Always use strict mode</li><li>Prefer type inference over explicit annotations</li><li>Use utility types like Partial, Required, and Pick</li><li>Leverage template literal types for string manipulation</li></ul>', 'Language', 'TypeScript', 'blue', 'admin', 'PUBLISHED', 2100, 142, 37, b'0', 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6)),
   (4, 'Docker & Kubernetes: A Practical Guide', 'Containerization has revolutionized how we deploy applications. Learn how to effectively use Docker and K8s together...', '<p>Containerization has revolutionized how we deploy applications. Learn how to effectively use Docker and Kubernetes together.</p><p>Start with a solid Dockerfile, define resource limits in your K8s manifests, and use Helm charts to manage complex deployments across environments.</p>', 'DevOps', 'DevOps', 'purple', 'admin', 'PUBLISHED', 1560, 98, 29, b'0', 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6));
 
+INSERT IGNORE INTO `twsny_blog_config`
+  (`id`, `type`, `name`, `config_value`, `description`, `sort_order`, `created_by`, `created_date`, `last_modified_by`, `last_modified_date`)
+VALUES
+  (1, 'CATEGORY', 'Frontend', NULL, 'UI, Vue, JavaScript, CSS', 10, 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6)),
+  (2, 'CATEGORY', 'Backend', NULL, 'Services, APIs, databases', 20, 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6)),
+  (3, 'CATEGORY', 'Language', NULL, 'Programming language notes', 30, 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6)),
+  (4, 'CATEGORY', 'DevOps', NULL, 'Build, deployment, operations', 40, 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6)),
+  (5, 'TAG', 'Vue', NULL, NULL, 10, 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6)),
+  (6, 'TAG', 'Java', NULL, NULL, 20, 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6)),
+  (7, 'TAG', 'Spring', NULL, NULL, 30, 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6)),
+  (8, 'TAG', 'TypeScript', NULL, NULL, 40, 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6)),
+  (9, 'TAG_COLOR', 'Blue', 'blue', NULL, 10, 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6)),
+  (10, 'TAG_COLOR', 'Green', 'green', NULL, 20, 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6)),
+  (11, 'TAG_COLOR', 'Orange', 'orange', NULL, 30, 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6)),
+  (12, 'TAG_COLOR', 'Purple', 'purple', NULL, 40, 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6)),
+  (13, 'TAG_COLOR', 'Red', 'red', NULL, 50, 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6)),
+  (14, 'TAG_COLOR', 'Cyan', 'cyan', NULL, 60, 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6)),
+  (15, 'TAG_COLOR', 'Geek Blue', 'geekblue', NULL, 70, 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6));
+
 ALTER TABLE `twsny_user` AUTO_INCREMENT = 1000;
 ALTER TABLE `twsny_blog` AUTO_INCREMENT = 1000;
+ALTER TABLE `twsny_blog_config` AUTO_INCREMENT = 1000;
 
 SET FOREIGN_KEY_CHECKS = 1;

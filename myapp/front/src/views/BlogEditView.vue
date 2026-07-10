@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import RichEditor from '../components/RichEditor.vue'
 import { getPost, updatePost, type Post } from '../stores/blog'
+import { categoryOptions, fetchBlogConfig, tagColorOptions, tagOptions } from '../stores/blogConfig'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -25,6 +26,7 @@ const form = reactive({
 onMounted(async () => {
   loadingPost.value = true
   try {
+    await fetchBlogConfig()
     const found = await getPost(Number(route.params.id))
     if (found) {
       post.value = found
@@ -40,8 +42,6 @@ onMounted(async () => {
   }
 })
 
-const categories = ['Frontend', 'Backend', 'Language', 'DevOps']
-const tagColors = ['blue', 'green', 'orange', 'purple', 'red', 'cyan', 'geekblue']
 const submitting = ref(false)
 
 async function handleSubmit() {
@@ -88,19 +88,27 @@ async function handleSubmit() {
               <a-col :span="8">
                 <a-form-item :label="t('editBlog.category')" required>
                   <a-select v-model:value="form.category" :placeholder="t('editBlog.categoryPlaceholder')" size="large">
-                    <a-select-option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</a-select-option>
+                    <a-select-option v-for="cat in categoryOptions" :key="cat" :value="cat">{{ cat }}</a-select-option>
                   </a-select>
                 </a-form-item>
               </a-col>
               <a-col :span="8">
                 <a-form-item :label="t('editBlog.tag')">
-                  <a-input v-model:value="form.tag" :placeholder="t('editBlog.tagPlaceholder')" size="large" />
+                  <a-select
+                    v-model:value="form.tag"
+                    :placeholder="t('editBlog.tagPlaceholder')"
+                    size="large"
+                    show-search
+                    allow-clear
+                  >
+                    <a-select-option v-for="tag in tagOptions" :key="tag" :value="tag">{{ tag }}</a-select-option>
+                  </a-select>
                 </a-form-item>
               </a-col>
               <a-col :span="8">
                 <a-form-item :label="t('editBlog.tagColor')">
                   <a-select v-model:value="form.tagColor" size="large">
-                    <a-select-option v-for="color in tagColors" :key="color" :value="color">
+                    <a-select-option v-for="color in tagColorOptions" :key="color" :value="color">
                       <a-tag :color="color">{{ color }}</a-tag>
                     </a-select-option>
                   </a-select>

@@ -1,8 +1,11 @@
 package com.example.myapp.config;
 
 import com.example.myapp.contants.enumeration.BlogStatus;
+import com.example.myapp.contants.enumeration.BlogConfigType;
 import com.example.myapp.domain.Blog;
+import com.example.myapp.domain.BlogConfig;
 import com.example.myapp.domain.User;
+import com.example.myapp.repository.BlogConfigRepository;
 import com.example.myapp.repository.BlogRepository;
 import com.example.myapp.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
@@ -17,6 +20,7 @@ public class DataInitializer {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final BlogRepository blogRepository;
+    private final BlogConfigRepository blogConfigRepository;
 
     @PostConstruct
     void init() {
@@ -80,6 +84,38 @@ public class DataInitializer {
                 .commentCount(29L)
                 .deleted(false));
         }
+
+        initBlogConfig();
+    }
+
+    private void initBlogConfig() {
+        createBlogConfigIfMissing(BlogConfigType.CATEGORY, "Frontend", null, "UI, Vue, JavaScript, CSS", 10);
+        createBlogConfigIfMissing(BlogConfigType.CATEGORY, "Backend", null, "Services, APIs, databases", 20);
+        createBlogConfigIfMissing(BlogConfigType.CATEGORY, "Language", null, "Programming language notes", 30);
+        createBlogConfigIfMissing(BlogConfigType.CATEGORY, "DevOps", null, "Build, deployment, operations", 40);
+        createBlogConfigIfMissing(BlogConfigType.TAG, "Vue", null, null, 10);
+        createBlogConfigIfMissing(BlogConfigType.TAG, "Java", null, null, 20);
+        createBlogConfigIfMissing(BlogConfigType.TAG, "Spring", null, null, 30);
+        createBlogConfigIfMissing(BlogConfigType.TAG, "TypeScript", null, null, 40);
+        createBlogConfigIfMissing(BlogConfigType.TAG_COLOR, "Blue", "blue", null, 10);
+        createBlogConfigIfMissing(BlogConfigType.TAG_COLOR, "Green", "green", null, 20);
+        createBlogConfigIfMissing(BlogConfigType.TAG_COLOR, "Orange", "orange", null, 30);
+        createBlogConfigIfMissing(BlogConfigType.TAG_COLOR, "Purple", "purple", null, 40);
+        createBlogConfigIfMissing(BlogConfigType.TAG_COLOR, "Red", "red", null, 50);
+        createBlogConfigIfMissing(BlogConfigType.TAG_COLOR, "Cyan", "cyan", null, 60);
+        createBlogConfigIfMissing(BlogConfigType.TAG_COLOR, "Geek Blue", "geekblue", null, 70);
+    }
+
+    private void createBlogConfigIfMissing(BlogConfigType type, String name, String value, String description, Integer sortOrder) {
+        if (blogConfigRepository.existsByTypeAndNameIgnoreCase(type, name)) {
+            return;
+        }
+        blogConfigRepository.save(new BlogConfig()
+            .type(type)
+            .name(name)
+            .value(value)
+            .description(description)
+            .sortOrder(sortOrder));
     }
 
     private void createUserIfMissing(String login, String name, String email, String password) {

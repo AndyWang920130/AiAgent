@@ -19,6 +19,8 @@ import {
   ExclamationCircleOutlined,
   CloseCircleOutlined,
   DesktopOutlined,
+  SettingOutlined,
+  TagsOutlined,
 } from '@ant-design/icons-vue'
 import { theme as appTheme, toggleTheme } from '../utils/theme'
 import { clearAuth, getUser } from '../utils/auth'
@@ -47,6 +49,9 @@ const keyToPath: Record<string, string> = {
   'blog-add': '/blog/add',
   'device-list': '/device',
   'device-add': '/device/add',
+  'tools': '/tools',
+  'personal': '/personal',
+  'blog-config': '/settings/blog-config',
 }
 
 const pathToKey: Record<string, string> = Object.fromEntries(
@@ -162,6 +167,16 @@ function formatPopoverTime(timeStr: string): string {
             <a-menu-item key="device-add" @click="navigate('device-add')">
               <PlusCircleOutlined />
               <span>{{ t('menu.addDevice') }}</span>
+            </a-menu-item>
+          </a-sub-menu>
+          <a-sub-menu key="settings-sub">
+            <template #title>
+              <SettingOutlined />
+              <span>{{ t('menu.systemSetting') }}</span>
+            </template>
+            <a-menu-item key="blog-config" @click="navigate('blog-config')">
+              <TagsOutlined />
+              <span>{{ t('menu.blogConfig') }}</span>
             </a-menu-item>
           </a-sub-menu>
           <a-menu-item key="tools" @click="navigate('tools')">
