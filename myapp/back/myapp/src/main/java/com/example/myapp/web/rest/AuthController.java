@@ -3,6 +3,7 @@ package com.example.myapp.web.rest;
 import com.example.myapp.domain.User;
 import com.example.myapp.repository.UserRepository;
 import com.example.myapp.security.JwtUtil;
+import com.example.myapp.service.EmailVerificationService;
 import com.example.myapp.web.rest.vm.AuthResponse;
 import com.example.myapp.web.rest.vm.LoginRequest;
 import com.example.myapp.web.rest.vm.RegisterRequest;
@@ -30,6 +31,7 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final EmailVerificationService emailVerificationService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req) {
@@ -49,11 +51,17 @@ public class AuthController {
         if (userRepository.existsByLogin(req.username())) {
             return ResponseEntity.badRequest().body(Map.of("message", "Username already taken"));
         }
+        if (userRepository.existsByEmailIgnoreCase(req.email())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email already registered"));
+        }
+        if (!emailVerificationService.verify(req.email(), req.emailCode())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Invalid email verification code"));
+        }
         userRepository.save(new User()
                 .login(req.username())
                 .realName(req.name())
                 .nickName(req.name())
-                .email(req.email() != null ? req.email() : "")
+                .email(req.email())
                 .password(passwordEncoder.encode(req.password()))
                 .deleted(false));
         return ResponseEntity.ok(Map.of("message", "Registration successful"));

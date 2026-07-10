@@ -75,10 +75,20 @@ MYSQL_ROOT_PASSWORD=123456
 MYSQL_PORT=16012
 HTTP_PORT=80
 APP_CORS_ALLOWED_ORIGINS=http://localhost,http://localhost:80
+# Optional mail overrides. Uncomment to override application-*.yaml defaults.
+# SPRING_MAIL_HOST=smtp.163.com
+# SPRING_MAIL_PORT=465
+# SPRING_MAIL_USERNAME=your-email@example.com
+# SPRING_MAIL_PASSWORD=your-smtp-authorization-code
+# SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true
+# SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_ENABLE=true
+# APP_MAIL_FROM=your-email@example.com
 COMPOSE_PROJECT_NAME=myapp-prod
 ```
 
 For test, use `APP_ENV=test`, `SPRING_PROFILE=test`, `MYSQL_DATABASE=twsny_test`, `MYSQL_PORT=16011`, `HTTP_PORT=8081`, `APP_CORS_ALLOWED_ORIGINS=http://localhost:8081,http://127.0.0.1:8081,http://*:8081,https://*:8081`, and `COMPOSE_PROJECT_NAME=myapp-test`.
+
+Mail defaults live in the active `application-*.yaml` file. Docker env files can override them with Spring Boot environment variable names. `SPRING_MAIL_PASSWORD` should be the SMTP authorization code or app password from the mail provider, not the login password. For 163 SMTP over SSL, use `SPRING_MAIL_HOST=smtp.163.com`, `SPRING_MAIL_PORT=465`, `SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true`, and `SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_ENABLE=true`. `APP_MAIL_FROM` controls the sender address used by verification emails.
 
 ## Running prod and test at the same time
 

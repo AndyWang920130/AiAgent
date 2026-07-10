@@ -1,6 +1,19 @@
 spring:
   application:
     name: myapp
+  mail:
+    host: smtp.163.com
+    port: 465
+    username: wanghf920130@163.com
+    password: YFeYWfQHfrfpeWM8
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+#            trust: smtp.163.com
   datasource:
     url: jdbc:mysql://localhost:16012/twsny_prod
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -21,3 +34,5 @@ app:
     expiration: 86400000   # 1 day in ms
   cors:
     allowed-origins: http://localhost:5173
+  mail:
+    from: ${APP_MAIL_FROM:${spring.mail.username}}
