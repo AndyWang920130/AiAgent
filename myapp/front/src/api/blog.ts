@@ -14,12 +14,17 @@ function mapBlog(dto: any): Post {
     tag: dto.tag || '',
     tagColor: dto.tagColor || 'blue',
     content: dto.content || '',
+    visibility: dto.visibility || 'PUBLIC',
   }
 }
 
 export const blogApi = {
   list: () =>
     http.get('/api/v1/blogs', { params: { size: 100, sort: 'id,desc' } })
+      .then(r => (r.data as any[]).map(mapBlog)),
+
+  listMine: () =>
+    http.get('/api/v1/blogs/my', { params: { size: 100, sort: 'id,desc' } })
       .then(r => (r.data as any[]).map(mapBlog)),
 
   get: (id: number) =>
@@ -33,6 +38,7 @@ export const blogApi = {
       category: post.category,
       tag: post.tag,
       tagColor: post.tagColor,
+      visibility: post.visibility || 'PUBLIC',
       status: 'PUBLISHED',
       viewCount: 0,
       likes: 0,
@@ -49,6 +55,7 @@ export const blogApi = {
       category: post.category,
       tag: post.tag,
       tagColor: post.tagColor,
+      visibility: post.visibility || 'PUBLIC',
       viewCount: post.views,
       likes: post.likes,
       commentCount: post.comments,

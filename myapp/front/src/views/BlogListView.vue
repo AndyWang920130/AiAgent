@@ -32,6 +32,7 @@ const columns = computed(() => [
   { title: t('blog.colTitle'), dataIndex: 'title', key: 'title', ellipsis: true },
   { title: t('blog.colCategory'), dataIndex: 'category', key: 'category', width: 120 },
   { title: t('blog.colTag'), dataIndex: 'tag', key: 'tag', width: 110 },
+  { title: t('blog.colVisibility'), dataIndex: 'visibility', key: 'visibility', width: 110 },
   { title: t('blog.colDate'), dataIndex: 'date', key: 'date', width: 120, sorter: (a: Post, b: Post) => a.date.localeCompare(b.date) },
   { title: t('blog.colViews'), dataIndex: 'views', key: 'views', width: 90, sorter: (a: Post, b: Post) => a.views - b.views },
   { title: t('blog.colActions'), key: 'actions', width: 140, fixed: 'right' },
@@ -93,6 +94,11 @@ function handleDelete(id: number, title: string) {
           </template>
           <template v-else-if="column.key === 'tag'">
             <a-tag :color="record.tagColor">{{ record.tag }}</a-tag>
+          </template>
+          <template v-else-if="column.key === 'visibility'">
+            <a-tag :color="record.visibility === 'PRIVATE' ? 'default' : 'green'">
+              {{ record.visibility === 'PRIVATE' ? t('blog.private') : t('blog.public') }}
+            </a-tag>
           </template>
           <template v-else-if="column.key === 'actions'">
             <a-space>

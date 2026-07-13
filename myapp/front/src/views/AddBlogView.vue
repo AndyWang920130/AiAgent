@@ -15,6 +15,7 @@ const form = reactive({
   category: '',
   tag: '',
   tagColor: 'blue',
+  visibility: 'PUBLIC',
   content: '',
   excerpt: '',
 })
@@ -37,6 +38,7 @@ async function handleSubmit() {
       category: form.category,
       tag: form.tag,
       tagColor: form.tagColor,
+      visibility: form.visibility as 'PUBLIC' | 'PRIVATE',
       content: form.content,
       excerpt: form.excerpt || form.title,
     })
@@ -99,6 +101,13 @@ function handleCancel() {
             </a-form-item>
           </a-col>
         </a-row>
+
+        <a-form-item :label="t('addBlog.visibility')">
+          <a-radio-group v-model:value="form.visibility" option-type="button" button-style="solid">
+            <a-radio-button value="PUBLIC">{{ t('addBlog.public') }}</a-radio-button>
+            <a-radio-button value="PRIVATE">{{ t('addBlog.private') }}</a-radio-button>
+          </a-radio-group>
+        </a-form-item>
 
         <a-form-item :label="t('addBlog.content')" required>
           <RichEditor v-model="form.content" :placeholder="t('addBlog.contentPlaceholder')" />

@@ -13,10 +13,13 @@ export interface Post {
   tag: string
   tagColor: string
   content: string
+  visibility: 'PUBLIC' | 'PRIVATE'
 }
 
 export const posts = ref<Post[]>([])
+export const myPosts = ref<Post[]>([])
 export const loading = ref(false)
+export const loadingMyPosts = ref(false)
 
 export async function fetchPosts() {
   loading.value = true
@@ -27,9 +30,19 @@ export async function fetchPosts() {
   }
 }
 
+export async function fetchMyPosts() {
+  loadingMyPosts.value = true
+  try {
+    myPosts.value = await blogApi.listMine()
+  } finally {
+    loadingMyPosts.value = false
+  }
+}
+
 export async function addPost(post: Omit<Post, 'id' | 'views' | 'likes' | 'comments' | 'date'>) {
   const created = await blogApi.create(post)
   posts.value.unshift(created)
+  myPosts.value.unshift(created)
   return created
 }
 
@@ -39,12 +52,15 @@ export async function updatePost(id: number, data: Partial<Omit<Post, 'id'>>) {
   const updated = await blogApi.update(id, merged)
   const idx = posts.value.findIndex(p => p.id === id)
   if (idx !== -1) posts.value[idx] = updated
+  const myIdx = myPosts.value.findIndex(p => p.id === id)
+  if (myIdx !== -1) myPosts.value[myIdx] = updated
   return updated
 }
 
 export async function deletePost(id: number) {
   await blogApi.remove(id)
   posts.value = posts.value.filter(p => p.id !== id)
+  myPosts.value = myPosts.value.filter(p => p.id !== id)
 }
 
 export async function getPost(id: number): Promise<Post | undefined> {

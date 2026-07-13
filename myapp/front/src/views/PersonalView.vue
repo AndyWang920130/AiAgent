@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
@@ -10,9 +10,11 @@ import {
   TrophyOutlined,
   FileTextOutlined,
   HeartOutlined,
+  EyeOutlined,
 } from '@ant-design/icons-vue'
 import { message, Modal } from 'ant-design-vue'
 import { clearAuth, getUser } from '../utils/auth'
+import { fetchMyPosts, loadingMyPosts, myPosts, type Post } from '../stores/blog'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -34,11 +36,24 @@ const editForm = reactive({ ...profile })
 const passwordForm = reactive({ current: '', next: '', confirm: '' })
 const showPasswordModal = ref(false)
 
-const activityData = [
-  { label: () => t('personal.postsWritten'), value: 128, icon: FileTextOutlined, color: '#1890ff' },
+onMounted(() => {
+  fetchMyPosts()
+})
+
+const activityData = computed(() => [
+  { label: () => t('personal.postsWritten'), value: myPosts.value.length, icon: FileTextOutlined, color: '#1890ff' },
   { label: () => t('personal.likesReceived'), value: 3840, icon: HeartOutlined, color: '#eb2f96' },
   { label: () => t('personal.achievements'), value: 47, icon: TrophyOutlined, color: '#faad14' },
-]
+])
+
+const blogColumns = computed(() => [
+  { title: t('blog.colTitle'), dataIndex: 'title', key: 'title', ellipsis: true },
+  { title: t('blog.colCategory'), dataIndex: 'category', key: 'category', width: 120 },
+  { title: t('blog.colVisibility'), dataIndex: 'visibility', key: 'visibility', width: 110 },
+  { title: t('blog.colDate'), dataIndex: 'date', key: 'date', width: 120, sorter: (a: Post, b: Post) => a.date.localeCompare(b.date) },
+  { title: t('blog.colViews'), dataIndex: 'views', key: 'views', width: 90, sorter: (a: Post, b: Post) => a.views - b.views },
+  { title: t('blog.colActions'), key: 'actions', width: 110, fixed: 'right' },
+])
 
 function saveProfile() {
   Object.assign(profile, editForm)
@@ -169,30 +184,41 @@ function logout() {
           </a-form>
         </a-card>
 
-        <!-- Recent Activity -->
-        <a-card v-else :title="t('personal.recentActivity')" :bordered="false">
-          <a-timeline>
-            <a-timeline-item color="blue">
-              <b>{{ t('personal.activity.published') }}</b> — "Getting Started with Vue 3 Composition API"
-              <div style="color: #888; font-size: 13px">2025-06-01</div>
-            </a-timeline-item>
-            <a-timeline-item color="green">
-              <b>{{ t('personal.activity.received89Likes') }}</b> on Vue 3 post
-              <div style="color: #888; font-size: 13px">2025-06-02</div>
-            </a-timeline-item>
-            <a-timeline-item color="gold">
-              <b>{{ t('personal.activity.achievementUnlocked') }}</b> — "Prolific Writer" 🏆
-              <div style="color: #888; font-size: 13px">2025-05-30</div>
-            </a-timeline-item>
-            <a-timeline-item color="blue">
-              <b>{{ t('personal.activity.published') }}</b> — "TypeScript Best Practices in 2025"
-              <div style="color: #888; font-size: 13px">2025-05-22</div>
-            </a-timeline-item>
-            <a-timeline-item>
-              <b>{{ t('personal.activity.joined') }}</b>
-              <div style="color: #888; font-size: 13px">2024-01-15</div>
-            </a-timeline-item>
-          </a-timeline>
+        <!-- My Blogs -->
+        <a-card v-else :title="t('personal.myBlogs')" :bordered="false">
+          <a-table
+            :columns="blogColumns"
+            :data-source="myPosts"
+            :loading="loadingMyPosts"
+            :row-key="(r: Post) => r.id"
+            :pagination="{ pageSize: 8, showSizeChanger: false }"
+            :scroll="{ x: 720 }"
+          >
+            <template #bodyCell="{ column, record }">
+              <template v-if="column.key === 'title'">
+                <a class="post-link" @click="router.push('/blog/' + record.id)">{{ record.title }}</a>
+              </template>
+              <template v-else-if="column.key === 'visibility'">
+                <a-tag :color="record.visibility === 'PRIVATE' ? 'default' : 'green'">
+                  {{ record.visibility === 'PRIVATE' ? t('blog.private') : t('blog.public') }}
+                </a-tag>
+              </template>
+              <template v-else-if="column.key === 'actions'">
+                <a-space>
+                  <a-tooltip :title="t('blog.view')">
+                    <a-button size="small" @click="router.push('/blog/' + record.id)">
+                      <template #icon><EyeOutlined /></template>
+                    </a-button>
+                  </a-tooltip>
+                  <a-tooltip :title="t('blog.edit')">
+                    <a-button size="small" type="primary" @click="router.push('/blog/' + record.id + '/edit')">
+                      <template #icon><EditOutlined /></template>
+                    </a-button>
+                  </a-tooltip>
+                </a-space>
+              </template>
+            </template>
+          </a-table>
         </a-card>
       </a-col>
     </a-row>
@@ -232,4 +258,6 @@ function logout() {
 .activity-card { border-radius: 10px; }
 .activity-value { font-size: 28px; font-weight: 700; margin: 8px 0 4px; }
 .activity-label { font-size: 13px; color: #888; }
+.post-link { color: #1890ff; cursor: pointer; }
+.post-link:hover { text-decoration: underline; }
 </style>

@@ -1,5 +1,6 @@
 package com.example.myapp.service;
 
+import com.example.myapp.contants.enumeration.BlogVisibility;
 import com.example.myapp.domain.Blog;
 import com.example.myapp.repository.BlogRepository;
 import com.example.myapp.service.dto.BlogDTO;
@@ -44,6 +45,9 @@ public class BlogService {
         Blog blog = blogMapper.toEntity(blogDTO);
         blog.setCreatedBy(currentUsername);
         blog.setLastModifiedBy(currentUsername);
+        if (blog.getVisibility() == null) {
+            blog.setVisibility(BlogVisibility.PUBLIC);
+        }
         if (isBlank(blog.getAuthor())) {
             blog.setAuthor(currentUsername);
         }
@@ -62,6 +66,9 @@ public class BlogService {
         String currentUsername = SecurityUtil.getCurrentUsername();
         Blog blog = blogMapper.toEntity(blogDTO);
         blog.setLastModifiedBy(currentUsername);
+        if (blog.getVisibility() == null) {
+            blog.setVisibility(BlogVisibility.PUBLIC);
+        }
         if (isBlank(blog.getAuthor())) {
             blog.setAuthor(currentUsername);
         }
@@ -84,6 +91,9 @@ public class BlogService {
                 blogMapper.partialUpdate(existingBlog, blogDTO);
                 String currentUsername = SecurityUtil.getCurrentUsername();
                 existingBlog.setLastModifiedBy(currentUsername);
+                if (existingBlog.getVisibility() == null) {
+                    existingBlog.setVisibility(BlogVisibility.PUBLIC);
+                }
                 if (isBlank(existingBlog.getAuthor())) {
                     existingBlog.setAuthor(currentUsername);
                 }
@@ -102,7 +112,20 @@ public class BlogService {
     @Transactional(readOnly = true)
     public Page<BlogDTO> findAll(Pageable pageable) {
         LOG.debug("Request to get all Blogs");
-        return blogRepository.findAll(pageable).map(blogMapper::toDto);
+        return blogRepository.findByVisibility(BlogVisibility.PUBLIC, pageable).map(blogMapper::toDto);
+    }
+
+    /**
+     * Get current user's blogs.
+     *
+     * @param pageable the pagination information.
+     * @return the list of current user's entities.
+     */
+    @Transactional(readOnly = true)
+    public Page<BlogDTO> findMine(Pageable pageable) {
+        LOG.debug("Request to get current user's Blogs");
+        String currentUsername = SecurityUtil.getCurrentUsername();
+        return blogRepository.findByCreatedBy(currentUsername, pageable).map(blogMapper::toDto);
     }
 
     /**

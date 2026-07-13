@@ -2,7 +2,6 @@ package com.example.myapp.web.rest;
 
 import com.example.myapp.service.BlogService;
 import com.example.myapp.service.dto.BlogDTO;
-import com.example.myapp.service.dto.UserDTO;
 import com.example.myapp.utils.PageUtils;
 import com.example.myapp.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
@@ -102,8 +101,19 @@ public class BlogResource {
      */
     @GetMapping("/blogs")
     public ResponseEntity<List<BlogDTO>> getAllBlogs(@PageableDefault(sort = {"id"}, direction = Sort.Direction.DESC) Pageable pageable) {
-        LOG.debug("REST request to get a page of Blogs");
+        LOG.debug("REST request to get a page of public Blogs");
         Page<BlogDTO> page = blogService.findAll(pageable);
+        HttpHeaders headers = PageUtils.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
+        return ResponseEntity.ok().headers(headers).body(page.getContent());
+    }
+
+    /**
+     * GET /blogs/my : Get current user's blogs.
+     */
+    @GetMapping("/blogs/my")
+    public ResponseEntity<List<BlogDTO>> getMyBlogs(@PageableDefault(sort = {"id"}, direction = Sort.Direction.DESC) Pageable pageable) {
+        LOG.debug("REST request to get a page of current user's Blogs");
+        Page<BlogDTO> page = blogService.findMine(pageable);
         HttpHeaders headers = PageUtils.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());
     }

@@ -1,6 +1,7 @@
 package com.example.myapp.domain;
 
 import com.example.myapp.contants.enumeration.BlogStatus;
+import com.example.myapp.contants.enumeration.BlogVisibility;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
@@ -45,6 +46,10 @@ public class Blog extends AbstractAuditingEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private BlogStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "visibility")
+    private BlogVisibility visibility = BlogVisibility.PUBLIC;
 
     @Column(name = "view_count")
     private Long viewCount;
@@ -159,6 +164,19 @@ public class Blog extends AbstractAuditingEntity {
 
     public void setStatus(BlogStatus status) {
         this.status = status;
+    }
+
+    public BlogVisibility getVisibility() {
+        return this.visibility;
+    }
+
+    public Blog visibility(BlogVisibility visibility) {
+        this.setVisibility(visibility);
+        return this;
+    }
+
+    public void setVisibility(BlogVisibility visibility) {
+        this.visibility = visibility;
     }
 
     public Long getViewCount() {
@@ -278,6 +296,7 @@ public class Blog extends AbstractAuditingEntity {
             ", coverImage='" + getCoverImage() + "'" +
             ", author='" + getAuthor() + "'" +
             ", status='" + getStatus() + "'" +
+            ", visibility='" + getVisibility() + "'" +
             ", viewCount=" + getViewCount() +
             ", deleted='" + getDeleted() + "'" +
             "}";

@@ -1,6 +1,7 @@
 package com.example.myapp.service.dto;
 
 import com.example.myapp.contants.enumeration.BlogStatus;
+import com.example.myapp.contants.enumeration.BlogVisibility;
 import com.example.myapp.domain.Blog;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
@@ -32,6 +33,8 @@ public class BlogDTO implements Serializable {
     private String author;
 
     private BlogStatus status;
+
+    private BlogVisibility visibility;
 
     private Long viewCount;
 
@@ -112,6 +115,14 @@ public class BlogDTO implements Serializable {
 
     public void setStatus(BlogStatus status) {
         this.status = status;
+    }
+
+    public BlogVisibility getVisibility() {
+        return visibility;
+    }
+
+    public void setVisibility(BlogVisibility visibility) {
+        this.visibility = visibility;
     }
 
     public Long getViewCount() {
@@ -233,6 +244,7 @@ public class BlogDTO implements Serializable {
             ", coverImage='" + getCoverImage() + "'" +
             ", author='" + getAuthor() + "'" +
             ", status='" + getStatus() + "'" +
+            ", visibility='" + getVisibility() + "'" +
             ", viewCount=" + getViewCount() +
             ", deleted='" + getDeleted() + "'" +
             ", createdBy='" + getCreatedBy() + "'" +
