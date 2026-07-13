@@ -58,7 +58,7 @@ export default {
     confirmPassword: 'Confirm Password',
     fullNamePlaceholder: 'Your full name',
     usernamePlaceholder: 'Choose a username',
-    emailPlaceholder: 'your@email.com',
+    emailPlaceholder: 'Enter your email',
     emailCodePlaceholder: '6-digit code',
     passwordPlaceholder: 'Min 6 characters',
     confirmPasswordPlaceholder: 'Repeat password',

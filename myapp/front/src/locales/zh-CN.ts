@@ -58,7 +58,7 @@ export default {
     confirmPassword: '确认密码',
     fullNamePlaceholder: '请输入姓名',
     usernamePlaceholder: '请选择用户名',
-    emailPlaceholder: 'your@email.com',
+    emailPlaceholder: '请输入邮箱地址',
     emailCodePlaceholder: '6位验证码',
     passwordPlaceholder: '至少6位字符',
     confirmPasswordPlaceholder: '重复密码',
