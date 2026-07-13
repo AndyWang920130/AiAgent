@@ -115,7 +115,7 @@ async function handleRegister() {
         </a-form-item>
 
         <a-form-item :label="t('register.email')" required>
-          <a-input v-model:value="form.email" size="large" :placeholder="t('register.emailPlaceholder')">
+          <a-input v-model:value="form.email" size="large" :placeholder="1111">
             <template #prefix><MailOutlined /></template>
           </a-input>
         </a-form-item>
