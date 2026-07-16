@@ -40,7 +40,8 @@ sudo systemctl restart docker
 ```bash
 docker compose --env-file back/myapp/src/main/resources/deploy/docker/env.prod \
   -f back/myapp/src/main/resources/deploy/docker/docker-compose.yaml \
-  up -d --build
+  up -d --build \
+&& docker image prune -f
 ```
 
 ## Start test
