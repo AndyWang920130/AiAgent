@@ -1,0 +1,20 @@
+# Version-control and local tooling metadata
+.git
+.agents
+.codex
+.idea
+.vscode
+
+# Frontend dependencies, caches, and generated output
+front/node_modules
+front/dist
+front/.vite
+
+# Backend IDE metadata and generated output
+back/myapp/.idea
+back/myapp/target
+
+# Common local and transient files
+**/*.log
+**/.DS_Store
+**/Thumbs.db
