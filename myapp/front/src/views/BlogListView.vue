@@ -33,6 +33,7 @@ const columns = computed(() => [
   { title: t('blog.colCategory'), dataIndex: 'category', key: 'category', width: 120 },
   { title: t('blog.colTag'), dataIndex: 'tag', key: 'tag', width: 110 },
   { title: t('blog.colVisibility'), dataIndex: 'visibility', key: 'visibility', width: 110 },
+  { title: t('blog.colAuthor'), dataIndex: 'author', key: 'author', width: 140, ellipsis: true },
   { title: t('blog.colDate'), dataIndex: 'date', key: 'date', width: 120, sorter: (a: Post, b: Post) => a.date.localeCompare(b.date) },
   { title: t('blog.colViews'), dataIndex: 'views', key: 'views', width: 90, sorter: (a: Post, b: Post) => a.views - b.views },
   { title: t('blog.colActions'), key: 'actions', width: 140, fixed: 'right' },
@@ -86,7 +87,7 @@ function handleDelete(id: number, title: string) {
         :loading="loading"
         :row-key="(r: Post) => r.id"
         :pagination="{ pageSize: 10, showSizeChanger: false }"
-        :scroll="{ x: 800 }"
+        :scroll="{ x: 940 }"
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'title'">

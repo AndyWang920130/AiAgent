@@ -13,6 +13,7 @@ function mapBlog(dto: any): Post {
     comments: dto.commentCount || 0,
     tag: dto.tag || '',
     tagColor: dto.tagColor || 'blue',
+    author: dto.author || dto.createdBy || '',
     content: dto.content || '',
     visibility: dto.visibility || 'PUBLIC',
   }
@@ -30,7 +31,7 @@ export const blogApi = {
   get: (id: number) =>
     http.get(`/api/v1/blogs/${id}`).then(r => mapBlog(r.data)),
 
-  create: (post: Omit<Post, 'id' | 'views' | 'likes' | 'comments' | 'date'>) =>
+  create: (post: Omit<Post, 'id' | 'views' | 'likes' | 'comments' | 'date' | 'author'> & { author?: string }) =>
     http.post('/api/v1/blogs', {
       title: post.title,
       summary: post.excerpt,
@@ -38,6 +39,7 @@ export const blogApi = {
       category: post.category,
       tag: post.tag,
       tagColor: post.tagColor,
+      author: post.author,
       visibility: post.visibility || 'PUBLIC',
       status: 'PUBLISHED',
       viewCount: 0,
@@ -55,6 +57,7 @@ export const blogApi = {
       category: post.category,
       tag: post.tag,
       tagColor: post.tagColor,
+      author: post.author,
       visibility: post.visibility || 'PUBLIC',
       viewCount: post.views,
       likes: post.likes,

@@ -141,6 +141,7 @@ export default {
     searchPlaceholder: 'Search by title...',
     allCategories: 'All categories',
     colTitle: 'Title',
+    colAuthor: 'Author',
     colCategory: 'Category',
     colTag: 'Tag',
     colVisibility: 'Visibility',

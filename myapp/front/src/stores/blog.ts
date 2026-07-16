@@ -12,6 +12,7 @@ export interface Post {
   comments: number
   tag: string
   tagColor: string
+  author: string
   content: string
   visibility: 'PUBLIC' | 'PRIVATE'
 }
@@ -39,7 +40,7 @@ export async function fetchMyPosts() {
   }
 }
 
-export async function addPost(post: Omit<Post, 'id' | 'views' | 'likes' | 'comments' | 'date'>) {
+export async function addPost(post: Omit<Post, 'id' | 'views' | 'likes' | 'comments' | 'date' | 'author'> & { author?: string }) {
   const created = await blogApi.create(post)
   posts.value.unshift(created)
   myPosts.value.unshift(created)

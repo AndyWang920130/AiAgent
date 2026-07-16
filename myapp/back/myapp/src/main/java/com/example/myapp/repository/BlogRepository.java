@@ -15,4 +15,6 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
     Page<Blog> findByVisibility(BlogVisibility visibility, Pageable pageable);
 
     Page<Blog> findByCreatedBy(String createdBy, Pageable pageable);
+
+    Page<Blog> findByAuthor(String author, Pageable pageable);
 }

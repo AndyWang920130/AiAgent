@@ -125,7 +125,7 @@ public class BlogService {
     public Page<BlogDTO> findMine(Pageable pageable) {
         LOG.debug("Request to get current user's Blogs");
         String currentUsername = SecurityUtil.getCurrentUsername();
-        return blogRepository.findByCreatedBy(currentUsername, pageable).map(blogMapper::toDto);
+        return blogRepository.findByAuthor(currentUsername, pageable).map(blogMapper::toDto);
     }
 
     /**

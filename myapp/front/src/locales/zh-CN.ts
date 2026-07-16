@@ -141,6 +141,7 @@ export default {
     searchPlaceholder: '按标题搜索...',
     allCategories: '所有分类',
     colTitle: '标题',
+    colAuthor: '作者',
     colCategory: '分类',
     colTag: '标签',
     colVisibility: '可见性',
