@@ -3,6 +3,7 @@ package com.example.myapp.service;
 import com.example.myapp.contants.enumeration.BlogVisibility;
 import com.example.myapp.domain.Blog;
 import com.example.myapp.repository.BlogRepository;
+import com.example.myapp.service.dto.BlogViewHistoryDTO;
 import com.example.myapp.service.dto.BlogDTO;
 import com.example.myapp.service.mapper.BlogMapper;
 import com.example.myapp.utils.SecurityUtil;
@@ -28,9 +29,12 @@ public class BlogService {
 
     private final BlogMapper blogMapper;
 
-    public BlogService(BlogRepository blogRepository, BlogMapper blogMapper) {
+    private final BlogViewHistoryService blogViewHistoryService;
+
+    public BlogService(BlogRepository blogRepository, BlogMapper blogMapper, BlogViewHistoryService blogViewHistoryService) {
         this.blogRepository = blogRepository;
         this.blogMapper = blogMapper;
+        this.blogViewHistoryService = blogViewHistoryService;
     }
 
     /**
@@ -150,11 +154,12 @@ public class BlogService {
         blogRepository.deleteById(id);
     }
 
-    public void incrementViewCount(Long id) {
-        blogRepository.findById(id).ifPresent(blog -> {
+    public Optional<BlogViewHistoryDTO> incrementViewCount(Long id) {
+        return blogRepository.findById(id).map(blog -> {
             blog.setViewCount((blog.getViewCount() == null ? 0L : blog.getViewCount()) + 1);
             blog.setLastModifiedBy(SecurityUtil.getCurrentUsername());
-            blogRepository.save(blog);
+            Blog saved = blogRepository.save(blog);
+            return blogViewHistoryService.recordView(saved);
         });
     }
 

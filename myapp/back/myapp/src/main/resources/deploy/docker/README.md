@@ -108,14 +108,3 @@ Prod and test can run at the same time from the same Compose file because their 
 The MySQL image creates the database named by `MYSQL_DATABASE`. The schema and seed data come from `back/myapp/src/main/resources/db/mysql/initial.sql` and are applied only to that environment's database on first volume creation.
 
 MySQL only runs initialization scripts when its data volume is first created. If you already started an older deployment and want the new isolation, stop the affected stack and migrate or remove the old volume intentionally before starting again.
-
-## Upgrade Existing MySQL Schema
-
-Before restarting a backend that includes blog visibility support, run this script once against the existing database:
-
-```bash
-mysql -h 127.0.0.1 -P 16012 -u root -p twsny_prod \
-  < back/myapp/src/main/resources/db/mysql/upgrade-blog-visibility.sql
-```
-
-For test, use port `16011` and database `twsny_test`. The script is idempotent: it adds `twsny_blog.visibility` and `idx_twsny_blog_visibility` only when missing, and backfills existing blogs to `PUBLIC`.

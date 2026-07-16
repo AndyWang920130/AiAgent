@@ -1,7 +1,9 @@
 package com.example.myapp.web.rest;
 
 import com.example.myapp.service.BlogService;
+import com.example.myapp.service.BlogViewHistoryService;
 import com.example.myapp.service.dto.BlogDTO;
+import com.example.myapp.service.dto.BlogViewHistoryDTO;
 import com.example.myapp.utils.PageUtils;
 import com.example.myapp.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
@@ -37,8 +39,11 @@ public class BlogResource {
 
     private final BlogService blogService;
 
-    public BlogResource(BlogService blogService) {
+    private final BlogViewHistoryService blogViewHistoryService;
+
+    public BlogResource(BlogService blogService, BlogViewHistoryService blogViewHistoryService) {
         this.blogService = blogService;
+        this.blogViewHistoryService = blogViewHistoryService;
     }
 
     /**
@@ -134,10 +139,25 @@ public class BlogResource {
      * POST /blogs/{id}/view : Increment view count.
      */
     @PostMapping("/blogs/{id}/view")
-    public ResponseEntity<Void> incrementView(@PathVariable("id") Long id) {
+    public ResponseEntity<BlogViewHistoryDTO> incrementView(@PathVariable("id") Long id) {
         LOG.debug("REST request to increment view count for Blog : {}", id);
-        blogService.incrementViewCount(id);
-        return ResponseEntity.ok().build();
+        Optional<BlogViewHistoryDTO> result = blogService.incrementViewCount(id);
+        return result
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * GET /blogs/view-history/my : Get current user's blog view history.
+     */
+    @GetMapping("/blogs/view-history/my")
+    public ResponseEntity<List<BlogViewHistoryDTO>> getMyViewHistory(
+        @PageableDefault(sort = {"lastViewedDate"}, direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        LOG.debug("REST request to get current user's Blog view history");
+        Page<BlogViewHistoryDTO> page = blogViewHistoryService.findMine(pageable);
+        HttpHeaders headers = PageUtils.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
+        return ResponseEntity.ok().headers(headers).body(page.getContent());
     }
 
     /**

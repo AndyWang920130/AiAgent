@@ -1,6 +1,18 @@
 import http from '../utils/axios'
 import type { Post } from '../stores/blog'
 
+export interface BlogViewHistory {
+  id: number
+  username: string
+  blogId: number
+  blogTitle: string
+  blogAuthor: string
+  blogViewCount: number
+  viewCount: number
+  firstViewedDate: string
+  lastViewedDate: string
+}
+
 function mapBlog(dto: any): Post {
   return {
     id: Number(dto.id),
@@ -68,6 +80,10 @@ export const blogApi = {
 
   incrementView: (id: number) =>
     http.post(`/api/v1/blogs/${id}/view`),
+
+  listMyViewHistory: () =>
+    http.get('/api/v1/blogs/view-history/my', { params: { size: 100, sort: 'lastViewedDate,desc' } })
+      .then(r => r.data as BlogViewHistory[]),
 
   remove: (id: number) =>
     http.delete(`/api/v1/blogs/${id}`),
