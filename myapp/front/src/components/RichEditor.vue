@@ -294,7 +294,7 @@ defineExpose({ getHTML: () => editor.value?.getHTML() ?? '' })
 .rich-editor {
   border: 1px solid #d9d9d9;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
   transition: border-color 0.2s;
 }
 .rich-editor:focus-within {
@@ -303,13 +303,18 @@ defineExpose({ getHTML: () => editor.value?.getHTML() ?? '' })
 }
 
 .toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 2px;
   padding: 6px 10px;
   border-bottom: 1px solid #f0f0f0;
+  border-radius: 8px 8px 0 0;
   background: #fafafa;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .color-btn {
@@ -341,6 +346,7 @@ defineExpose({ getHTML: () => editor.value?.getHTML() ?? '' })
 .editor-content {
   min-height: 360px;
   padding: 16px;
+  border-radius: 0 0 8px 8px;
   background: #fff;
 }
 </style>

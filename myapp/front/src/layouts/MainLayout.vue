@@ -126,7 +126,7 @@ function formatPopoverTime(timeStr: string): string {
   <a-config-provider :theme="themeConfig" :locale="antLocale">
     <a-layout style="min-height: 100vh">
       <!-- Sider -->
-      <a-layout-sider v-model:collapsed="collapsed" collapsible :trigger="null" :width="220">
+      <a-layout-sider v-model:collapsed="collapsed" collapsible :trigger="null" :width="220" class="app-sider">
         <div class="logo" @click="navigate('home')">
           <span v-if="!collapsed">🚀 MyApp</span>
           <span v-else>🚀</span>
@@ -350,6 +350,13 @@ function formatPopoverTime(timeStr: string): string {
   background: rgba(255, 255, 255, 0.05);
   cursor: pointer;
   user-select: none;
+}
+.app-sider {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 30;
 }
 .app-header {
   padding: 0 16px;
