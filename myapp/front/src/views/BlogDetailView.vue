@@ -19,18 +19,47 @@ const route = useRoute()
 
 const post = ref<Post | undefined>(undefined)
 const loading = ref(false)
+const liking = ref(false)
+const liked = ref(false)
 
 onMounted(async () => {
   loading.value = true
   try {
     const id = Number(route.params.id)
     post.value = await getPost(id)
+    try {
+      const likeStatus = await blogApi.getLikeStatus(id)
+      liked.value = likeStatus.liked
+      if (post.value) post.value.likes = likeStatus.totalLikes
+    } catch {
+      // A status failure should not prevent the blog itself from rendering.
+    }
     blogApi.incrementView(id)
     if (post.value) post.value.views++
   } finally {
     loading.value = false
   }
 })
+
+async function handleLike() {
+  if (!post.value) return
+  if (liked.value) {
+    message.info(t('blog.alreadyLiked'))
+    return
+  }
+  liking.value = true
+  try {
+    const result = await blogApi.like(post.value.id)
+    post.value.likes = result.totalLikes
+    liked.value = result.liked
+    message.success(t('blog.liked'))
+  } catch (error: any) {
+    const detail = error?.response?.data?.message
+    message.error(detail || t('blog.likeFailed'))
+  } finally {
+    liking.value = false
+  }
+}
 
 function handleDelete() {
   if (!post.value) return
@@ -71,7 +100,15 @@ function handleDelete() {
             <a-space size="large" class="meta-row">
               <span>📅 {{ post.date }}</span>
               <span><EyeOutlined /> {{ post.views }}</span>
-              <span><LikeOutlined /> {{ post.likes }}</span>
+              <a-button
+                type="text"
+                class="like-button"
+                :class="{ liked }"
+                :loading="liking"
+                @click="handleLike"
+              >
+                <LikeOutlined /> {{ post.likes }}
+              </a-button>
               <span><MessageOutlined /> {{ post.comments }}</span>
             </a-space>
           </template>
@@ -96,4 +133,6 @@ function handleDelete() {
 .content-card { border-radius: 10px; }
 .post-content { line-height: 1.8; font-size: 15px; }
 .meta-row { color: #888; }
+.like-button { padding: 0 4px; color: inherit; }
+.like-button.liked { color: #1677ff; }
 </style>

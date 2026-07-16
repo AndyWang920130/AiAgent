@@ -136,6 +136,9 @@ export default {
     },
   },
   blog: {
+    liked: '点赞成功',
+    alreadyLiked: '你已经点赞过这篇博客',
+    likeFailed: '点赞失败',
     listTitle: '📋 博客列表',
     addPost: '添加文章',
     searchPlaceholder: '按标题搜索...',

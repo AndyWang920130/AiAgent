@@ -15,6 +15,7 @@ import {
 import { message, Modal } from 'ant-design-vue'
 import { clearAuth, getUser } from '../utils/auth'
 import { fetchMyPosts, loadingMyPosts, myPosts, type Post } from '../stores/blog'
+import { blogApi } from '../api/blog'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -35,14 +36,20 @@ const editMode = ref(false)
 const editForm = reactive({ ...profile })
 const passwordForm = reactive({ current: '', next: '', confirm: '' })
 const showPasswordModal = ref(false)
+const likesReceived = ref(0)
 
-onMounted(() => {
-  fetchMyPosts()
+onMounted(async () => {
+  await Promise.all([
+    fetchMyPosts(),
+    blogApi.getMyLikesReceived().then(total => {
+      likesReceived.value = total
+    }),
+  ])
 })
 
 const activityData = computed(() => [
   { label: () => t('personal.postsWritten'), value: myPosts.value.length, icon: FileTextOutlined, color: '#1890ff' },
-  { label: () => t('personal.likesReceived'), value: 3840, icon: HeartOutlined, color: '#eb2f96' },
+  { label: () => t('personal.likesReceived'), value: likesReceived.value, icon: HeartOutlined, color: '#eb2f96' },
   { label: () => t('personal.achievements'), value: 47, icon: TrophyOutlined, color: '#faad14' },
 ])
 

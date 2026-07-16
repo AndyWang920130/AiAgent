@@ -136,6 +136,9 @@ export default {
     },
   },
   blog: {
+    liked: 'Blog liked',
+    alreadyLiked: 'You already liked this blog',
+    likeFailed: 'Unable to like this blog',
     listTitle: '📋 Blog List',
     addPost: 'Add Post',
     searchPlaceholder: 'Search by title...',

@@ -13,6 +13,23 @@ export interface BlogViewHistory {
   lastViewedDate: string
 }
 
+export interface BlogLikeStatus {
+  blogId: number
+  totalLikes: number
+  liked: boolean
+  likedDate: string | null
+}
+
+export interface BlogLikeHistory {
+  id: number
+  username: string
+  blogId: number
+  blogTitle: string
+  blogAuthor: string
+  blogLikes: number
+  likedDate: string
+}
+
 function mapBlog(dto: any): Post {
   return {
     id: Number(dto.id),
@@ -84,6 +101,20 @@ export const blogApi = {
   listMyViewHistory: () =>
     http.get('/api/v1/blogs/view-history/my', { params: { size: 100, sort: 'lastViewedDate,desc' } })
       .then(r => r.data as BlogViewHistory[]),
+
+  like: (id: number) =>
+    http.post(`/api/v1/blogs/${id}/like`).then(r => r.data as BlogLikeStatus),
+
+  getLikeStatus: (id: number) =>
+    http.get(`/api/v1/blogs/${id}/like-status`).then(r => r.data as BlogLikeStatus),
+
+  listMyLikeHistory: () =>
+    http.get('/api/v1/blogs/like-history/my', { params: { size: 100, sort: 'likedDate,desc' } })
+      .then(r => r.data as BlogLikeHistory[]),
+
+  getMyLikesReceived: () =>
+    http.get('/api/v1/blogs/likes-received/my')
+      .then(r => Number(r.data.totalLikes || 0)),
 
   remove: (id: number) =>
     http.delete(`/api/v1/blogs/${id}`),
