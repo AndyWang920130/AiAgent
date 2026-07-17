@@ -14,6 +14,7 @@ import { message } from 'ant-design-vue'
 import {
   BoldOutlined,
   ItalicOutlined,
+  CodeOutlined,
   UnderlineOutlined,
   StrikethroughOutlined,
   OrderedListOutlined,
@@ -175,6 +176,12 @@ defineExpose({ getHTML: () => editor.value?.getHTML() ?? '' })
         <a-button size="small" :type="editor.isActive('strike') ? 'primary' : 'text'"
           @click="editor.chain().focus().toggleStrike().run()">
           <StrikethroughOutlined />
+        </a-button>
+      </a-tooltip>
+      <a-tooltip title="Code Snippet">
+        <a-button size="small" :type="editor.isActive('code') ? 'primary' : 'text'"
+          @click="editor.chain().focus().toggleCode().run()">
+          <CodeOutlined />
         </a-button>
       </a-tooltip>
 
@@ -379,7 +386,14 @@ defineExpose({ getHTML: () => editor.value?.getHTML() ?? '' })
   padding-left: 16px;
   color: #888;
 }
-.ProseMirror code { background: #f5f5f5; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+.ProseMirror code {
+  background: #1f2937;
+  color: #f8fafc;
+  padding: 2px 6px;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
 .ProseMirror pre { background: #1e1e1e; color: #fff; padding: 16px; border-radius: 8px; overflow-x: auto; }
-.ProseMirror pre code { background: none; padding: 0; }
+.ProseMirror pre code { background: none; padding: 0; border: none; }
 </style>

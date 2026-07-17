@@ -132,6 +132,26 @@ function handleDelete() {
 .blog-detail-view { display: flex; flex-direction: column; gap: 16px; }
 .content-card { border-radius: 10px; }
 .post-content { line-height: 1.8; font-size: 15px; }
+.post-content :deep(code) {
+  background: #1f2937;
+  color: #f8fafc;
+  padding: 2px 6px;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.post-content :deep(pre) {
+  background: #1e1e1e;
+  color: #fff;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.post-content :deep(pre code) {
+  background: none;
+  padding: 0;
+  border: none;
+}
 .meta-row { color: #888; }
 .like-button { padding: 0 4px; color: inherit; }
 .like-button.liked { color: #1677ff; }
