@@ -12,6 +12,7 @@ import {
 } from '@ant-design/icons-vue'
 import { getPost, deletePost, type Post } from '../stores/blog'
 import { blogApi } from '../api/blog'
+import BlogCommentSection from '../components/BlogCommentSection.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -117,6 +118,11 @@ function handleDelete() {
         <a-card :bordered="false" class="content-card">
           <div class="post-content" v-html="post.content" />
         </a-card>
+
+        <BlogCommentSection
+          :blog-id="post.id"
+          @update:count="(count: number) => post!.comments = count"
+        />
       </template>
 
       <a-result v-else-if="!loading" status="404" :title="t('blog.notFound')" :sub-title="t('blog.notFoundDesc')">

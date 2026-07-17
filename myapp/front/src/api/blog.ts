@@ -30,6 +30,15 @@ export interface BlogLikeHistory {
   likedDate: string
 }
 
+export interface BlogComment {
+  id: number
+  blogId: number
+  username: string
+  content: string
+  createdDate: string
+  canDelete: boolean
+}
+
 function mapBlog(dto: any): Post {
   return {
     id: Number(dto.id),
@@ -118,4 +127,14 @@ export const blogApi = {
 
   remove: (id: number) =>
     http.delete(`/api/v1/blogs/${id}`),
+
+  getComments: (blogId: number) =>
+    http.get(`/api/v1/blogs/${blogId}/comments`, { params: { size: 100, sort: 'createdDate,asc' } })
+      .then(r => r.data as BlogComment[]),
+
+  addComment: (blogId: number, content: string) =>
+    http.post(`/api/v1/blogs/${blogId}/comments`, { content }).then(r => r.data as BlogComment),
+
+  deleteComment: (commentId: number) =>
+    http.delete(`/api/v1/comments/${commentId}`),
 }
