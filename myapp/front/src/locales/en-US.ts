@@ -157,6 +157,7 @@ export default {
     deleteTitle: 'Delete Post',
     deleteContent: 'Are you sure you want to delete "{title}"?',
     deleted: 'Post deleted',
+    deleteFailed: 'Unable to delete this post',
     notFound: 'Post not found',
     notFoundDesc: 'The post you are looking for does not exist.',
     backToList: 'Back to List',
@@ -216,6 +217,7 @@ export default {
     fillRequired: 'Please fill in all required fields.',
     updated: 'Post updated!',
     notFound: 'Post not found',
+    notPermitted: 'You can only edit your own posts',
     backToList: 'Back to List',
   },
   tools: {

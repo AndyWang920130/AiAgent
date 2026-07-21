@@ -6,6 +6,7 @@ import { message } from 'ant-design-vue'
 import RichEditor from '../components/RichEditor.vue'
 import { getPost, updatePost, type Post } from '../stores/blog'
 import { categoryOptions, fetchBlogConfig, tagColorOptions, tagOptions } from '../stores/blogConfig'
+import { getUser } from '../utils/auth'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -29,6 +30,12 @@ onMounted(async () => {
   try {
     await fetchBlogConfig()
     const found = await getPost(Number(route.params.id))
+    const currentUsername = getUser<{ username: string }>()?.username
+    if (found && found.author !== currentUsername) {
+      message.error(t('editBlog.notPermitted'))
+      router.replace('/blog/' + found.id)
+      return
+    }
     if (found) {
       post.value = found
       form.title = found.title

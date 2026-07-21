@@ -11,8 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
@@ -68,13 +70,17 @@ public class BlogService {
     public BlogDTO update(BlogDTO blogDTO) {
         LOG.debug("Request to update Blog : {}", blogDTO);
         String currentUsername = SecurityUtil.getCurrentUsername();
+        Blog existingBlog = blogRepository
+            .findById(blogDTO.getId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (!currentUsername.equals(existingBlog.getAuthor())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not permitted to update this blog");
+        }
         Blog blog = blogMapper.toEntity(blogDTO);
+        blog.setAuthor(existingBlog.getAuthor());
         blog.setLastModifiedBy(currentUsername);
         if (blog.getVisibility() == null) {
             blog.setVisibility(BlogVisibility.PUBLIC);
-        }
-        if (isBlank(blog.getAuthor())) {
-            blog.setAuthor(currentUsername);
         }
         blog = blogRepository.save(blog);
         return blogMapper.toDto(blog);
@@ -88,18 +94,20 @@ public class BlogService {
      */
     public Optional<BlogDTO> partialUpdate(BlogDTO blogDTO) {
         LOG.debug("Request to partially update Blog : {}", blogDTO);
+        String currentUsername = SecurityUtil.getCurrentUsername();
 
         return blogRepository
             .findById(blogDTO.getId())
             .map(existingBlog -> {
+                if (!currentUsername.equals(existingBlog.getAuthor())) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not permitted to update this blog");
+                }
+                String author = existingBlog.getAuthor();
                 blogMapper.partialUpdate(existingBlog, blogDTO);
-                String currentUsername = SecurityUtil.getCurrentUsername();
+                existingBlog.setAuthor(author);
                 existingBlog.setLastModifiedBy(currentUsername);
                 if (existingBlog.getVisibility() == null) {
                     existingBlog.setVisibility(BlogVisibility.PUBLIC);
-                }
-                if (isBlank(existingBlog.getAuthor())) {
-                    existingBlog.setAuthor(currentUsername);
                 }
                 return existingBlog;
             })
@@ -151,6 +159,11 @@ public class BlogService {
      */
     public void delete(Long id) {
         LOG.debug("Request to delete Blog : {}", id);
+        String currentUsername = SecurityUtil.getCurrentUsername();
+        Blog blog = blogRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (!currentUsername.equals(blog.getAuthor())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not permitted to delete this blog");
+        }
         blogRepository.deleteById(id);
     }
 

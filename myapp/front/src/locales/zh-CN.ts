@@ -157,6 +157,7 @@ export default {
     deleteTitle: '删除文章',
     deleteContent: '确定要删除"{title}"吗？',
     deleted: '文章已删除',
+    deleteFailed: '删除文章失败',
     notFound: '文章未找到',
     notFoundDesc: '您查找的文章不存在。',
     backToList: '返回列表',
@@ -216,6 +217,7 @@ export default {
     fillRequired: '请填写所有必填项。',
     updated: '文章已更新！',
     notFound: '文章未找到',
+    notPermitted: '您只能编辑自己发布的文章',
     backToList: '返回列表',
   },
   tools: {

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
@@ -12,6 +12,7 @@ import {
 } from '@ant-design/icons-vue'
 import { getPost, deletePost, type Post } from '../stores/blog'
 import { blogApi } from '../api/blog'
+import { getUser } from '../utils/auth'
 import BlogCommentSection from '../components/BlogCommentSection.vue'
 
 const { t } = useI18n()
@@ -22,6 +23,9 @@ const post = ref<Post | undefined>(undefined)
 const loading = ref(false)
 const liking = ref(false)
 const liked = ref(false)
+
+const currentUsername = getUser<{ username: string }>()?.username
+const canManage = computed(() => !!post.value && post.value.author === currentUsername)
 
 onMounted(async () => {
   loading.value = true
@@ -70,9 +74,13 @@ function handleDelete() {
     okText: t('blog.delete'),
     okType: 'danger',
     async onOk() {
-      await deletePost(post.value!.id)
-      message.success(t('blog.deleted'))
-      router.push('/blog')
+      try {
+        await deletePost(post.value!.id)
+        message.success(t('blog.deleted'))
+        router.push('/blog')
+      } catch {
+        message.error(t('blog.deleteFailed'))
+      }
     },
   })
 }
@@ -84,11 +92,11 @@ function handleDelete() {
       <template v-if="post">
         <a-page-header :title="post.title" @back="router.push('/blog')">
           <template #extra>
-            <a-button @click="router.push('/blog/' + post.id + '/edit')">
+            <a-button v-if="canManage" @click="router.push('/blog/' + post.id + '/edit')">
               <template #icon><EditOutlined /></template>
               {{ t('blog.edit') }}
             </a-button>
-            <a-button danger @click="handleDelete">
+            <a-button v-if="canManage" danger @click="handleDelete">
               <template #icon><DeleteOutlined /></template>
               {{ t('blog.delete') }}
             </a-button>

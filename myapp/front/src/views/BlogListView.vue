@@ -10,9 +10,16 @@ import {
   PlusOutlined,
 } from '@ant-design/icons-vue'
 import { posts, loading, fetchPosts, deletePost, type Post } from '../stores/blog'
+import { getUser } from '../utils/auth'
 
 const { t } = useI18n()
 const router = useRouter()
+
+const currentUsername = getUser<{ username: string }>()?.username
+
+function canManage(post: Post) {
+  return post.author === currentUsername
+}
 
 const searchText = ref('')
 const selectedCategory = ref<string | undefined>(undefined)
@@ -46,8 +53,12 @@ function handleDelete(id: number, title: string) {
     okText: t('blog.delete'),
     okType: 'danger',
     async onOk() {
-      await deletePost(id)
-      message.success(t('blog.deleted'))
+      try {
+        await deletePost(id)
+        message.success(t('blog.deleted'))
+      } catch {
+        message.error(t('blog.deleteFailed'))
+      }
     },
   })
 }
@@ -108,16 +119,18 @@ function handleDelete(id: number, title: string) {
                   <template #icon><EyeOutlined /></template>
                 </a-button>
               </a-tooltip>
-              <a-tooltip :title="t('blog.edit')">
-                <a-button size="small" type="primary" @click="router.push('/blog/' + record.id + '/edit')">
-                  <template #icon><EditOutlined /></template>
-                </a-button>
-              </a-tooltip>
-              <a-tooltip :title="t('blog.delete')">
-                <a-button size="small" danger @click="handleDelete(record.id, record.title)">
-                  <template #icon><DeleteOutlined /></template>
-                </a-button>
-              </a-tooltip>
+              <template v-if="canManage(record)">
+                <a-tooltip :title="t('blog.edit')">
+                  <a-button size="small" type="primary" @click="router.push('/blog/' + record.id + '/edit')">
+                    <template #icon><EditOutlined /></template>
+                  </a-button>
+                </a-tooltip>
+                <a-tooltip :title="t('blog.delete')">
+                  <a-button size="small" danger @click="handleDelete(record.id, record.title)">
+                    <template #icon><DeleteOutlined /></template>
+                  </a-button>
+                </a-tooltip>
+              </template>
             </a-space>
           </template>
         </template>
