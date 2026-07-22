@@ -1,22 +1,21 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { GiftOutlined } from '@ant-design/icons-vue'
+import { gamePrizes, spinDurationSeconds, fetchGameConfig } from '../stores/gameConfig'
 
 const { t } = useI18n()
 
-const prizes = computed(() => [
-  { label: t('lottery.prize1'), color: '#f5222d' },
-  { label: t('lottery.prize2'), color: '#fa8c16' },
-  { label: t('lottery.prize3'), color: '#fadb14' },
-  { label: t('lottery.prize4'), color: '#52c41a' },
-  { label: t('lottery.prize5'), color: '#1890ff' },
-  { label: t('lottery.prize6'), color: '#722ed1' },
-])
+onMounted(() => {
+  if (!gamePrizes.value.length) fetchGameConfig()
+})
 
-const segmentAngle = computed(() => 360 / prizes.value.length)
+const prizes = computed(() => gamePrizes.value.map(p => ({ label: p.name, color: p.color })))
+
+const segmentAngle = computed(() => 360 / (prizes.value.length || 1))
 
 const wheelBackground = computed(() => {
+  if (!prizes.value.length) return '#e5e7eb'
   const seg = segmentAngle.value
   const stops = prizes.value.map((p, i) => `${p.color} ${i * seg}deg ${(i + 1) * seg}deg`).join(', ')
   return `conic-gradient(${stops})`
@@ -27,7 +26,7 @@ const rotation = ref(0)
 const result = ref<string | null>(null)
 
 function spin() {
-  if (spinning.value) return
+  if (spinning.value || !prizes.value.length) return
   spinning.value = true
   result.value = null
   const seg = segmentAngle.value
@@ -40,7 +39,7 @@ function spin() {
   setTimeout(() => {
     spinning.value = false
     result.value = prizes.value[index].label
-  }, 4000)
+  }, spinDurationSeconds.value * 1000)
 }
 </script>
 
@@ -53,7 +52,11 @@ function spin() {
         <div class="pointer">▼</div>
         <div
           class="wheel"
-          :style="{ background: wheelBackground, transform: `rotate(${rotation}deg)` }"
+          :style="{
+            background: wheelBackground,
+            transform: `rotate(${rotation}deg)`,
+            transitionDuration: `${spinDurationSeconds}s`,
+          }"
         >
           <span
             v-for="(p, i) in prizes"
@@ -66,8 +69,10 @@ function spin() {
         </div>
       </div>
 
+      <a-empty v-if="!prizes.length" :description="t('lottery.noPrizes')" />
+
       <div class="actions">
-        <a-button type="primary" size="large" :loading="spinning" @click="spin">
+        <a-button type="primary" size="large" :loading="spinning" :disabled="!prizes.length" @click="spin">
           {{ spinning ? t('lottery.spinning') : t('lottery.spin') }}
         </a-button>
       </div>

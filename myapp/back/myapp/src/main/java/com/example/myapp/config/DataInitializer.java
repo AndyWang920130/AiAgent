@@ -2,11 +2,14 @@ package com.example.myapp.config;
 
 import com.example.myapp.contants.enumeration.BlogStatus;
 import com.example.myapp.contants.enumeration.BlogConfigType;
+import com.example.myapp.contants.enumeration.GameConfigType;
 import com.example.myapp.domain.Blog;
 import com.example.myapp.domain.BlogConfig;
+import com.example.myapp.domain.GameConfig;
 import com.example.myapp.domain.User;
 import com.example.myapp.repository.BlogConfigRepository;
 import com.example.myapp.repository.BlogRepository;
+import com.example.myapp.repository.GameConfigRepository;
 import com.example.myapp.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,7 @@ public class DataInitializer {
     private final PasswordEncoder passwordEncoder;
     private final BlogRepository blogRepository;
     private final BlogConfigRepository blogConfigRepository;
+    private final GameConfigRepository gameConfigRepository;
 
     @PostConstruct
     void init() {
@@ -86,6 +90,7 @@ public class DataInitializer {
         }
 
         initBlogConfig();
+        initGameConfig();
     }
 
     private void initBlogConfig() {
@@ -111,6 +116,28 @@ public class DataInitializer {
             return;
         }
         blogConfigRepository.save(new BlogConfig()
+            .type(type)
+            .name(name)
+            .value(value)
+            .description(description)
+            .sortOrder(sortOrder));
+    }
+
+    private void initGameConfig() {
+        createGameConfigIfMissing(GameConfigType.PRIZE, "🎉 Grand Prize", "red", null, 10);
+        createGameConfigIfMissing(GameConfigType.PRIZE, "🥇 First Prize", "orange", null, 20);
+        createGameConfigIfMissing(GameConfigType.PRIZE, "🥈 Second Prize", "gold", null, 30);
+        createGameConfigIfMissing(GameConfigType.PRIZE, "🥉 Third Prize", "green", null, 40);
+        createGameConfigIfMissing(GameConfigType.PRIZE, "Try Again", "blue", null, 50);
+        createGameConfigIfMissing(GameConfigType.PRIZE, "Lucky Draw", "purple", null, 60);
+        createGameConfigIfMissing(GameConfigType.PARAMETER, "spinDurationSeconds", "4", "How long the wheel spins, in seconds", 10);
+    }
+
+    private void createGameConfigIfMissing(GameConfigType type, String name, String value, String description, Integer sortOrder) {
+        if (gameConfigRepository.existsByTypeAndNameIgnoreCase(type, name)) {
+            return;
+        }
+        gameConfigRepository.save(new GameConfig()
             .type(type)
             .name(name)
             .value(value)

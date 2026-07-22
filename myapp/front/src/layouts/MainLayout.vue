@@ -22,6 +22,7 @@ import {
   SettingOutlined,
   TagsOutlined,
   GiftOutlined,
+  TrophyOutlined,
 } from '@ant-design/icons-vue'
 import { theme as appTheme, toggleTheme } from '../utils/theme'
 import { clearAuth, getUser } from '../utils/auth'
@@ -53,6 +54,7 @@ const keyToPath: Record<string, string> = {
   'tools': '/tools',
   'personal': '/personal',
   'blog-config': '/settings/blog-config',
+  'game-config': '/settings/game-config',
   'lottery': '/mini-game/lottery',
 }
 
@@ -179,6 +181,10 @@ function formatPopoverTime(timeStr: string): string {
             <a-menu-item key="blog-config" @click="navigate('blog-config')">
               <TagsOutlined />
               <span>{{ t('menu.blogConfig') }}</span>
+            </a-menu-item>
+            <a-menu-item key="game-config" @click="navigate('game-config')">
+              <TrophyOutlined />
+              <span>{{ t('menu.gameConfig') }}</span>
             </a-menu-item>
           </a-sub-menu>
           <a-sub-menu key="mini-game-sub">

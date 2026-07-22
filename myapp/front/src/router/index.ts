@@ -22,6 +22,7 @@ const router = createRouter({
         { path: 'blog/:id', name: 'blog-detail', component: () => import('../views/BlogDetailView.vue') },
         { path: 'blog/:id/edit', name: 'blog-edit', component: () => import('../views/BlogEditView.vue') },
         { path: 'settings/blog-config', name: 'blog-config', component: () => import('../views/BlogConfigView.vue') },
+        { path: 'settings/game-config', name: 'game-config', component: () => import('../views/GameConfigView.vue') },
         { path: 'notifications', name: 'notifications', component: () => import('../views/NotificationView.vue') },
         { path: 'device', name: 'device-list', component: () => import('../views/DeviceListView.vue') },
         { path: 'device/add', name: 'device-add', component: () => import('../views/AddDeviceView.vue') },
