@@ -4,7 +4,6 @@ import { gameConfigApi, type GameConfigDTO } from '../api/gameConfig'
 export interface GamePrize {
   id: number
   name: string
-  color: string
   sortOrder?: number | null
 }
 
@@ -31,7 +30,6 @@ function mapPrize(dto: GameConfigDTO): GamePrize {
   return {
     id: Number(dto.id),
     name: dto.name || '',
-    color: dto.value || '',
     sortOrder: dto.sortOrder,
   }
 }
@@ -62,11 +60,10 @@ export async function fetchGameConfig() {
   }
 }
 
-export async function addPrize(name: string, color: string) {
+export async function addPrize(name: string) {
   const created = await gameConfigApi.create({
     type: 'WHEEL_PRIZE',
     name,
-    value: color,
     sortOrder: nextSortOrder(gamePrizes.value),
   })
   gamePrizes.value.push(mapPrize(created))
@@ -79,7 +76,6 @@ export async function updatePrize(id: number, data: Partial<Omit<GamePrize, 'id'
     id,
     type: 'WHEEL_PRIZE',
     name: data.name ?? existing.name,
-    value: data.color ?? existing.color,
     sortOrder: data.sortOrder ?? existing.sortOrder,
   })
   replaceById(gamePrizes.value, mapPrize(updated))
@@ -90,11 +86,10 @@ export async function removePrize(id: number) {
   gamePrizes.value = gamePrizes.value.filter(prize => prize.id !== id)
 }
 
-export async function addClassPrize(name: string, color: string) {
+export async function addClassPrize(name: string) {
   const created = await gameConfigApi.create({
     type: 'LIST_PRIZE',
     name,
-    value: color,
     sortOrder: nextSortOrder(classPrizes.value),
   })
   classPrizes.value.push(mapPrize(created))
@@ -107,7 +102,6 @@ export async function updateClassPrize(id: number, data: Partial<Omit<GamePrize,
     id,
     type: 'LIST_PRIZE',
     name: data.name ?? existing.name,
-    value: data.color ?? existing.color,
     sortOrder: data.sortOrder ?? existing.sortOrder,
   })
   replaceById(classPrizes.value, mapPrize(updated))

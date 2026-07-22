@@ -11,7 +11,7 @@ onMounted(() => {
   if (!gamePrizes.value.length) fetchGameConfig()
 })
 
-const prizes = computed(() => gamePrizes.value.map(p => ({ label: p.name, color: p.color })))
+const prizes = computed(() => gamePrizes.value.map(p => ({ label: p.name })))
 </script>
 
 <template>

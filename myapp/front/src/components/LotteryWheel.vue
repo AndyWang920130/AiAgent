@@ -3,18 +3,22 @@ import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
-  prizes: { label: string; color: string }[]
+  prizes: { label: string }[]
   spinDurationSeconds: number
 }>()
 
 const { t } = useI18n()
+
+const DEFAULT_COLORS = ['red', 'orange', 'gold', 'green', 'cyan', 'blue', 'purple', 'magenta']
 
 const segmentAngle = computed(() => 360 / (props.prizes.length || 1))
 
 const wheelBackground = computed(() => {
   if (!props.prizes.length) return '#e5e7eb'
   const seg = segmentAngle.value
-  const stops = props.prizes.map((p, i) => `${p.color} ${i * seg}deg ${(i + 1) * seg}deg`).join(', ')
+  const stops = props.prizes
+    .map((_, i) => `${DEFAULT_COLORS[i % DEFAULT_COLORS.length]} ${i * seg}deg ${(i + 1) * seg}deg`)
+    .join(', ')
   return `conic-gradient(${stops})`
 })
 

@@ -21,8 +21,8 @@ import {
 
 const { t } = useI18n()
 
-const prizeForm = reactive({ name: '', color: 'blue' })
-const classPrizeForm = reactive({ name: '', color: 'blue' })
+const prizeForm = reactive({ name: '' })
+const classPrizeForm = reactive({ name: '' })
 const parameterForm = reactive({ name: '', value: '', description: '' })
 
 onMounted(() => {
@@ -30,14 +30,12 @@ onMounted(() => {
 })
 
 const prizeColumns = computed(() => [
-  { title: t('gameConfig.name'), dataIndex: 'name', key: 'name', width: 220 },
-  { title: t('gameConfig.color'), dataIndex: 'color', key: 'color' },
+  { title: t('gameConfig.name'), dataIndex: 'name', key: 'name' },
   { title: t('gameConfig.actions'), key: 'actions', width: 120 },
 ])
 
 const classPrizeColumns = computed(() => [
-  { title: t('gameConfig.name'), dataIndex: 'name', key: 'name', width: 220 },
-  { title: t('gameConfig.color'), dataIndex: 'color', key: 'color' },
+  { title: t('gameConfig.name'), dataIndex: 'name', key: 'name' },
   { title: t('gameConfig.actions'), key: 'actions', width: 120 },
 ])
 
@@ -58,15 +56,13 @@ function inputValue(event: Event) {
 
 async function handleAddPrize() {
   const name = normalize(prizeForm.name)
-  const color = normalize(prizeForm.color)
-  if (!name || !color) return message.warning(t('gameConfig.nameRequired'))
+  if (!name) return message.warning(t('gameConfig.nameRequired'))
   if (gamePrizes.value.some(prize => prize.name.toLowerCase() === name.toLowerCase())) {
     return message.warning(t('gameConfig.duplicateName'))
   }
   try {
-    await addPrize(name, color)
+    await addPrize(name)
     prizeForm.name = ''
-    prizeForm.color = 'blue'
     message.success(t('gameConfig.saved'))
   } catch {
     message.error(t('gameConfig.saveFailed'))
@@ -75,15 +71,13 @@ async function handleAddPrize() {
 
 async function handleAddClassPrize() {
   const name = normalize(classPrizeForm.name)
-  const color = normalize(classPrizeForm.color)
-  if (!name || !color) return message.warning(t('gameConfig.nameRequired'))
+  if (!name) return message.warning(t('gameConfig.nameRequired'))
   if (classPrizes.value.some(prize => prize.name.toLowerCase() === name.toLowerCase())) {
     return message.warning(t('gameConfig.duplicateName'))
   }
   try {
-    await addClassPrize(name, color)
+    await addClassPrize(name)
     classPrizeForm.name = ''
-    classPrizeForm.color = 'blue'
     message.success(t('gameConfig.saved'))
   } catch {
     message.error(t('gameConfig.saveFailed'))
@@ -118,29 +112,9 @@ async function savePrizeName(id: number, name: string) {
   }
 }
 
-async function savePrizeColor(id: number, color: string) {
-  try {
-    await updatePrize(id, { color })
-    message.success(t('gameConfig.saved'))
-  } catch {
-    message.error(t('gameConfig.saveFailed'))
-    fetchGameConfig()
-  }
-}
-
 async function saveClassPrizeName(id: number, name: string) {
   try {
     await updateClassPrize(id, { name })
-    message.success(t('gameConfig.saved'))
-  } catch {
-    message.error(t('gameConfig.saveFailed'))
-    fetchGameConfig()
-  }
-}
-
-async function saveClassPrizeColor(id: number, color: string) {
-  try {
-    await updateClassPrize(id, { color })
     message.success(t('gameConfig.saved'))
   } catch {
     message.error(t('gameConfig.saveFailed'))
@@ -226,16 +200,6 @@ async function deleteParameter(id: number) {
               />
             </a-form-item>
             <a-form-item>
-              <a-input
-                v-model:value="prizeForm.color"
-                :placeholder="t('gameConfig.colorValuePlaceholder')"
-                allow-clear
-              />
-            </a-form-item>
-            <a-form-item>
-              <a-tag :color="prizeForm.color">{{ prizeForm.name || prizeForm.color }}</a-tag>
-            </a-form-item>
-            <a-form-item>
               <a-button type="primary" @click="handleAddPrize">{{ t('gameConfig.add') }}</a-button>
             </a-form-item>
           </a-form>
@@ -253,15 +217,6 @@ async function deleteParameter(id: number) {
                   :value="record.name"
                   @change="savePrizeName(record.id, inputValue($event))"
                 />
-              </template>
-              <template v-else-if="column.key === 'color'">
-                <a-space>
-                  <a-input
-                    :value="record.color"
-                    @change="savePrizeColor(record.id, inputValue($event))"
-                  />
-                  <a-tag :color="record.color">{{ record.color }}</a-tag>
-                </a-space>
               </template>
               <template v-else-if="column.key === 'actions'">
                 <a-popconfirm
@@ -287,16 +242,6 @@ async function deleteParameter(id: number) {
               />
             </a-form-item>
             <a-form-item>
-              <a-input
-                v-model:value="classPrizeForm.color"
-                :placeholder="t('gameConfig.colorValuePlaceholder')"
-                allow-clear
-              />
-            </a-form-item>
-            <a-form-item>
-              <a-tag :color="classPrizeForm.color">{{ classPrizeForm.name || classPrizeForm.color }}</a-tag>
-            </a-form-item>
-            <a-form-item>
               <a-button type="primary" @click="handleAddClassPrize">{{ t('gameConfig.add') }}</a-button>
             </a-form-item>
           </a-form>
@@ -314,15 +259,6 @@ async function deleteParameter(id: number) {
                   :value="record.name"
                   @change="saveClassPrizeName(record.id, inputValue($event))"
                 />
-              </template>
-              <template v-else-if="column.key === 'color'">
-                <a-space>
-                  <a-input
-                    :value="record.color"
-                    @change="saveClassPrizeColor(record.id, inputValue($event))"
-                  />
-                  <a-tag :color="record.color">{{ record.color }}</a-tag>
-                </a-space>
               </template>
               <template v-else-if="column.key === 'actions'">
                 <a-popconfirm
