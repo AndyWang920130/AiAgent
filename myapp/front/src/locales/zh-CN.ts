@@ -20,7 +20,8 @@ export default {
     systemSetting: '系统设置',
     blogConfig: '博客配置',
     miniGame: '小游戏',
-    lottery: '抽奖',
+    lottery: '转盘抽奖',
+    classLottery: '名单抽奖',
     gameConfig: '游戏配置',
   },
   header: { profile: '个人资料', logout: '退出登录' },
@@ -239,11 +240,14 @@ export default {
     ipLookupDesc: 'IP 地址查询',
   },
   lottery: {
-    title: '幸运抽奖',
+    title: '转盘抽奖',
     spin: '开始抽奖',
     spinning: '抽奖中...',
     won: '恭喜你，抽中了：{prize}',
     noPrizes: '暂未配置奖品，请前往游戏配置进行设置。',
+  },
+  classLottery: {
+    title: '名单抽奖',
   },
   device: {
     listTitle: '📟 设备列表',
@@ -370,7 +374,8 @@ export default {
   gameConfig: {
     pageTitle: '游戏配置',
     pageSubtitle: '管理抽奖奖品和小游戏参数',
-    prizes: '奖品',
+    prizes: '转盘奖品',
+    classPrizes: '名单奖品',
     parameters: '参数',
     name: '名称',
     value: '值',

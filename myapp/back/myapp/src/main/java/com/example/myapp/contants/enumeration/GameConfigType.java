@@ -1,6 +1,7 @@
 package com.example.myapp.contants.enumeration;
 
 public enum GameConfigType {
-    PRIZE,
+    WHEEL_PRIZE,
+    LIST_PRIZE,
     PARAMETER
 }

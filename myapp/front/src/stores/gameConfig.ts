@@ -17,6 +17,7 @@ export interface GameParameter {
 }
 
 export const gamePrizes = ref<GamePrize[]>([])
+export const classPrizes = ref<GamePrize[]>([])
 export const gameParameters = ref<GameParameter[]>([])
 export const gameConfigLoading = ref(false)
 
@@ -48,11 +49,13 @@ function mapParameter(dto: GameConfigDTO): GameParameter {
 export async function fetchGameConfig() {
   gameConfigLoading.value = true
   try {
-    const [prizes, parameters] = await Promise.all([
-      gameConfigApi.list('PRIZE'),
+    const [prizes, classPrizeList, parameters] = await Promise.all([
+      gameConfigApi.list('WHEEL_PRIZE'),
+      gameConfigApi.list('LIST_PRIZE'),
       gameConfigApi.list('PARAMETER'),
     ])
     gamePrizes.value = prizes.map(mapPrize)
+    classPrizes.value = classPrizeList.map(mapPrize)
     gameParameters.value = parameters.map(mapParameter)
   } finally {
     gameConfigLoading.value = false
@@ -61,7 +64,7 @@ export async function fetchGameConfig() {
 
 export async function addPrize(name: string, color: string) {
   const created = await gameConfigApi.create({
-    type: 'PRIZE',
+    type: 'WHEEL_PRIZE',
     name,
     value: color,
     sortOrder: nextSortOrder(gamePrizes.value),
@@ -74,7 +77,7 @@ export async function updatePrize(id: number, data: Partial<Omit<GamePrize, 'id'
   if (!existing) return
   const updated = await gameConfigApi.update(id, {
     id,
-    type: 'PRIZE',
+    type: 'WHEEL_PRIZE',
     name: data.name ?? existing.name,
     value: data.color ?? existing.color,
     sortOrder: data.sortOrder ?? existing.sortOrder,
@@ -85,6 +88,34 @@ export async function updatePrize(id: number, data: Partial<Omit<GamePrize, 'id'
 export async function removePrize(id: number) {
   await gameConfigApi.remove(id)
   gamePrizes.value = gamePrizes.value.filter(prize => prize.id !== id)
+}
+
+export async function addClassPrize(name: string, color: string) {
+  const created = await gameConfigApi.create({
+    type: 'LIST_PRIZE',
+    name,
+    value: color,
+    sortOrder: nextSortOrder(classPrizes.value),
+  })
+  classPrizes.value.push(mapPrize(created))
+}
+
+export async function updateClassPrize(id: number, data: Partial<Omit<GamePrize, 'id'>>) {
+  const existing = classPrizes.value.find(prize => prize.id === id)
+  if (!existing) return
+  const updated = await gameConfigApi.update(id, {
+    id,
+    type: 'LIST_PRIZE',
+    name: data.name ?? existing.name,
+    value: data.color ?? existing.color,
+    sortOrder: data.sortOrder ?? existing.sortOrder,
+  })
+  replaceById(classPrizes.value, mapPrize(updated))
+}
+
+export async function removeClassPrize(id: number) {
+  await gameConfigApi.remove(id)
+  classPrizes.value = classPrizes.value.filter(prize => prize.id !== id)
 }
 
 export async function addParameter(name: string, value: string, description = '') {

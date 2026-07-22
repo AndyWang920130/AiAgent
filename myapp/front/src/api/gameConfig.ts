@@ -1,6 +1,6 @@
 import http from '../utils/axios'
 
-export type GameConfigType = 'PRIZE' | 'PARAMETER'
+export type GameConfigType = 'WHEEL_PRIZE' | 'LIST_PRIZE' | 'PARAMETER'
 
 export interface GameConfigDTO {
   id?: number

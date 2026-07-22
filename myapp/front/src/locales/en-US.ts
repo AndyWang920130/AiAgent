@@ -20,7 +20,8 @@ export default {
     systemSetting: 'System Setting',
     blogConfig: 'Blog Config',
     miniGame: 'Mini Game',
-    lottery: 'Lottery',
+    lottery: 'Wheel Lottery',
+    classLottery: 'List Lottery',
     gameConfig: 'Game Config',
   },
   header: { profile: 'Profile', logout: 'Logout' },
@@ -239,11 +240,14 @@ export default {
     ipLookupDesc: 'IP Address Lookup',
   },
   lottery: {
-    title: 'Lucky Draw',
+    title: 'Wheel Lottery',
     spin: 'Spin',
     spinning: 'Spinning...',
     won: 'Congratulations! You won: {prize}',
     noPrizes: 'No prizes configured yet. Set some up in Game Config.',
+  },
+  classLottery: {
+    title: 'List Lottery',
   },
   device: {
     listTitle: '📟 Device List',
@@ -370,7 +374,8 @@ export default {
   gameConfig: {
     pageTitle: 'Game Config',
     pageSubtitle: 'Manage lottery prizes and mini-game parameters',
-    prizes: 'Prizes',
+    prizes: 'Wheel Prizes',
+    classPrizes: 'List Prizes',
     parameters: 'Parameters',
     name: 'Name',
     value: 'Value',

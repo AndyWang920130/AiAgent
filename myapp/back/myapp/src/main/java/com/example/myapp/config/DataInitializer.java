@@ -124,13 +124,24 @@ public class DataInitializer {
     }
 
     private void initGameConfig() {
-        createGameConfigIfMissing(GameConfigType.PRIZE, "Grand Prize", "red", null, 10);
-        createGameConfigIfMissing(GameConfigType.PRIZE, "First Prize", "orange", null, 20);
-        createGameConfigIfMissing(GameConfigType.PRIZE, "Second Prize", "gold", null, 30);
-        createGameConfigIfMissing(GameConfigType.PRIZE, "Third Prize", "green", null, 40);
-        createGameConfigIfMissing(GameConfigType.PRIZE, "Try Again", "blue", null, 50);
-        createGameConfigIfMissing(GameConfigType.PRIZE, "Lucky Draw", "purple", null, 60);
+        createGameConfigIfMissing(GameConfigType.WHEEL_PRIZE, "Grand Prize", "red", null, 10);
+        createGameConfigIfMissing(GameConfigType.WHEEL_PRIZE, "First Prize", "orange", null, 20);
+        createGameConfigIfMissing(GameConfigType.WHEEL_PRIZE, "Second Prize", "gold", null, 30);
+        createGameConfigIfMissing(GameConfigType.WHEEL_PRIZE, "Third Prize", "green", null, 40);
+        createGameConfigIfMissing(GameConfigType.WHEEL_PRIZE, "Try Again", "blue", null, 50);
+        createGameConfigIfMissing(GameConfigType.WHEEL_PRIZE, "Lucky Draw", "purple", null, 60);
         createGameConfigIfMissing(GameConfigType.PARAMETER, "spinDurationSeconds", "4", "How long the wheel spins, in seconds", 10);
+
+        String[] listPrizeColors = { "red", "orange", "gold", "green", "cyan", "blue", "purple", "magenta" };
+        for (int i = 1; i <= 20; i++) {
+            createGameConfigIfMissing(
+                GameConfigType.LIST_PRIZE,
+                "Student " + i,
+                listPrizeColors[(i - 1) % listPrizeColors.length],
+                null,
+                i * 10
+            );
+        }
     }
 
     private void createGameConfigIfMissing(GameConfigType type, String name, String value, String description, Integer sortOrder) {

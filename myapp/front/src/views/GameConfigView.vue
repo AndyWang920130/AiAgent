@@ -4,12 +4,16 @@ import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import {
   gamePrizes,
+  classPrizes,
   gameParameters,
   gameConfigLoading,
   fetchGameConfig,
   addPrize,
   updatePrize,
   removePrize,
+  addClassPrize,
+  updateClassPrize,
+  removeClassPrize,
   addParameter,
   updateParameter,
   removeParameter,
@@ -18,6 +22,7 @@ import {
 const { t } = useI18n()
 
 const prizeForm = reactive({ name: '', color: 'blue' })
+const classPrizeForm = reactive({ name: '', color: 'blue' })
 const parameterForm = reactive({ name: '', value: '', description: '' })
 
 onMounted(() => {
@@ -25,6 +30,12 @@ onMounted(() => {
 })
 
 const prizeColumns = computed(() => [
+  { title: t('gameConfig.name'), dataIndex: 'name', key: 'name', width: 220 },
+  { title: t('gameConfig.color'), dataIndex: 'color', key: 'color' },
+  { title: t('gameConfig.actions'), key: 'actions', width: 120 },
+])
+
+const classPrizeColumns = computed(() => [
   { title: t('gameConfig.name'), dataIndex: 'name', key: 'name', width: 220 },
   { title: t('gameConfig.color'), dataIndex: 'color', key: 'color' },
   { title: t('gameConfig.actions'), key: 'actions', width: 120 },
@@ -56,6 +67,23 @@ async function handleAddPrize() {
     await addPrize(name, color)
     prizeForm.name = ''
     prizeForm.color = 'blue'
+    message.success(t('gameConfig.saved'))
+  } catch {
+    message.error(t('gameConfig.saveFailed'))
+  }
+}
+
+async function handleAddClassPrize() {
+  const name = normalize(classPrizeForm.name)
+  const color = normalize(classPrizeForm.color)
+  if (!name || !color) return message.warning(t('gameConfig.nameRequired'))
+  if (classPrizes.value.some(prize => prize.name.toLowerCase() === name.toLowerCase())) {
+    return message.warning(t('gameConfig.duplicateName'))
+  }
+  try {
+    await addClassPrize(name, color)
+    classPrizeForm.name = ''
+    classPrizeForm.color = 'blue'
     message.success(t('gameConfig.saved'))
   } catch {
     message.error(t('gameConfig.saveFailed'))
@@ -100,6 +128,26 @@ async function savePrizeColor(id: number, color: string) {
   }
 }
 
+async function saveClassPrizeName(id: number, name: string) {
+  try {
+    await updateClassPrize(id, { name })
+    message.success(t('gameConfig.saved'))
+  } catch {
+    message.error(t('gameConfig.saveFailed'))
+    fetchGameConfig()
+  }
+}
+
+async function saveClassPrizeColor(id: number, color: string) {
+  try {
+    await updateClassPrize(id, { color })
+    message.success(t('gameConfig.saved'))
+  } catch {
+    message.error(t('gameConfig.saveFailed'))
+    fetchGameConfig()
+  }
+}
+
 async function saveParameterName(id: number, name: string) {
   try {
     await updateParameter(id, { name })
@@ -133,6 +181,15 @@ async function saveParameterDescription(id: number, description: string) {
 async function deletePrize(id: number) {
   try {
     await removePrize(id)
+    message.success(t('gameConfig.deleted'))
+  } catch {
+    message.error(t('gameConfig.deleteFailed'))
+  }
+}
+
+async function deleteClassPrize(id: number) {
+  try {
+    await removeClassPrize(id)
     message.success(t('gameConfig.deleted'))
   } catch {
     message.error(t('gameConfig.deleteFailed'))
@@ -210,6 +267,67 @@ async function deleteParameter(id: number) {
                 <a-popconfirm
                   :title="t('gameConfig.deleteConfirm')"
                   @confirm="deletePrize(record.id)"
+                >
+                  <a-button danger type="link">{{ t('gameConfig.delete') }}</a-button>
+                </a-popconfirm>
+              </template>
+            </template>
+          </a-table>
+        </a-card>
+      </a-tab-pane>
+
+      <a-tab-pane key="class-prizes" :tab="t('gameConfig.classPrizes')">
+        <a-card :bordered="false" class="config-card">
+          <a-form layout="inline" class="config-form" @submit.prevent>
+            <a-form-item>
+              <a-input
+                v-model:value="classPrizeForm.name"
+                :placeholder="t('gameConfig.prizeNamePlaceholder')"
+                allow-clear
+              />
+            </a-form-item>
+            <a-form-item>
+              <a-input
+                v-model:value="classPrizeForm.color"
+                :placeholder="t('gameConfig.colorValuePlaceholder')"
+                allow-clear
+              />
+            </a-form-item>
+            <a-form-item>
+              <a-tag :color="classPrizeForm.color">{{ classPrizeForm.name || classPrizeForm.color }}</a-tag>
+            </a-form-item>
+            <a-form-item>
+              <a-button type="primary" @click="handleAddClassPrize">{{ t('gameConfig.add') }}</a-button>
+            </a-form-item>
+          </a-form>
+
+          <a-table
+            :columns="classPrizeColumns"
+            :data-source="classPrizes"
+            :pagination="{ pageSize: 10 }"
+            row-key="id"
+            size="middle"
+          >
+            <template #bodyCell="{ column, record }">
+              <template v-if="column.key === 'name'">
+                <a-input
+                  :value="record.name"
+                  @change="saveClassPrizeName(record.id, inputValue($event))"
+                />
+              </template>
+              <template v-else-if="column.key === 'color'">
+                <a-space>
+                  <a-input
+                    :value="record.color"
+                    @change="saveClassPrizeColor(record.id, inputValue($event))"
+                  />
+                  <a-tag :color="record.color">{{ record.color }}</a-tag>
+                </a-space>
+              </template>
+              <template v-else-if="column.key === 'actions'">
+                <a-popconfirm
+                  :title="t('gameConfig.deleteConfirm')"
+                  @confirm="deleteClassPrize(record.id)"
                 >
                   <a-button danger type="link">{{ t('gameConfig.delete') }}</a-button>
                 </a-popconfirm>
