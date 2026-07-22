@@ -17,10 +17,10 @@ CREATE TABLE IF NOT EXISTS `twsny_game_config` (
 INSERT IGNORE INTO `twsny_game_config`
   (`id`, `type`, `name`, `config_value`, `description`, `sort_order`, `created_by`)
 VALUES
-  (1, 'PRIZE', '🎉 Grand Prize', 'red', NULL, 10, 'system'),
-  (2, 'PRIZE', '🥇 First Prize', 'orange', NULL, 20, 'system'),
-  (3, 'PRIZE', '🥈 Second Prize', 'gold', NULL, 30, 'system'),
-  (4, 'PRIZE', '🥉 Third Prize', 'green', NULL, 40, 'system'),
+  (1, 'PRIZE', 'Grand Prize', 'red', NULL, 10, 'system'),
+  (2, 'PRIZE', 'First Prize', 'orange', NULL, 20, 'system'),
+  (3, 'PRIZE', 'Second Prize', 'gold', NULL, 30, 'system'),
+  (4, 'PRIZE', 'Third Prize', 'green', NULL, 40, 'system'),
   (5, 'PRIZE', 'Try Again', 'blue', NULL, 50, 'system'),
   (6, 'PRIZE', 'Lucky Draw', 'purple', NULL, 60, 'system'),
   (7, 'PARAMETER', 'spinDurationSeconds', '4', 'How long the wheel spins, in seconds', 10, 'system');
