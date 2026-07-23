@@ -3,6 +3,7 @@ package com.example.myapp.config;
 import com.example.myapp.contants.enumeration.BlogStatus;
 import com.example.myapp.contants.enumeration.BlogConfigType;
 import com.example.myapp.contants.enumeration.GameConfigType;
+import com.example.myapp.contants.enumeration.Role;
 import com.example.myapp.domain.Blog;
 import com.example.myapp.domain.BlogConfig;
 import com.example.myapp.domain.GameConfig;
@@ -28,8 +29,8 @@ public class DataInitializer {
 
     @PostConstruct
     void init() {
-        createUserIfMissing("admin", "Administrator", "admin@example.com", "admin");
-        createUserIfMissing("user", "Demo User", "user@example.com", "password");
+        createUserIfMissing("admin", "Administrator", "admin@example.com", "admin", Role.ADMIN);
+        createUserIfMissing("user", "Demo User", "user@example.com", "password", Role.USER);
 
         if (blogRepository.count() == 0) {
             blogRepository.save(new Blog()
@@ -156,7 +157,7 @@ public class DataInitializer {
             .sortOrder(sortOrder));
     }
 
-    private void createUserIfMissing(String login, String name, String email, String password) {
+    private void createUserIfMissing(String login, String name, String email, String password, Role role) {
         if (userRepository.existsByLogin(login)) {
             return;
         }
@@ -166,6 +167,7 @@ public class DataInitializer {
             .nickName(name)
             .email(email)
             .password(passwordEncoder.encode(password))
+            .role(role)
             .deleted(false));
     }
 }

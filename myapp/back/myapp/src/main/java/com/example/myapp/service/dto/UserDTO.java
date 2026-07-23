@@ -2,6 +2,7 @@ package com.example.myapp.service.dto;
 
 
 import com.example.myapp.contants.enumeration.Gender;
+import com.example.myapp.contants.enumeration.Role;
 import com.example.myapp.contants.enumeration.UserType;
 import com.example.myapp.domain.User;
 import jakarta.validation.constraints.*;
@@ -34,6 +35,8 @@ public class UserDTO implements Serializable {
     private Gender gender;
 
     private UserType userType;
+
+    private Role role;
 
     @Size(max = 32)
     private String phoneNumber;
@@ -116,6 +119,14 @@ public class UserDTO implements Serializable {
 
     public void setUserType(UserType userType) {
         this.userType = userType;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     public String getPhoneNumber() {
@@ -230,6 +241,7 @@ public class UserDTO implements Serializable {
             ", password='" + getPassword() + "'" +
             ", gender='" + getGender() + "'" +
             ", userType='" + getUserType() + "'" +
+            ", role='" + getRole() + "'" +
             ", phoneNumber='" + getPhoneNumber() + "'" +
             ", email='" + getEmail() + "'" +
             ", avatar='" + getAvatar() + "'" +

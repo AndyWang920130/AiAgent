@@ -1,5 +1,6 @@
 package com.example.myapp.security;
 
+import com.example.myapp.contants.enumeration.Role;
 import com.example.myapp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.User;
@@ -19,7 +20,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         return userRepository.findOneByLogin(username)
                 .map(u -> User.withUsername(u.getLogin())
                         .password(u.getPassword())
-                        .roles("USER")
+                        .roles((u.getRole() != null ? u.getRole() : Role.USER).name())
                         .build())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }

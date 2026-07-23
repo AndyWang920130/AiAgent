@@ -1,6 +1,7 @@
 package com.example.myapp.domain;
 
 import com.example.myapp.contants.enumeration.Gender;
+import com.example.myapp.contants.enumeration.Role;
 import com.example.myapp.contants.enumeration.UserType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
@@ -45,6 +46,10 @@ public class User extends AbstractAuditingEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "user_type")
     private UserType userType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role")
+    private Role role;
 
     @Size(max = 32)
     @Column(name = "phone_number", length = 32)
@@ -163,6 +168,19 @@ public class User extends AbstractAuditingEntity {
         this.userType = userType;
     }
 
+    public Role getRole() {
+        return this.role;
+    }
+
+    public User role(Role role) {
+        this.setRole(role);
+        return this;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
     public String getPhoneNumber() {
         return this.phoneNumber;
     }
@@ -272,6 +290,7 @@ public class User extends AbstractAuditingEntity {
             ", password='" + getPassword() + "'" +
             ", gender='" + getGender() + "'" +
             ", userType='" + getUserType() + "'" +
+            ", role='" + getRole() + "'" +
             ", phoneNumber='" + getPhoneNumber() + "'" +
             ", email='" + getEmail() + "'" +
             ", avatar='" + getAvatar() + "'" +

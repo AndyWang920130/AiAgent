@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS `twsny_user` (
   `password` varchar(512) DEFAULT NULL,
   `gender` varchar(255) DEFAULT NULL,
   `user_type` varchar(255) DEFAULT NULL,
+  `role` varchar(255) DEFAULT NULL,
   `phone_number` varchar(32) DEFAULT NULL,
   `email` varchar(512) DEFAULT NULL,
   `avatar` varchar(512) DEFAULT NULL,
@@ -120,10 +121,10 @@ CREATE TABLE IF NOT EXISTS `twsny_blog_comment` (
 
 
 INSERT IGNORE INTO `twsny_user`
-  (`id`, `login`, `real_name`, `nick_name`, `password`, `email`, `deleted`, `created_by`, `created_date`, `last_modified_by`, `last_modified_date`)
+  (`id`, `login`, `real_name`, `nick_name`, `password`, `email`, `role`, `deleted`, `created_by`, `created_date`, `last_modified_by`, `last_modified_date`)
 VALUES
-  (1, 'admin', 'Administrator', 'Administrator', '$2a$10$KtddfykXOj0CzPYJEL6cDuqPVbWN5HUBSnyRgy51UFs1AxBdjbfGG', 'admin@example.com', b'0', 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6)),
-  (2, 'user', 'Demo User', 'Demo User', '$2a$10$OSrgGE7b8DrxitBTAF3hRetlUyld/mldHYDCTMfS1mjakmcF8H5FG', 'user@example.com', b'0', 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6));
+  (1, 'admin', 'Administrator', 'Administrator', '$2a$10$KtddfykXOj0CzPYJEL6cDuqPVbWN5HUBSnyRgy51UFs1AxBdjbfGG', 'admin@example.com', 'ADMIN', b'0', 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6)),
+  (2, 'user', 'Demo User', 'Demo User', '$2a$10$OSrgGE7b8DrxitBTAF3hRetlUyld/mldHYDCTMfS1mjakmcF8H5FG', 'user@example.com', 'USER', b'0', 'system', CURRENT_TIMESTAMP(6), 'system', CURRENT_TIMESTAMP(6));
 
 INSERT IGNORE INTO `twsny_blog`
   (`id`, `title`, `summary`, `content`, `category`, `tag`, `tag_color`, `author`, `status`, `visibility`, `view_count`, `likes`, `comment_count`, `deleted`, `created_by`, `created_date`, `last_modified_by`, `last_modified_date`)
