@@ -1,5 +1,6 @@
 package com.example.myapp.web.rest;
 
+import com.example.myapp.contants.enumeration.Role;
 import com.example.myapp.domain.User;
 import com.example.myapp.repository.UserRepository;
 import com.example.myapp.security.JwtUtil;
@@ -42,8 +43,9 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("message", "Invalid username or password"));
         }
         User user = userRepository.findOneByLogin(req.username()).orElseThrow();
-        String token = jwtUtil.generate(req.username(), List.of("ROLE_USER"));
-        return ResponseEntity.ok(new AuthResponse(token, new UserInfo(user.getLogin(), user.getRealName(), user.getEmail())));
+        Role role = user.getRole() != null ? user.getRole() : Role.USER;
+        String token = jwtUtil.generate(req.username(), List.of("ROLE_" + role.name()));
+        return ResponseEntity.ok(new AuthResponse(token, new UserInfo(user.getLogin(), user.getRealName(), user.getEmail(), role.name())));
     }
 
     @PostMapping("/register")

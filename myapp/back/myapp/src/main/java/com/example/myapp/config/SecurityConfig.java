@@ -43,6 +43,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/v1/auth/**", "/api/v1/code/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/blog-configs/**", "/api/v1/game-configs/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/v1/blog-configs/**", "/api/v1/game-configs/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/blog-configs/**", "/api/v1/game-configs/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex

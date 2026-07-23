@@ -44,7 +44,8 @@ const router = useRouter()
 const route = useRoute()
 const collapsed = ref(false)
 const bellOpen = ref(false)
-const user = getUser<{ username: string; name: string }>()
+const user = getUser<{ username: string; name: string; role?: string }>()
+const isAdmin = computed(() => user?.role === 'ADMIN')
 
 const keyToPath: Record<string, string> = {
   'home': '/home',
@@ -175,7 +176,7 @@ function formatPopoverTime(timeStr: string): string {
               <span>{{ t('menu.addDevice') }}</span>
             </a-menu-item>
           </a-sub-menu>
-          <a-sub-menu key="settings-sub">
+          <a-sub-menu v-if="isAdmin" key="settings-sub">
             <template #title>
               <SettingOutlined />
               <span>{{ t('menu.systemSetting') }}</span>
