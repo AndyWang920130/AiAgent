@@ -119,6 +119,20 @@ CREATE TABLE IF NOT EXISTS `twsny_blog_comment` (
     FOREIGN KEY (`blog_id`) REFERENCES `twsny_blog` (`id`) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `twsny_achievement` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `login` varchar(512) NOT NULL,
+  `type` varchar(50) NOT NULL,
+  `points` bigint DEFAULT 0,
+  `created_by` varchar(50) NOT NULL DEFAULT 'system',
+  `created_date` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  `last_modified_by` varchar(50) DEFAULT NULL,
+  `last_modified_date` datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_twsny_achievement_login_type` (`login`, `type`),
+  KEY `idx_twsny_achievement_login` (`login`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 INSERT IGNORE INTO `twsny_user`
   (`id`, `login`, `real_name`, `nick_name`, `password`, `email`, `role`, `deleted`, `created_by`, `created_date`, `last_modified_by`, `last_modified_date`)
@@ -158,5 +172,6 @@ ALTER TABLE `twsny_blog` AUTO_INCREMENT = 1000;
 ALTER TABLE `twsny_blog_config` AUTO_INCREMENT = 1000;
 ALTER TABLE `twsny_blog_view_history` AUTO_INCREMENT = 1000;
 ALTER TABLE `twsny_blog_like_history` AUTO_INCREMENT = 1000;
+ALTER TABLE `twsny_achievement` AUTO_INCREMENT = 1000;
 
 SET FOREIGN_KEY_CHECKS = 1;

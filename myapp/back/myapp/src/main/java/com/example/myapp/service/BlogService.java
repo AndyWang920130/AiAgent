@@ -1,5 +1,7 @@
 package com.example.myapp.service;
 
+import com.example.myapp.contants.enumeration.AchievementType;
+import com.example.myapp.contants.enumeration.BlogStatus;
 import com.example.myapp.contants.enumeration.BlogVisibility;
 import com.example.myapp.domain.Blog;
 import com.example.myapp.repository.BlogRepository;
@@ -33,10 +35,13 @@ public class BlogService {
 
     private final BlogViewHistoryService blogViewHistoryService;
 
-    public BlogService(BlogRepository blogRepository, BlogMapper blogMapper, BlogViewHistoryService blogViewHistoryService) {
+    private final AchievementService achievementService;
+
+    public BlogService(BlogRepository blogRepository, BlogMapper blogMapper, BlogViewHistoryService blogViewHistoryService, AchievementService achievementService) {
         this.blogRepository = blogRepository;
         this.blogMapper = blogMapper;
         this.blogViewHistoryService = blogViewHistoryService;
+        this.achievementService = achievementService;
     }
 
     /**
@@ -58,6 +63,9 @@ public class BlogService {
             blog.setAuthor(currentUsername);
         }
         blog = blogRepository.save(blog);
+        if (blog.getStatus() == BlogStatus.PUBLISHED) {
+            achievementService.award(blog.getAuthor(), AchievementType.PUBLISH_ARTICLE);
+        }
         return blogMapper.toDto(blog);
     }
 

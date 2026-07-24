@@ -17,6 +17,7 @@ import { message, Modal } from 'ant-design-vue'
 import { clearAuth, getUser } from '../utils/auth'
 import { deletePost, fetchMyPosts, loadingMyPosts, myPosts, type Post } from '../stores/blog'
 import { blogApi } from '../api/blog'
+import { achievementApi } from '../api/achievement'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -38,6 +39,8 @@ const editForm = reactive({ ...profile })
 const passwordForm = reactive({ current: '', next: '', confirm: '' })
 const showPasswordModal = ref(false)
 const likesReceived = ref(0)
+const achievementPoints = ref(0)
+const achievementItems = ref<{ type: string; points: number }[]>([])
 
 onMounted(async () => {
   await Promise.all([
@@ -45,14 +48,29 @@ onMounted(async () => {
     blogApi.getMyLikesReceived().then(total => {
       likesReceived.value = total
     }),
+    achievementApi.getMy().then(summary => {
+      achievementPoints.value = summary.total
+      achievementItems.value = summary.items
+    }),
   ])
 })
 
 const activityData = computed(() => [
   { label: () => t('personal.postsWritten'), value: myPosts.value.length, icon: FileTextOutlined, color: '#1890ff' },
   { label: () => t('personal.likesReceived'), value: likesReceived.value, icon: HeartOutlined, color: '#eb2f96' },
-  { label: () => t('personal.achievements'), value: 47, icon: TrophyOutlined, color: '#faad14' },
+  { label: () => t('personal.achievements'), value: achievementPoints.value, icon: TrophyOutlined, color: '#faad14' },
 ])
+
+const achievementLabelKeys: Record<string, string> = {
+  REGISTRATION: 'personal.achRegistration',
+  PUBLISH_ARTICLE: 'personal.achPublish',
+  RECEIVE_LIKE: 'personal.achLike',
+}
+
+function achLabel(type: string): string {
+  const key = achievementLabelKeys[type]
+  return key ? t(key) : type
+}
 
 const blogColumns = computed(() => [
   { title: t('blog.colTitle'), dataIndex: 'title', key: 'title', ellipsis: true },
@@ -166,6 +184,19 @@ function logout() {
             </a-card>
           </a-col>
         </a-row>
+
+        <!-- Achievement breakdown -->
+        <a-card :title="t('personal.achievementsBreakdown')" :bordered="false" style="margin-bottom: 24px">
+          <a-empty v-if="achievementItems.length === 0" :description="t('personal.noAchievements')" />
+          <a-list v-else :data-source="achievementItems" size="small">
+            <template #renderItem="{ item }">
+              <a-list-item>
+                <span>{{ achLabel(item.type) }}</span>
+                <a-tag color="gold">{{ item.points }}</a-tag>
+              </a-list-item>
+            </template>
+          </a-list>
+        </a-card>
 
         <!-- Edit Profile Form -->
         <a-card v-if="editMode" :title="t('personal.editProfileTitle')" :bordered="false">

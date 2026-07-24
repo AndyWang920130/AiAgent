@@ -1,9 +1,11 @@
 package com.example.myapp.web.rest;
 
+import com.example.myapp.contants.enumeration.AchievementType;
 import com.example.myapp.contants.enumeration.Role;
 import com.example.myapp.domain.User;
 import com.example.myapp.repository.UserRepository;
 import com.example.myapp.security.JwtUtil;
+import com.example.myapp.service.AchievementService;
 import com.example.myapp.service.EmailVerificationService;
 import com.example.myapp.web.rest.vm.AuthResponse;
 import com.example.myapp.web.rest.vm.LoginRequest;
@@ -33,6 +35,7 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final EmailVerificationService emailVerificationService;
+    private final AchievementService achievementService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req) {
@@ -66,6 +69,7 @@ public class AuthController {
                 .email(req.email())
                 .password(passwordEncoder.encode(req.password()))
                 .deleted(false));
+        achievementService.award(req.username(), AchievementType.REGISTRATION);
         return ResponseEntity.ok(Map.of("message", "Registration successful"));
     }
 }

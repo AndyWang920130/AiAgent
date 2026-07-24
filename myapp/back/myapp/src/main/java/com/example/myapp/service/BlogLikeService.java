@@ -1,5 +1,6 @@
 package com.example.myapp.service;
 
+import com.example.myapp.contants.enumeration.AchievementType;
 import com.example.myapp.domain.Blog;
 import com.example.myapp.domain.BlogLikeHistory;
 import com.example.myapp.repository.BlogLikeHistoryRepository;
@@ -19,10 +20,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class BlogLikeService {
     private final BlogLockRepository blogRepository;
     private final BlogLikeHistoryRepository historyRepository;
+    private final AchievementService achievementService;
 
-    public BlogLikeService(BlogLockRepository blogRepository, BlogLikeHistoryRepository historyRepository) {
+    public BlogLikeService(BlogLockRepository blogRepository, BlogLikeHistoryRepository historyRepository, AchievementService achievementService) {
         this.blogRepository = blogRepository;
         this.historyRepository = historyRepository;
+        this.achievementService = achievementService;
     }
 
     public Optional<BlogLikeStatusDTO> like(Long blogId) {
@@ -43,6 +46,9 @@ public class BlogLikeService {
             blog.setLikes(likes(blog) + 1);
             blog.setLastModifiedBy(username);
             blogRepository.save(blog);
+            if (!username.equals(blog.getAuthor())) {
+                achievementService.award(blog.getAuthor(), AchievementType.RECEIVE_LIKE);
+            }
             return status(blog, history);
         });
     }

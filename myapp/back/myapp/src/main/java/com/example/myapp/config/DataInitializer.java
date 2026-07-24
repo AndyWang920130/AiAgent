@@ -3,19 +3,26 @@ package com.example.myapp.config;
 import com.example.myapp.contants.enumeration.BlogStatus;
 import com.example.myapp.contants.enumeration.BlogConfigType;
 import com.example.myapp.contants.enumeration.GameConfigType;
+import com.example.myapp.contants.enumeration.AchievementType;
 import com.example.myapp.contants.enumeration.Role;
 import com.example.myapp.domain.Blog;
 import com.example.myapp.domain.BlogConfig;
 import com.example.myapp.domain.GameConfig;
 import com.example.myapp.domain.User;
+import com.example.myapp.repository.AchievementRepository;
 import com.example.myapp.repository.BlogConfigRepository;
 import com.example.myapp.repository.BlogRepository;
 import com.example.myapp.repository.GameConfigRepository;
 import com.example.myapp.repository.UserRepository;
+import com.example.myapp.service.AchievementService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -26,6 +33,8 @@ public class DataInitializer {
     private final BlogRepository blogRepository;
     private final BlogConfigRepository blogConfigRepository;
     private final GameConfigRepository gameConfigRepository;
+    private final AchievementRepository achievementRepository;
+    private final AchievementService achievementService;
 
     @PostConstruct
     void init() {
@@ -92,6 +101,40 @@ public class DataInitializer {
 
         initBlogConfig();
         initGameConfig();
+        backfillAchievements();
+    }
+
+    /**
+     * One-time backfill of achievement points from content that existed before
+     * the achievement system (e.g. seeded blogs). Runs per author only when that
+     * author has no achievement rows yet, so it is safe across restarts and never
+     * double-counts. Registration points are not backfilled — there is no record
+     * of who self-registered vs. was seeded.
+     */
+    private void backfillAchievements() {
+        List<Blog> blogs = blogRepository.findAll();
+        Map<String, long[]> byAuthor = new HashMap<>(); // author -> [publishedCount, likesReceived]
+        for (Blog blog : blogs) {
+            String author = blog.getAuthor();
+            if (author == null || author.isBlank()) {
+                continue;
+            }
+            long[] tally = byAuthor.computeIfAbsent(author, a -> new long[2]);
+            if (blog.getStatus() == BlogStatus.PUBLISHED) {
+                tally[0] += 1;
+            }
+            tally[1] += blog.getLikes() == null ? 0L : blog.getLikes();
+        }
+        for (Map.Entry<String, long[]> entry : byAuthor.entrySet()) {
+            String author = entry.getKey();
+            if (achievementRepository.existsByLogin(author)) {
+                continue; // already has achievements — leave live-earned data untouched
+            }
+            long published = entry.getValue()[0];
+            long likes = entry.getValue()[1];
+            achievementService.award(author, AchievementType.PUBLISH_ARTICLE, published * AchievementType.PUBLISH_ARTICLE.getDefaultPoints());
+            achievementService.award(author, AchievementType.RECEIVE_LIKE, likes * AchievementType.RECEIVE_LIKE.getDefaultPoints());
+        }
     }
 
     private void initBlogConfig() {
