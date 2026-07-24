@@ -18,7 +18,6 @@ import {
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   CloseCircleOutlined,
-  DesktopOutlined,
   SettingOutlined,
   TagsOutlined,
   GiftOutlined,
@@ -51,8 +50,6 @@ const keyToPath: Record<string, string> = {
   'home': '/home',
   'blog-list': '/blog',
   'blog-add': '/blog/add',
-  'device-list': '/device',
-  'device-add': '/device/add',
   'tools': '/tools',
   'personal': '/personal',
   'blog-config': '/settings/blog-config',
@@ -160,20 +157,6 @@ function formatPopoverTime(timeStr: string): string {
             <a-menu-item key="blog-add" @click="navigate('blog-add')">
               <PlusCircleOutlined />
               <span>{{ t('menu.addBlog') }}</span>
-            </a-menu-item>
-          </a-sub-menu>
-          <a-sub-menu key="device-sub">
-            <template #title>
-              <DesktopOutlined />
-              <span>{{ t('menu.device') }}</span>
-            </template>
-            <a-menu-item key="device-list" @click="navigate('device-list')">
-              <UnorderedListOutlined />
-              <span>{{ t('menu.deviceList') }}</span>
-            </a-menu-item>
-            <a-menu-item key="device-add" @click="navigate('device-add')">
-              <PlusCircleOutlined />
-              <span>{{ t('menu.addDevice') }}</span>
             </a-menu-item>
           </a-sub-menu>
           <a-sub-menu v-if="isAdmin" key="settings-sub">
