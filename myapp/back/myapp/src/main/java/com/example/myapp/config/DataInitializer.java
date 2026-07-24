@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -35,6 +36,13 @@ public class DataInitializer {
     private final GameConfigRepository gameConfigRepository;
     private final AchievementRepository achievementRepository;
     private final AchievementService achievementService;
+
+    /**
+     * Logins created by {@link #createUserIfMissing} at startup. These accounts are
+     * seeded rather than self-registered, so they are excluded from registration
+     * points backfill.
+     */
+    private static final Set<String> SEEDED_LOGINS = Set.of("admin", "user");
 
     @PostConstruct
     void init() {
@@ -102,6 +110,7 @@ public class DataInitializer {
         initBlogConfig();
         initGameConfig();
         backfillAchievements();
+        backfillRegistrationAchievements();
     }
 
     /**
@@ -134,6 +143,27 @@ public class DataInitializer {
             long likes = entry.getValue()[1];
             achievementService.award(author, AchievementType.PUBLISH_ARTICLE, published * AchievementType.PUBLISH_ARTICLE.getDefaultPoints());
             achievementService.award(author, AchievementType.RECEIVE_LIKE, likes * AchievementType.RECEIVE_LIKE.getDefaultPoints());
+        }
+    }
+
+    /**
+     * One-time backfill of registration points for users who signed up before the
+     * achievement system existed. Awards {@link AchievementType#REGISTRATION} to every
+     * user except the seeded accounts (see {@link #SEEDED_LOGINS}), which were created
+     * by the initializer rather than through self-registration. Guarded per user by an
+     * existing REGISTRATION row, so it never double-counts live-earned points and is
+     * safe to re-run across restarts.
+     */
+    private void backfillRegistrationAchievements() {
+        for (User user : userRepository.findAll()) {
+            String login = user.getLogin();
+            if (login == null || login.isBlank() || SEEDED_LOGINS.contains(login)) {
+                continue;
+            }
+            if (achievementRepository.findByLoginAndType(login, AchievementType.REGISTRATION).isPresent()) {
+                continue; // already has registration points — leave live-earned data untouched
+            }
+            achievementService.award(login, AchievementType.REGISTRATION);
         }
     }
 

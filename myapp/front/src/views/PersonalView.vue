@@ -191,8 +191,10 @@ function logout() {
           <a-list v-else :data-source="achievementItems" size="small">
             <template #renderItem="{ item }">
               <a-list-item>
-                <span>{{ achLabel(item.type) }}</span>
-                <a-tag color="gold">{{ item.points }}</a-tag>
+                <div class="ach-row">
+                  <span class="ach-label">{{ achLabel(item.type) }}</span>
+                  <a-tag color="gold" class="ach-points">{{ item.points }}</a-tag>
+                </div>
               </a-list-item>
             </template>
           </a-list>
@@ -321,4 +323,7 @@ function logout() {
 .activity-label { font-size: 13px; color: #888; }
 .post-link { color: #1890ff; cursor: pointer; }
 .post-link:hover { text-decoration: underline; }
+.ach-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.ach-label { font-size: 14px; color: #555; }
+.ach-points { margin: 0; font-weight: 600; }
 </style>
