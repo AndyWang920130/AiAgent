@@ -22,6 +22,12 @@ const busy = ref(false)
 const DEFAULT_PASSWORD = 'twsny'
 const effectivePassword = () => password.value || DEFAULT_PASSWORD
 
+// Web Crypto (crypto.subtle) is only exposed in a secure context: HTTPS, or
+// localhost/127.0.0.1. Over plain http:// on a deployed server it is undefined,
+// so encryption/decryption cannot work — detect that up front and explain it
+// rather than throwing a generic error.
+const cryptoAvailable = typeof crypto !== 'undefined' && !!crypto.subtle
+
 // IV length depends on the mode: GCM = 12 bytes, CBC = 16 bytes.
 const ivLength = computed(() => (algorithm.value === 'AES-GCM' ? 12 : 16))
 const SALT_LENGTH = 16
@@ -114,6 +120,10 @@ async function decrypt() {
 }
 
 function validate(): boolean {
+  if (!cryptoAvailable) {
+    message.error(t('aes.insecureContext'))
+    return false
+  }
   if (!input.value) {
     message.warning(t('aes.needInput'))
     return false
@@ -144,6 +154,14 @@ async function copyOutput() {
         <LockOutlined style="color: #1890ff; margin-right: 8px" />{{ t('aes.title') }}
       </template>
 
+      <a-alert
+        v-if="!cryptoAvailable"
+        :message="t('aes.insecureContextTitle')"
+        :description="t('aes.insecureContext')"
+        type="warning"
+        show-icon
+        style="margin-bottom: 16px"
+      />
       <a-alert :message="t('aes.hint')" type="info" show-icon style="margin-bottom: 16px" />
 
       <a-form layout="vertical">
@@ -187,11 +205,11 @@ async function copyOutput() {
         </a-form-item>
 
         <a-space wrap style="margin-bottom: 16px">
-          <a-button type="primary" :loading="busy" @click="encrypt">
+          <a-button type="primary" :loading="busy" :disabled="!cryptoAvailable" @click="encrypt">
             <template #icon><LockOutlined /></template>
             {{ t('aes.encrypt') }}
           </a-button>
-          <a-button :loading="busy" @click="decrypt">
+          <a-button :loading="busy" :disabled="!cryptoAvailable" @click="decrypt">
             <template #icon><UnlockOutlined /></template>
             {{ t('aes.decrypt') }}
           </a-button>

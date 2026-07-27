@@ -63,6 +63,8 @@ export default {
     copied: 'Copied to clipboard',
     copyFailed: 'Copy failed',
     needInput: 'Please enter some input',
+    insecureContextTitle: 'Encryption unavailable',
+    insecureContext: 'Your browser only allows AES encryption over a secure connection. Open this page via HTTPS (or localhost) — over plain HTTP the Web Crypto API is disabled by the browser.',
     encryptFailed: 'Encryption failed',
     decryptFailed: 'Decryption failed — check the options, password, and ciphertext',
   },

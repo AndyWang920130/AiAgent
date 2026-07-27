@@ -63,6 +63,8 @@ export default {
     copied: '已复制到剪贴板',
     copyFailed: '复制失败',
     needInput: '请输入内容',
+    insecureContextTitle: '加密不可用',
+    insecureContext: '浏览器仅允许在安全连接下使用 AES 加密。请通过 HTTPS（或 localhost）访问本页面——在普通 HTTP 下，浏览器会禁用 Web Crypto API。',
     encryptFailed: '加密失败',
     decryptFailed: '解密失败——请检查选项、密码和密文',
   },
