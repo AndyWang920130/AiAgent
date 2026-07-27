@@ -7,14 +7,17 @@ import com.example.myapp.contants.enumeration.AchievementType;
 import com.example.myapp.contants.enumeration.Role;
 import com.example.myapp.domain.Blog;
 import com.example.myapp.domain.BlogConfig;
+import com.example.myapp.domain.EcgRecord;
 import com.example.myapp.domain.GameConfig;
 import com.example.myapp.domain.User;
 import com.example.myapp.repository.AchievementRepository;
 import com.example.myapp.repository.BlogConfigRepository;
 import com.example.myapp.repository.BlogRepository;
+import com.example.myapp.repository.EcgRecordRepository;
 import com.example.myapp.repository.GameConfigRepository;
 import com.example.myapp.repository.UserRepository;
 import com.example.myapp.service.AchievementService;
+import com.example.myapp.service.EcgSignalGenerator;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,6 +39,7 @@ public class DataInitializer {
     private final GameConfigRepository gameConfigRepository;
     private final AchievementRepository achievementRepository;
     private final AchievementService achievementService;
+    private final EcgRecordRepository ecgRecordRepository;
 
     /**
      * Logins created by {@link #createUserIfMissing} at startup. These accounts are
@@ -109,8 +113,37 @@ public class DataInitializer {
 
         initBlogConfig();
         initGameConfig();
+        seedEcgRecords();
         backfillAchievements();
         backfillRegistrationAchievements();
+    }
+
+    /**
+     * Seed a few synthetic single-lead ECG recordings (lead II, 10 s @ 250 Hz) so the
+     * admin ECG chart has data to display. Runs only when no records exist, so it is
+     * safe across restarts (and re-seeds the in-memory dev database each boot).
+     */
+    private void seedEcgRecords() {
+        if (ecgRecordRepository.count() > 0) {
+            return;
+        }
+        int sampleRate = 250;
+        int durationSec = 10;
+        record Seed(String name, int bpm) {}
+        List<Seed> seeds = List.of(
+            new Seed("Normal Sinus Rhythm 60 bpm", 60),
+            new Seed("Sinus Tachycardia 120 bpm", 120),
+            new Seed("Sinus Bradycardia 45 bpm", 45)
+        );
+        for (Seed seed : seeds) {
+            double[] samples = EcgSignalGenerator.generate(seed.bpm(), sampleRate, durationSec);
+            ecgRecordRepository.save(new EcgRecord()
+                .name(seed.name())
+                .leadName("II")
+                .sampleRate(sampleRate)
+                .heartRate(seed.bpm())
+                .samples(EcgSignalGenerator.toCsv(samples)));
+        }
     }
 
     /**

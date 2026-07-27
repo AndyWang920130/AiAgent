@@ -23,6 +23,10 @@ import {
   GiftOutlined,
   TrophyOutlined,
   TeamOutlined,
+  HeartOutlined,
+  AppstoreOutlined,
+  LockOutlined,
+  NumberOutlined,
 } from '@ant-design/icons-vue'
 import { theme as appTheme, toggleTheme } from '../utils/theme'
 import { clearAuth, getUser } from '../utils/auth'
@@ -50,10 +54,13 @@ const keyToPath: Record<string, string> = {
   'home': '/home',
   'blog-list': '/blog',
   'blog-add': '/blog/add',
-  'tools': '/tools',
+  'third-party-tools': '/tools',
+  'aes-tool': '/tools/aes',
+  'sha-tool': '/tools/sha',
   'personal': '/personal',
   'blog-config': '/settings/blog-config',
   'game-config': '/settings/game-config',
+  'ecg-chart': '/ecg',
   'lottery': '/mini-game/lottery',
   'class-lottery': '/mini-game/class-lottery',
 }
@@ -173,6 +180,10 @@ function formatPopoverTime(timeStr: string): string {
               <span>{{ t('menu.gameConfig') }}</span>
             </a-menu-item>
           </a-sub-menu>
+          <a-menu-item v-if="isAdmin" key="ecg-chart" @click="navigate('ecg-chart')">
+            <HeartOutlined />
+            <span>{{ t('menu.ecgChart') }}</span>
+          </a-menu-item>
           <a-sub-menu key="mini-game-sub">
             <template #title>
               <GiftOutlined />
@@ -187,10 +198,24 @@ function formatPopoverTime(timeStr: string): string {
               <span>{{ t('menu.classLottery') }}</span>
             </a-menu-item>
           </a-sub-menu>
-          <a-menu-item key="tools" @click="navigate('tools')">
-            <ToolOutlined />
-            <span>{{ t('menu.tools') }}</span>
-          </a-menu-item>
+          <a-sub-menu key="tools-sub">
+            <template #title>
+              <ToolOutlined />
+              <span>{{ t('menu.tools') }}</span>
+            </template>
+            <a-menu-item key="third-party-tools" @click="navigate('third-party-tools')">
+              <AppstoreOutlined />
+              <span>{{ t('menu.thirdPartyTools') }}</span>
+            </a-menu-item>
+            <a-menu-item key="aes-tool" @click="navigate('aes-tool')">
+              <LockOutlined />
+              <span>{{ t('menu.aesTool') }}</span>
+            </a-menu-item>
+            <a-menu-item key="sha-tool" @click="navigate('sha-tool')">
+              <NumberOutlined />
+              <span>{{ t('menu.shaTool') }}</span>
+            </a-menu-item>
+          </a-sub-menu>
           <a-menu-item key="personal" @click="navigate('personal')">
             <UserOutlined />
             <span>{{ t('menu.personal') }}</span>
