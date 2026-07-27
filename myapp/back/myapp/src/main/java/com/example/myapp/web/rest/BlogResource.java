@@ -5,6 +5,7 @@ import com.example.myapp.service.BlogViewHistoryService;
 import com.example.myapp.service.dto.BlogDTO;
 import com.example.myapp.service.dto.BlogViewHistoryDTO;
 import com.example.myapp.utils.PageUtils;
+import com.example.myapp.web.rest.vm.BlogStats;
 import com.example.myapp.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -110,6 +111,15 @@ public class BlogResource {
         Page<BlogDTO> page = blogService.findAll(pageable);
         HttpHeaders headers = PageUtils.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());
+    }
+
+    /**
+     * GET /blogs/stats : Get site-wide aggregate stats over public blogs.
+     */
+    @GetMapping("/blogs/stats")
+    public ResponseEntity<BlogStats> getBlogStats() {
+        LOG.debug("REST request to get public Blog stats");
+        return ResponseEntity.ok(blogService.getStats());
     }
 
     /**

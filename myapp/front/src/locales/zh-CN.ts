@@ -90,9 +90,9 @@ export default {
   },
   home: {
     totalPosts: '总文章数',
-    followers: '粉丝数',
-    achievements: '成就',
-    streakDays: '连续天数',
+    totalViews: '总浏览量',
+    totalLikes: '总点赞数',
+    totalComments: '总评论数',
     welcome: '👋 欢迎来到 MyApp',
     tagline: '您的个人技术博客与知识中心，每天探索、学习与成长。',
     latestPosts: '📝 最新文章',

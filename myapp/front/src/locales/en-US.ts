@@ -90,9 +90,9 @@ export default {
   },
   home: {
     totalPosts: 'Total Posts',
-    followers: 'Followers',
-    achievements: 'Achievements',
-    streakDays: 'Streak Days',
+    totalViews: 'Total Views',
+    totalLikes: 'Total Likes',
+    totalComments: 'Total Comments',
     welcome: '👋 Welcome to MyApp',
     tagline: 'Your personal tech blog & knowledge hub. Explore, learn, and grow every day.',
     latestPosts: '📝 Latest Posts',

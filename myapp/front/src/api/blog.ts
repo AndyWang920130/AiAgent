@@ -125,6 +125,11 @@ export const blogApi = {
     http.get('/api/v1/blogs/likes-received/my')
       .then(r => Number(r.data.totalLikes || 0)),
 
+  getStats: () =>
+    http.get('/api/v1/blogs/stats').then(r => r.data as {
+      totalPosts: number; totalViews: number; totalLikes: number; totalComments: number
+    }),
+
   remove: (id: number) =>
     http.delete(`/api/v1/blogs/${id}`),
 

@@ -3,13 +3,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { posts, loading, fetchPosts } from '../stores/blog'
+import { blogApi } from '../api/blog'
 import {
   RocketOutlined,
-  TrophyOutlined,
-  ThunderboltOutlined,
-  StarOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
   EyeOutlined,
   LikeOutlined,
   MessageOutlined,
@@ -19,16 +15,24 @@ import {
 const { t } = useI18n()
 const router = useRouter()
 
+const statsLoading = ref(true)
+const siteStats = ref({ totalPosts: 0, totalViews: 0, totalLikes: 0, totalComments: 0 })
+
 const stats = computed(() => [
-  { title: t('home.totalPosts'), value: 128, icon: RocketOutlined, color: '#1890ff', change: 12, up: true },
-  { title: t('home.followers'), value: 3840, icon: StarOutlined, color: '#52c41a', change: 8, up: true },
-  { title: t('home.achievements'), value: 47, icon: TrophyOutlined, color: '#faad14', change: 3, up: true },
-  { title: t('home.streakDays'), value: 21, icon: ThunderboltOutlined, color: '#eb2f96', change: 2, up: false },
+  { title: t('home.totalPosts'), value: siteStats.value.totalPosts, icon: RocketOutlined, color: '#1890ff' },
+  { title: t('home.totalViews'), value: siteStats.value.totalViews, icon: EyeOutlined, color: '#52c41a' },
+  { title: t('home.totalLikes'), value: siteStats.value.totalLikes, icon: LikeOutlined, color: '#eb2f96' },
+  { title: t('home.totalComments'), value: siteStats.value.totalComments, icon: MessageOutlined, color: '#faad14' },
 ])
 
 const activeTab = ref('all')
 
-onMounted(() => fetchPosts())
+onMounted(() => {
+  fetchPosts()
+  blogApi.getStats()
+    .then(data => { siteStats.value = data })
+    .finally(() => { statsLoading.value = false })
+})
 
 const categories = computed(() => [
   'all',
@@ -56,7 +60,7 @@ const latestPosts = computed(() => {
     <!-- Stats -->
     <a-row :gutter="[16, 16]" style="margin-bottom: 24px">
       <a-col :xs="24" :sm="12" :lg="6" v-for="stat in stats" :key="stat.title">
-        <a-card :bordered="false" class="stat-card">
+        <a-card :bordered="false" class="stat-card" :loading="statsLoading">
           <a-statistic
             :title="stat.title"
             :value="stat.value"
@@ -64,12 +68,6 @@ const latestPosts = computed(() => {
           >
             <template #prefix>
               <component :is="stat.icon" :style="{ color: stat.color }" />
-            </template>
-            <template #suffix>
-              <span :style="{ fontSize: '14px', color: stat.up ? '#52c41a' : '#ff4d4f' }">
-                <component :is="stat.up ? ArrowUpOutlined : ArrowDownOutlined" />
-                {{ stat.change }}%
-              </span>
             </template>
           </a-statistic>
         </a-card>

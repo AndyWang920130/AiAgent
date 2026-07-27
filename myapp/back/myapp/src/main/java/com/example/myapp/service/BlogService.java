@@ -9,6 +9,7 @@ import com.example.myapp.service.dto.BlogViewHistoryDTO;
 import com.example.myapp.service.dto.BlogDTO;
 import com.example.myapp.service.mapper.BlogMapper;
 import com.example.myapp.utils.SecurityUtil;
+import com.example.myapp.web.rest.vm.BlogStats;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -133,6 +134,24 @@ public class BlogService {
     public Page<BlogDTO> findAll(Pageable pageable) {
         LOG.debug("Request to get all Blogs");
         return blogRepository.findByVisibility(BlogVisibility.PUBLIC, pageable).map(blogMapper::toDto);
+    }
+
+    /**
+     * Aggregate site-wide stats over public blogs, mirroring the predicate used by
+     * {@link #findAll(Pageable)} so the numbers agree with the public blog list.
+     *
+     * @return count of public blogs plus the sums of their views, likes, and comments.
+     */
+    @Transactional(readOnly = true)
+    public BlogStats getStats() {
+        LOG.debug("Request to aggregate public Blog stats");
+        Object[] row = blogRepository.aggregateStats(BlogVisibility.PUBLIC).get(0);
+        return new BlogStats(
+            ((Number) row[0]).longValue(),
+            ((Number) row[1]).longValue(),
+            ((Number) row[2]).longValue(),
+            ((Number) row[3]).longValue()
+        );
     }
 
     /**
