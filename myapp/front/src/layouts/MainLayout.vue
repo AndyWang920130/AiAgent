@@ -27,6 +27,7 @@ import {
   AppstoreOutlined,
   LockOutlined,
   NumberOutlined,
+  ApiOutlined,
 } from '@ant-design/icons-vue'
 import { theme as appTheme, toggleTheme } from '../utils/theme'
 import { clearAuth, getUser } from '../utils/auth'
@@ -61,6 +62,7 @@ const keyToPath: Record<string, string> = {
   'blog-config': '/settings/blog-config',
   'game-config': '/settings/game-config',
   'ecg-chart': '/ecg',
+  'data-integration': '/data-integration',
   'lottery': '/mini-game/lottery',
   'class-lottery': '/mini-game/class-lottery',
 }
@@ -183,6 +185,10 @@ function formatPopoverTime(timeStr: string): string {
           <a-menu-item v-if="isAdmin" key="ecg-chart" @click="navigate('ecg-chart')">
             <HeartOutlined />
             <span>{{ t('menu.ecgChart') }}</span>
+          </a-menu-item>
+          <a-menu-item v-if="isAdmin" key="data-integration" @click="navigate('data-integration')">
+            <ApiOutlined />
+            <span>{{ t('menu.dataIntegration') }}</span>
           </a-menu-item>
           <a-sub-menu key="mini-game-sub">
             <template #title>

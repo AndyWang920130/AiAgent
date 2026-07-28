@@ -47,6 +47,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/api/v1/blog-configs/**", "/api/v1/game-configs/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/blog-configs/**", "/api/v1/game-configs/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/ecg-records/**").hasRole("ADMIN")
+                .requestMatchers("/api/v1/data-integrations/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex

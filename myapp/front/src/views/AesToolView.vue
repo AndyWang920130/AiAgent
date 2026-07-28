@@ -12,6 +12,7 @@ type Algo = 'AES-GCM' | 'AES-CBC'
 const algorithm = ref<Algo>('AES-GCM')      // default AES-GCM
 const keySize = ref<128 | 192 | 256>(256)   // default 256-bit
 
+  
 const input = ref('')
 const password = ref('')
 const saltInput = ref('')                     // optional fixed salt (Base64), blank = random

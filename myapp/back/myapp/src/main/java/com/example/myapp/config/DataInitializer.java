@@ -7,12 +7,14 @@ import com.example.myapp.contants.enumeration.AchievementType;
 import com.example.myapp.contants.enumeration.Role;
 import com.example.myapp.domain.Blog;
 import com.example.myapp.domain.BlogConfig;
+import com.example.myapp.domain.DataIntegration;
 import com.example.myapp.domain.EcgRecord;
 import com.example.myapp.domain.GameConfig;
 import com.example.myapp.domain.User;
 import com.example.myapp.repository.AchievementRepository;
 import com.example.myapp.repository.BlogConfigRepository;
 import com.example.myapp.repository.BlogRepository;
+import com.example.myapp.repository.DataIntegrationRepository;
 import com.example.myapp.repository.EcgRecordRepository;
 import com.example.myapp.repository.GameConfigRepository;
 import com.example.myapp.repository.UserRepository;
@@ -40,6 +42,7 @@ public class DataInitializer {
     private final AchievementRepository achievementRepository;
     private final AchievementService achievementService;
     private final EcgRecordRepository ecgRecordRepository;
+    private final DataIntegrationRepository dataIntegrationRepository;
 
     /**
      * Logins created by {@link #createUserIfMissing} at startup. These accounts are
@@ -114,8 +117,78 @@ public class DataInitializer {
         initBlogConfig();
         initGameConfig();
         seedEcgRecords();
+        seedDataIntegrations();
         backfillAchievements();
         backfillRegistrationAchievements();
+    }
+
+    /**
+     * Seed a few example Data Integration configs so the admin list isn't empty on a
+     * fresh database. These point at this app's own API so they can be executed locally
+     * out of the box. Runs only when no records exist (safe across restarts).
+     */
+    private void seedDataIntegrations() {
+        if (dataIntegrationRepository.count() > 0) {
+            return;
+        }
+        String selfBaseUrl = "http://localhost:8080";
+
+        // 1) Image captcha code — public endpoint, no auth needed.
+        dataIntegrationRepository.save(new DataIntegration()
+            .name("Image Code")
+            .description("Fetch an image captcha code (uuid_CODE).")
+            .baseUrl(selfBaseUrl)
+            .path("/api/v1/code/image")
+            .method("GET")
+            .headers("[]")
+            .queryParams("[]")
+            .bodyConfig("[]")
+            .responseConfig("[]"));
+
+        // 2) Login — obtains a JWT used to authenticate the blog-list call below.
+        DataIntegration login = dataIntegrationRepository.save(new DataIntegration()
+            .name("Login (demo)")
+            .description("Authenticate as admin and return a JWT token.")
+            .baseUrl(selfBaseUrl)
+            .path("/api/v1/auth/login")
+            .method("POST")
+            .headers("[]")
+            .queryParams("[]")
+            .bodyConfig("[{\"key\":\"username\",\"value\":\"admin\"},{\"key\":\"password\",\"value\":\"admin\"}]")
+            .responseConfig("[{\"key\":\"token\",\"value\":\"token\"}]"));
+
+        // 3) Blog list — requires auth; chains off the Login integration to inject
+        //    the token as "Authorization: Bearer <token>".
+        dataIntegrationRepository.save(new DataIntegration()
+            .name("Blog List")
+            .description("Fetch the public blog list (requires authentication).")
+            .baseUrl(selfBaseUrl)
+            .path("/api/v1/blogs")
+            .method("GET")
+            .headers("[]")
+            .queryParams("[{\"key\":\"size\",\"value\":\"100\"},{\"key\":\"sort\",\"value\":\"id,desc\"}]")
+            .bodyConfig("[]")
+            .responseConfig("[]")
+            .authSourceId(login.getId())
+            .authTokenPath("token")
+            .authHeaderName("Authorization")
+            .authHeaderTemplate("Bearer {{token}}"));
+
+        // 4) Blog detail — a single blog by id; also auth-required, chained to Login.
+        dataIntegrationRepository.save(new DataIntegration()
+            .name("Blog Detail")
+            .description("Fetch a single blog by id (requires authentication).")
+            .baseUrl(selfBaseUrl)
+            .path("/api/v1/blogs/1")
+            .method("GET")
+            .headers("[]")
+            .queryParams("[]")
+            .bodyConfig("[]")
+            .responseConfig("[]")
+            .authSourceId(login.getId())
+            .authTokenPath("token")
+            .authHeaderName("Authorization")
+            .authHeaderTemplate("Bearer {{token}}"));
     }
 
     /**
