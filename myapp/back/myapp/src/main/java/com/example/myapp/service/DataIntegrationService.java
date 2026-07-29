@@ -89,11 +89,14 @@ public class DataIntegrationService {
         existing.setHeaders(dto.getHeaders());
         existing.setQueryParams(dto.getQueryParams());
         existing.setBodyConfig(dto.getBodyConfig());
+        existing.setBodyType(dto.getBodyType());
+        existing.setBodyRaw(dto.getBodyRaw());
         existing.setResponseConfig(dto.getResponseConfig());
         existing.setAuthSourceId(dto.getAuthSourceId());
         existing.setAuthTokenPath(dto.getAuthTokenPath());
         existing.setAuthHeaderName(dto.getAuthHeaderName());
         existing.setAuthHeaderTemplate(dto.getAuthHeaderTemplate());
+        existing.setAuthBodyProperty(dto.getAuthBodyProperty());
         existing.setLastModifiedBy(SecurityUtil.getCurrentUsername());
         return dataIntegrationMapper.toDto(dataIntegrationRepository.save(existing));
     }
@@ -128,30 +131,52 @@ public class DataIntegrationService {
             .orElseThrow(() -> new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnotfound"));
 
         Map<String, String> extraHeaders = new LinkedHashMap<>();
+        Map<String, String> extraBodyProps = new LinkedHashMap<>();
 
-        // Optional auth pre-step: run the linked source, extract a token, inject a header.
-        // Single-level only — the source's own auth source is ignored (prevents cycles).
-        Long authSourceId = entity.getAuthSourceId();
-        if (authSourceId != null && !authSourceId.equals(entity.getId())) {
-            Optional<DataIntegration> authOpt = dataIntegrationRepository.findById(authSourceId);
-            if (authOpt.isEmpty()) {
-                return new ExecuteResult(0, 0, Map.of(), "", false, "auth step: auth source not found");
+        // Optional pre-step: run the linked source integration, extract a value from its
+        // response, and inject that value into a header and/or a request-body property. The
+        // source is NOT necessarily an authentication interface — the extracted value may be
+        // a token, an id, or any scalar. Single-level only — the source's own source link is
+        // ignored (prevents cycles).
+        Long sourceId = entity.getAuthSourceId();
+        if (sourceId != null && !sourceId.equals(entity.getId())) {
+            Optional<DataIntegration> sourceOpt = dataIntegrationRepository.findById(sourceId);
+            if (sourceOpt.isEmpty()) {
+                return new ExecuteResult(0, 0, Map.of(), "", false, "pre-step: source integration not found");
             }
-            ExecuteResult authResult = performCall(authOpt.get(), Map.of());
-            if (!authResult.success()) {
-                String detail = authResult.error() != null ? authResult.error() : ("HTTP " + authResult.status());
-                return new ExecuteResult(authResult.status(), authResult.durationMs(), authResult.headers(),
-                    authResult.body(), false, "auth step failed: " + detail);
+            ExecuteResult sourceResult = performCall(sourceOpt.get(), Map.of(), Map.of());
+            if (!sourceResult.success()) {
+                String detail = sourceResult.error() != null ? sourceResult.error() : ("HTTP " + sourceResult.status());
+                return new ExecuteResult(sourceResult.status(), sourceResult.durationMs(), sourceResult.headers(),
+                    sourceResult.body(), false, "pre-step failed: " + detail);
             }
-            String token = extractByPath(authResult.body(), entity.getAuthTokenPath());
-            String headerName = (entity.getAuthHeaderName() == null || entity.getAuthHeaderName().isBlank())
-                ? "Authorization" : entity.getAuthHeaderName().trim();
-            String template = (entity.getAuthHeaderTemplate() == null || entity.getAuthHeaderTemplate().isBlank())
-                ? "Bearer {{token}}" : entity.getAuthHeaderTemplate();
-            extraHeaders.put(headerName, template.replace("{{token}}", token == null ? "" : token));
+            String extracted = extractByPath(sourceResult.body(), entity.getAuthTokenPath());
+            String value = extracted == null ? "" : extracted;
+
+            boolean headerConfigured = (entity.getAuthHeaderName() != null && !entity.getAuthHeaderName().isBlank())
+                || (entity.getAuthHeaderTemplate() != null && !entity.getAuthHeaderTemplate().isBlank());
+            String bodyProperty = entity.getAuthBodyProperty();
+            boolean bodyConfigured = bodyProperty != null && !bodyProperty.isBlank();
+
+            // Inject a header when one is explicitly configured, or by default when no body
+            // target was given (preserves the original auth-token behavior for existing
+            // integrations). When only a body property is set, skip the header so a plain
+            // value-forwarding chain sends no spurious Authorization header.
+            if (headerConfigured || !bodyConfigured) {
+                String headerName = (entity.getAuthHeaderName() == null || entity.getAuthHeaderName().isBlank())
+                    ? "Authorization" : entity.getAuthHeaderName().trim();
+                String template = (entity.getAuthHeaderTemplate() == null || entity.getAuthHeaderTemplate().isBlank())
+                    ? "Bearer {{token}}" : entity.getAuthHeaderTemplate();
+                extraHeaders.put(headerName, template.replace("{{token}}", value));
+            }
+
+            // Inject the extracted value into a request-body property (dotted path).
+            if (bodyConfigured) {
+                extraBodyProps.put(bodyProperty.trim(), value);
+            }
         }
 
-        return performCall(entity, extraHeaders);
+        return performCall(entity, extraHeaders, extraBodyProps);
     }
 
     /**
@@ -177,11 +202,49 @@ public class DataIntegrationService {
     }
 
     /**
-     * Build and send the HTTP request for a single integration, applying {@code extraHeaders}
-     * (e.g. an injected auth token) after the entity's own headers. Captures the response for
-     * all statuses; wraps connection/timeout failures into an unsuccessful result.
+     * Inject each {@code dotted.path → value} into the JSON body, creating intermediate
+     * objects as needed and overwriting any existing leaf. Starts from an empty object when
+     * {@code bodyJson} is null/blank or not a JSON object. On any failure the original body
+     * is returned unchanged, so a bad injection never breaks the call.
      */
-    private ExecuteResult performCall(DataIntegration entity, Map<String, String> extraHeaders) {
+    private String injectBodyProperties(String bodyJson, Map<String, String> props) {
+        try {
+            com.fasterxml.jackson.databind.JsonNode root = (bodyJson == null || bodyJson.isBlank())
+                ? objectMapper.createObjectNode()
+                : objectMapper.readTree(bodyJson);
+            if (!(root instanceof com.fasterxml.jackson.databind.node.ObjectNode)) {
+                // Only object bodies can carry named properties; leave arrays/scalars untouched.
+                return bodyJson;
+            }
+            com.fasterxml.jackson.databind.node.ObjectNode rootObj =
+                (com.fasterxml.jackson.databind.node.ObjectNode) root;
+            for (Map.Entry<String, String> prop : props.entrySet()) {
+                String[] segments = prop.getKey().trim().split("\\.");
+                com.fasterxml.jackson.databind.node.ObjectNode cursor = rootObj;
+                for (int i = 0; i < segments.length - 1; i++) {
+                    com.fasterxml.jackson.databind.JsonNode child = cursor.get(segments[i]);
+                    if (child instanceof com.fasterxml.jackson.databind.node.ObjectNode) {
+                        cursor = (com.fasterxml.jackson.databind.node.ObjectNode) child;
+                    } else {
+                        cursor = cursor.putObject(segments[i]);
+                    }
+                }
+                cursor.put(segments[segments.length - 1], prop.getValue());
+            }
+            return objectMapper.writeValueAsString(rootObj);
+        } catch (Exception e) {
+            return bodyJson;
+        }
+    }
+
+    /**
+     * Build and send the HTTP request for a single integration, applying {@code extraHeaders}
+     * (e.g. an injected auth token) after the entity's own headers, and {@code extraBodyProps}
+     * (dotted-path → value) into the JSON request body. Captures the response for all statuses;
+     * wraps connection/timeout failures into an unsuccessful result.
+     */
+    private ExecuteResult performCall(DataIntegration entity, Map<String, String> extraHeaders,
+                                      Map<String, String> extraBodyProps) {
         HttpMethod method = HttpMethod.valueOf(
             (entity.getMethod() == null || entity.getMethod().isBlank() ? "GET" : entity.getMethod().trim().toUpperCase())
         );
@@ -198,21 +261,35 @@ public class DataIntegrationService {
         boolean hasContentType = headerRows.stream()
             .anyMatch(h -> "content-type".equalsIgnoreCase(h.getOrDefault("key", "")));
 
-        // Assemble a JSON body from the key/value rows for methods that carry one.
+        // Assemble the request body for methods that carry one. Two modes:
+        //   RAW → send bodyRaw verbatim (supports nested objects, arrays, non-string types);
+        //   KV  → build a flat JSON object from the key/value rows.
         String bodyJson = null;
         boolean sendBody = method == HttpMethod.POST || method == HttpMethod.PUT || method == HttpMethod.PATCH;
         if (sendBody) {
-            List<Map<String, String>> bodyRows = parseKeyValues(entity.getBodyConfig());
-            if (!bodyRows.isEmpty()) {
-                Map<String, String> bodyMap = new LinkedHashMap<>();
-                for (Map<String, String> row : bodyRows) {
-                    bodyMap.put(row.getOrDefault("key", ""), row.getOrDefault("value", ""));
+            if ("RAW".equalsIgnoreCase(entity.getBodyType())) {
+                String raw = entity.getBodyRaw();
+                if (raw != null && !raw.isBlank()) {
+                    bodyJson = raw;
                 }
-                try {
-                    bodyJson = objectMapper.writeValueAsString(bodyMap);
-                } catch (Exception e) {
-                    bodyJson = null;
+            } else {
+                List<Map<String, String>> bodyRows = parseKeyValues(entity.getBodyConfig());
+                if (!bodyRows.isEmpty()) {
+                    Map<String, String> bodyMap = new LinkedHashMap<>();
+                    for (Map<String, String> row : bodyRows) {
+                        bodyMap.put(row.getOrDefault("key", ""), row.getOrDefault("value", ""));
+                    }
+                    try {
+                        bodyJson = objectMapper.writeValueAsString(bodyMap);
+                    } catch (Exception e) {
+                        bodyJson = null;
+                    }
                 }
+            }
+            // Inject any auth-derived body properties (dotted path → value). Starts from an
+            // empty object when no body was configured, so injection alone still sends a body.
+            if (!extraBodyProps.isEmpty()) {
+                bodyJson = injectBodyProperties(bodyJson, extraBodyProps);
             }
         }
 
@@ -289,6 +366,9 @@ public class DataIntegrationService {
         dto.setBaseUrl(trim(dto.getBaseUrl()));
         dto.setPath(trim(dto.getPath()));
         dto.setMethod(trim(dto.getMethod()));
+        // Default the body mode so a missing value always means the flat key/value path.
+        String bodyType = trim(dto.getBodyType());
+        dto.setBodyType("RAW".equalsIgnoreCase(bodyType) ? "RAW" : "KV");
     }
 
     private String trim(String value) {

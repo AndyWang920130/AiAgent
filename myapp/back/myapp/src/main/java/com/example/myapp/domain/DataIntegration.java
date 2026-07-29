@@ -54,6 +54,16 @@ public class DataIntegration extends AbstractAuditingEntity {
     @Column(name = "body_config", columnDefinition = "longtext")
     private String bodyConfig;
 
+    /** How the request body is built: "KV" = the bodyConfig key/value rows, "RAW" = the bodyRaw JSON sent as-is. */
+    @Size(max = 10)
+    @Column(name = "body_type", length = 10)
+    private String bodyType;
+
+    /** Raw request body sent verbatim when bodyType is "RAW" (supports nested objects, arrays, non-string types). */
+    @Lob
+    @Column(name = "body_raw", columnDefinition = "longtext")
+    private String bodyRaw;
+
     @Lob
     @Column(name = "response_config", columnDefinition = "longtext")
     private String responseConfig;
@@ -76,6 +86,15 @@ public class DataIntegration extends AbstractAuditingEntity {
     @Size(max = 500)
     @Column(name = "auth_header_template", length = 500)
     private String authHeaderTemplate;
+
+    /**
+     * Optional dotted path of a request-body property to inject the extracted value into
+     * (e.g. {@code data.token} creates/overwrites a nested "token" under "data"). Blank = none.
+     * Applies only to methods that send a body.
+     */
+    @Size(max = 500)
+    @Column(name = "auth_body_property", length = 500)
+    private String authBodyProperty;
 
     public Long getId() {
         return id;
@@ -194,6 +213,32 @@ public class DataIntegration extends AbstractAuditingEntity {
         this.bodyConfig = bodyConfig;
     }
 
+    public String getBodyType() {
+        return bodyType;
+    }
+
+    public DataIntegration bodyType(String bodyType) {
+        this.setBodyType(bodyType);
+        return this;
+    }
+
+    public void setBodyType(String bodyType) {
+        this.bodyType = bodyType;
+    }
+
+    public String getBodyRaw() {
+        return bodyRaw;
+    }
+
+    public DataIntegration bodyRaw(String bodyRaw) {
+        this.setBodyRaw(bodyRaw);
+        return this;
+    }
+
+    public void setBodyRaw(String bodyRaw) {
+        this.bodyRaw = bodyRaw;
+    }
+
     public String getResponseConfig() {
         return responseConfig;
     }
@@ -257,6 +302,19 @@ public class DataIntegration extends AbstractAuditingEntity {
 
     public void setAuthHeaderTemplate(String authHeaderTemplate) {
         this.authHeaderTemplate = authHeaderTemplate;
+    }
+
+    public String getAuthBodyProperty() {
+        return authBodyProperty;
+    }
+
+    public DataIntegration authBodyProperty(String authBodyProperty) {
+        this.setAuthBodyProperty(authBodyProperty);
+        return this;
+    }
+
+    public void setAuthBodyProperty(String authBodyProperty) {
+        this.authBodyProperty = authBodyProperty;
     }
 
     @Override

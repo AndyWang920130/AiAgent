@@ -25,15 +25,18 @@ const form = reactive({
   baseUrl: '',
   path: '',
   method: 'GET',
+  bodyType: 'KV',
   authSourceId: null as number | null,
   authTokenPath: '',
   authHeaderName: '',
   authHeaderTemplate: '',
+  authBodyProperty: '',
 })
 
 const headers = ref<KeyValue[]>([])
 const queryParams = ref<KeyValue[]>([])
 const bodyConfig = ref<KeyValue[]>([])
+const bodyRaw = ref('')
 const responseConfig = ref<KeyValue[]>([])
 
 // Other saved integrations that can serve as the auth source (self excluded when editing).
@@ -69,13 +72,16 @@ onMounted(async () => {
       form.baseUrl = dto.baseUrl
       form.path = dto.path || ''
       form.method = dto.method || 'GET'
+      form.bodyType = dto.bodyType === 'RAW' ? 'RAW' : 'KV'
       form.authSourceId = dto.authSourceId ?? null
       form.authTokenPath = dto.authTokenPath || ''
       form.authHeaderName = dto.authHeaderName || ''
       form.authHeaderTemplate = dto.authHeaderTemplate || ''
+      form.authBodyProperty = dto.authBodyProperty || ''
       headers.value = parseRows(dto.headers)
       queryParams.value = parseRows(dto.queryParams)
       bodyConfig.value = parseRows(dto.bodyConfig)
+      bodyRaw.value = dto.bodyRaw || ''
       responseConfig.value = parseRows(dto.responseConfig)
     } catch {
       message.error(t('dataIntegration.loadFailed'))
@@ -91,6 +97,15 @@ async function handleSubmit() {
     message.warning(t('dataIntegration.fillRequired'))
     return
   }
+  // Validate raw JSON body up front so a malformed payload is caught before saving.
+  if (form.bodyType === 'RAW' && bodyRaw.value.trim()) {
+    try {
+      JSON.parse(bodyRaw.value)
+    } catch {
+      message.error(t('dataIntegration.bodyRawInvalid'))
+      return
+    }
+  }
   submitting.value = true
   const payload = {
     name: form.name.trim(),
@@ -101,11 +116,14 @@ async function handleSubmit() {
     headers: serializeRows(headers.value),
     queryParams: serializeRows(queryParams.value),
     bodyConfig: serializeRows(bodyConfig.value),
+    bodyType: form.bodyType,
+    bodyRaw: bodyRaw.value,
     responseConfig: serializeRows(responseConfig.value),
     authSourceId: form.authSourceId,
     authTokenPath: form.authTokenPath,
     authHeaderName: form.authHeaderName,
     authHeaderTemplate: form.authHeaderTemplate,
+    authBodyProperty: form.authBodyProperty,
   }
   try {
     if (isEdit.value) {
@@ -123,10 +141,12 @@ async function handleSubmit() {
   }
 }
 
-const sections = computed(() => [
+// Key-value sections rendered around the body block (which has its own KV/raw toggle).
+const sectionsBefore = computed(() => [
   { label: t('dataIntegration.headers'), rows: headers.value },
   { label: t('dataIntegration.queryParams'), rows: queryParams.value },
-  { label: t('dataIntegration.bodyConfig'), rows: bodyConfig.value },
+])
+const sectionsAfter = computed(() => [
   { label: t('dataIntegration.responseConfig'), rows: responseConfig.value },
 ])
 </script>
@@ -168,8 +188,54 @@ const sections = computed(() => [
             </a-col>
           </a-row>
 
-          <!-- Key-value editors: headers / params / body / response -->
-          <a-form-item v-for="section in sections" :key="section.label" :label="section.label">
+          <!-- Key-value editors: headers / query params -->
+          <a-form-item v-for="section in sectionsBefore" :key="section.label" :label="section.label">
+            <div v-for="(row, idx) in section.rows" :key="idx" class="kv-row">
+              <a-input v-model:value="row.key" :placeholder="t('dataIntegration.keyPlaceholder')" class="kv-key" />
+              <a-input v-model:value="row.value" :placeholder="t('dataIntegration.valuePlaceholder')" class="kv-value" />
+              <a-button type="text" danger @click="removeRow(section.rows, idx)">
+                <template #icon><MinusCircleOutlined /></template>
+              </a-button>
+            </div>
+            <a-button type="dashed" block @click="addRow(section.rows)">
+              <template #icon><PlusOutlined /></template>
+              {{ t('dataIntegration.addRow') }}
+            </a-button>
+          </a-form-item>
+
+          <!-- Request body: key-value pairs or a raw JSON payload -->
+          <a-form-item :label="t('dataIntegration.bodyConfig')">
+            <a-radio-group v-model:value="form.bodyType" button-style="solid" size="small" style="margin-bottom: 12px">
+              <a-radio-button value="KV">{{ t('dataIntegration.bodyModeKv') }}</a-radio-button>
+              <a-radio-button value="RAW">{{ t('dataIntegration.bodyModeRaw') }}</a-radio-button>
+            </a-radio-group>
+
+            <template v-if="form.bodyType === 'RAW'">
+              <a-textarea
+                v-model:value="bodyRaw"
+                :rows="10"
+                :placeholder="t('dataIntegration.bodyRawPlaceholder')"
+                class="body-raw"
+              />
+              <div class="body-raw-hint">{{ t('dataIntegration.bodyRawHelp') }}</div>
+            </template>
+            <template v-else>
+              <div v-for="(row, idx) in bodyConfig" :key="idx" class="kv-row">
+                <a-input v-model:value="row.key" :placeholder="t('dataIntegration.keyPlaceholder')" class="kv-key" />
+                <a-input v-model:value="row.value" :placeholder="t('dataIntegration.valuePlaceholder')" class="kv-value" />
+                <a-button type="text" danger @click="removeRow(bodyConfig, idx)">
+                  <template #icon><MinusCircleOutlined /></template>
+                </a-button>
+              </div>
+              <a-button type="dashed" block @click="addRow(bodyConfig)">
+                <template #icon><PlusOutlined /></template>
+                {{ t('dataIntegration.addRow') }}
+              </a-button>
+            </template>
+          </a-form-item>
+
+          <!-- Key-value editors: response data config -->
+          <a-form-item v-for="section in sectionsAfter" :key="section.label" :label="section.label">
             <div v-for="(row, idx) in section.rows" :key="idx" class="kv-row">
               <a-input v-model:value="row.key" :placeholder="t('dataIntegration.keyPlaceholder')" class="kv-key" />
               <a-input v-model:value="row.value" :placeholder="t('dataIntegration.valuePlaceholder')" class="kv-value" />
@@ -217,6 +283,13 @@ const sections = computed(() => [
               </a-form-item>
             </a-col>
           </a-row>
+          <a-row :gutter="16">
+            <a-col :xs="24" :md="12">
+              <a-form-item :label="t('dataIntegration.authBodyProperty')" :help="t('dataIntegration.authBodyPropertyHelp')">
+                <a-input v-model:value="form.authBodyProperty" placeholder="data.token" />
+              </a-form-item>
+            </a-col>
+          </a-row>
 
           <div style="display: flex; gap: 8px; margin-top: 8px">
             <a-button type="primary" html-type="submit" :loading="submitting">
@@ -235,4 +308,6 @@ const sections = computed(() => [
 .kv-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
 .kv-key { flex: 1; }
 .kv-value { flex: 2; }
+.body-raw { font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; }
+.body-raw-hint { margin-top: 6px; color: rgba(0, 0, 0, 0.45); font-size: 12px; }
 </style>

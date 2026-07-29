@@ -28,6 +28,7 @@ import {
   LockOutlined,
   NumberOutlined,
   ApiOutlined,
+  CodeOutlined,
 } from '@ant-design/icons-vue'
 import { theme as appTheme, toggleTheme } from '../utils/theme'
 import { clearAuth, getUser } from '../utils/auth'
@@ -58,6 +59,7 @@ const keyToPath: Record<string, string> = {
   'third-party-tools': '/tools',
   'aes-tool': '/tools/aes',
   'sha-tool': '/tools/sha',
+  'json-to-entity': '/tools/json-to-entity',
   'personal': '/personal',
   'blog-config': '/settings/blog-config',
   'game-config': '/settings/game-config',
@@ -220,6 +222,10 @@ function formatPopoverTime(timeStr: string): string {
             <a-menu-item key="sha-tool" @click="navigate('sha-tool')">
               <NumberOutlined />
               <span>{{ t('menu.shaTool') }}</span>
+            </a-menu-item>
+            <a-menu-item key="json-to-entity" @click="navigate('json-to-entity')">
+              <CodeOutlined />
+              <span>{{ t('menu.jsonToEntity') }}</span>
             </a-menu-item>
           </a-sub-menu>
           <a-menu-item key="personal" @click="navigate('personal')">

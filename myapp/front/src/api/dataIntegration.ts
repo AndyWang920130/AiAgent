@@ -20,11 +20,14 @@ export interface DataIntegrationDTO {
   headers?: string | null
   queryParams?: string | null
   bodyConfig?: string | null
+  bodyType?: string | null
+  bodyRaw?: string | null
   responseConfig?: string | null
   authSourceId?: number | null
   authTokenPath?: string | null
   authHeaderName?: string | null
   authHeaderTemplate?: string | null
+  authBodyProperty?: string | null
   createdBy?: string
   createdDate?: string
   lastModifiedBy?: string

@@ -17,6 +17,7 @@ const router = createRouter({
         { path: 'tools', name: 'tools', component: () => import('../views/ToolsView.vue') },
         { path: 'tools/aes', name: 'aes-tool', component: () => import('../views/AesToolView.vue') },
         { path: 'tools/sha', name: 'sha-tool', component: () => import('../views/ShaToolView.vue') },
+        { path: 'tools/json-to-entity', name: 'json-to-entity', component: () => import('../views/JsonToEntityView.vue') },
         { path: 'personal', name: 'personal', component: () => import('../views/PersonalView.vue') },
         { path: 'mini-game/lottery', name: 'lottery', component: () => import('../views/LotteryView.vue') },
         { path: 'mini-game/class-lottery', name: 'class-lottery', component: () => import('../views/ClassLotteryView.vue') },

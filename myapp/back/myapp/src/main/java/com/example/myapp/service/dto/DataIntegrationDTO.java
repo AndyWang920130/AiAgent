@@ -36,12 +36,15 @@ public class DataIntegrationDTO implements Serializable {
     private String headers;
     private String queryParams;
     private String bodyConfig;
+    private String bodyType;
+    private String bodyRaw;
     private String responseConfig;
 
     private Long authSourceId;
     private String authTokenPath;
     private String authHeaderName;
     private String authHeaderTemplate;
+    private String authBodyProperty;
 
     private String createdBy;
     private Instant createdDate;
@@ -120,6 +123,22 @@ public class DataIntegrationDTO implements Serializable {
         this.bodyConfig = bodyConfig;
     }
 
+    public String getBodyType() {
+        return bodyType;
+    }
+
+    public void setBodyType(String bodyType) {
+        this.bodyType = bodyType;
+    }
+
+    public String getBodyRaw() {
+        return bodyRaw;
+    }
+
+    public void setBodyRaw(String bodyRaw) {
+        this.bodyRaw = bodyRaw;
+    }
+
     public String getResponseConfig() {
         return responseConfig;
     }
@@ -158,6 +177,14 @@ public class DataIntegrationDTO implements Serializable {
 
     public void setAuthHeaderTemplate(String authHeaderTemplate) {
         this.authHeaderTemplate = authHeaderTemplate;
+    }
+
+    public String getAuthBodyProperty() {
+        return authBodyProperty;
+    }
+
+    public void setAuthBodyProperty(String authBodyProperty) {
+        this.authBodyProperty = authBodyProperty;
     }
 
     public String getCreatedBy() {
