@@ -53,12 +53,34 @@ function splitWords(raw: string): string[] {
 function toFieldName(key: string): string {
   const words = splitWords(key)
   if (words.length === 0) return 'field'
+  // Normalize every word to lowercase first so ALL_CAPS / acronym keys (DEVICE_ID, ID)
+  // become proper camelCase (deviceId, id) rather than dEVICEId / iD.
   const name = words
-    .map((w, i) => (i === 0 ? w.charAt(0).toLowerCase() + w.slice(1) : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()))
+    .map((w, i) => {
+      const lower = w.toLowerCase()
+      return i === 0 ? lower : lower.charAt(0).toUpperCase() + lower.slice(1)
+    })
     .join('')
   // A field starting with a digit or hitting a keyword can't stand alone.
   if (/^[0-9]/.test(name)) return 'field' + name.charAt(0).toUpperCase() + name.slice(1)
   if (JAVA_KEYWORDS.has(name)) return name + '_'
+  return name
+}
+
+/**
+ * Reserve a unique field name within one class, suffixing with a counter on collision.
+ * Two distinct JSON keys can normalize to the same camelCase name (e.g. `device_id` and
+ * `DEVICE_ID` both → `deviceId`); without this the class would declare duplicate fields
+ * and getters/setters and fail to compile. Each field keeps its own @JsonProperty, so the
+ * distinct wire keys are still mapped correctly.
+ */
+function uniqueFieldName(used: Set<string>, base: string): string {
+  let name = base
+  let n = 2
+  while (used.has(name)) {
+    name = base + n++
+  }
+  used.add(name)
   return name
 }
 
@@ -117,9 +139,10 @@ export function jsonToJava(json: unknown, options: JsonToJavaOptions): string {
   function buildClass(obj: Record<string, unknown>, keyHint: string): string {
     const className = uniqueClassName(toClassName(keyHint))
     const fields: JavaField[] = []
+    const usedFieldNames = new Set<string>()
     for (const [key, value] of Object.entries(obj)) {
       const javaType = resolveType(value, key)
-      fields.push({ javaName: toFieldName(key), javaType, jsonKey: key })
+      fields.push({ javaName: uniqueFieldName(usedFieldNames, toFieldName(key)), javaType, jsonKey: key })
     }
     classes.push({ name: className, fields })
     return className
@@ -131,10 +154,11 @@ export function jsonToJava(json: unknown, options: JsonToJavaOptions): string {
     // Reserve the root name first so nested classes can't steal it.
     usedNames.add(rootName)
     const fields: JavaField[] = []
+    const usedFieldNames = new Set<string>()
     for (const [key, value] of Object.entries(json as Record<string, unknown>)) {
       const javaType = resolveType(value, key)
       if (javaType.startsWith('List<')) usesList = true
-      fields.push({ javaName: toFieldName(key), javaType, jsonKey: key })
+      fields.push({ javaName: uniqueFieldName(usedFieldNames, toFieldName(key)), javaType, jsonKey: key })
     }
     classes.unshift({ name: rootName, fields })
   } else if (Array.isArray(json)) {
