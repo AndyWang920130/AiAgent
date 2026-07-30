@@ -42,6 +42,8 @@ public class SecurityConfig {
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // Must precede the /api/v1/auth/** permitAll below — changing a password requires auth.
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/change-password").authenticated()
                 .requestMatchers("/api/v1/auth/**", "/api/v1/code/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/blog-configs/**", "/api/v1/game-configs/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/v1/blog-configs/**", "/api/v1/game-configs/**").hasRole("ADMIN")

@@ -18,6 +18,7 @@ import { clearAuth, getUser } from '../utils/auth'
 import { deletePost, fetchMyPosts, loadingMyPosts, myPosts, type Post } from '../stores/blog'
 import { blogApi } from '../api/blog'
 import { achievementApi } from '../api/achievement'
+import { authApi } from '../api/auth'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -104,18 +105,36 @@ function saveProfile() {
   message.success(t('personal.profileUpdated'))
 }
 
-function changePassword() {
+const changingPassword = ref(false)
+
+async function changePassword() {
   if (!passwordForm.current || !passwordForm.next) {
     message.warning(t('personal.fillAllFields'))
+    return
+  }
+  if (passwordForm.next.length < 6) {
+    message.error(t('personal.passwordTooShort'))
     return
   }
   if (passwordForm.next !== passwordForm.confirm) {
     message.error(t('personal.passwordsNoMatch'))
     return
   }
-  showPasswordModal.value = false
-  Object.assign(passwordForm, { current: '', next: '', confirm: '' })
-  message.success(t('personal.passwordChanged'))
+  changingPassword.value = true
+  try {
+    await authApi.changePassword({
+      currentPassword: passwordForm.current,
+      newPassword: passwordForm.next,
+    })
+    showPasswordModal.value = false
+    Object.assign(passwordForm, { current: '', next: '', confirm: '' })
+    message.success(t('personal.passwordChanged'))
+  } catch (err: any) {
+    // Surface the backend message (e.g. wrong current password); keep the modal open.
+    message.error(err?.response?.data?.message || t('personal.passwordChangeFailed'))
+  } finally {
+    changingPassword.value = false
+  }
 }
 
 function logout() {
@@ -292,6 +311,7 @@ function logout() {
       :title="t('personal.changePassword')"
       :ok-text="t('personal.updatePassword')"
       :cancel-text="t('personal.cancel')"
+      :confirm-loading="changingPassword"
       @ok="changePassword"
     >
       <a-form layout="vertical" style="margin-top: 16px">

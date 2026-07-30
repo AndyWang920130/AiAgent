@@ -29,9 +29,24 @@ public class EmailVerificationService {
 
     public void sendCode(String email) {
         String normalizedEmail = normalize(email);
+        String code = generateAndStore(normalizedEmail);
+        sendMail(normalizedEmail, "MyApp registration verification code",
+            "Your MyApp registration verification code is: " + code + "\n\nThis code expires in 5 minutes.");
+    }
+
+    /** Generate/store a code (same store as {@link #verify}) and email it with reset-specific wording. */
+    public void sendResetCode(String email) {
+        String normalizedEmail = normalize(email);
+        String code = generateAndStore(normalizedEmail);
+        sendMail(normalizedEmail, "MyApp password reset code",
+            "Your MyApp password reset code is: " + code + "\n\nThis code expires in 5 minutes. "
+                + "If you did not request a password reset, you can ignore this email.");
+    }
+
+    private String generateAndStore(String normalizedEmail) {
         String code = String.format("%06d", RANDOM.nextInt(1_000_000));
         codes.put(normalizedEmail, new EmailCode(code, Instant.now().plusSeconds(CODE_TTL_SECONDS)));
-        sendMail(normalizedEmail, code);
+        return code;
     }
 
     public boolean verify(String email, String code) {
@@ -52,12 +67,12 @@ public class EmailVerificationService {
         return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
     }
 
-    private void sendMail(String email, String code) {
+    private void sendMail(String email, String subject, String text) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);
         message.setTo(email);
-        message.setSubject("MyApp registration verification code");
-        message.setText("Your MyApp registration verification code is: " + code + "\n\nThis code expires in 5 minutes.");
+        message.setSubject(subject);
+        message.setText(text);
         mailSender.send(message);
     }
 
