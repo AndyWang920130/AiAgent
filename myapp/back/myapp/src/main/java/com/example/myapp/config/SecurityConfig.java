@@ -42,6 +42,11 @@ public class SecurityConfig {
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // Let the error dispatch through. authorizeHttpRequests applies to ERROR dispatches
+                // too, and JwtAuthFilter (OncePerRequestFilter) skips them — so without this, any
+                // unhandled controller exception forwards to /error unauthenticated and is reported
+                // as a misleading 401 instead of its true status (e.g. 500).
+                .requestMatchers("/error").permitAll()
                 // Must precede the /api/v1/auth/** permitAll below — changing a password requires auth.
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/change-password").authenticated()
                 .requestMatchers("/api/v1/auth/**", "/api/v1/code/**").permitAll()
