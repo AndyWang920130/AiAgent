@@ -12,8 +12,10 @@ import com.example.myapp.web.rest.vm.AuthResponse;
 import com.example.myapp.web.rest.vm.ChangePasswordRequest;
 import com.example.myapp.web.rest.vm.ForgotPasswordRequest;
 import com.example.myapp.web.rest.vm.LoginRequest;
+import com.example.myapp.web.rest.vm.ProfileResponse;
 import com.example.myapp.web.rest.vm.RegisterRequest;
 import com.example.myapp.web.rest.vm.ResetPasswordRequest;
+import com.example.myapp.web.rest.vm.UpdateProfileRequest;
 import com.example.myapp.web.rest.vm.UserInfo;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +25,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -97,6 +101,54 @@ public class AuthController {
         user.setPassword(passwordEncoder.encode(req.newPassword()));
         userRepository.save(user);
         return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
+    }
+
+    /**
+     * Return the current (authenticated) user's editable profile. The login and join date are
+     * read-only; the remaining fields map to editable columns (name -> realName, bio -> description).
+     * Requires authentication — see SecurityConfig, where /api/v1/auth/profile is exempted from the
+     * permitAll rule that covers the rest of /api/v1/auth/**.
+     */
+    @GetMapping("/profile")
+    public ResponseEntity<?> getProfile() {
+        String username = SecurityUtil.getCurrentUsername();
+        User user = userRepository.findOneByLogin(username).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(401).body(Map.of("message", "Not authenticated"));
+        }
+        return ResponseEntity.ok(toProfile(user));
+    }
+
+    /**
+     * Update the current user's own profile. Only name, email and bio are accepted (username is
+     * immutable). The email must not already belong to a different account.
+     */
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateProfile(@Valid @RequestBody UpdateProfileRequest req) {
+        String username = SecurityUtil.getCurrentUsername();
+        User user = userRepository.findOneByLogin(username).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(401).body(Map.of("message", "Not authenticated"));
+        }
+        User emailOwner = userRepository.findOneByEmailIgnoreCase(req.email()).orElse(null);
+        if (emailOwner != null && !emailOwner.getId().equals(user.getId())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email already registered"));
+        }
+        user.setRealName(req.name());
+        user.setNickName(req.name());
+        user.setEmail(req.email());
+        user.setDescription(req.bio());
+        userRepository.save(user);
+        return ResponseEntity.ok(toProfile(user));
+    }
+
+    private ProfileResponse toProfile(User user) {
+        return new ProfileResponse(
+                user.getLogin(),
+                user.getRealName(),
+                user.getEmail(),
+                user.getDescription(),
+                user.getCreatedDate());
     }
 
     /**

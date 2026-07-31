@@ -41,6 +41,12 @@ export function getUser<T>(): T | null {
   return getWithExpiry<T>(USER_KEY)
 }
 
+// Update the stored user in place (keeps the existing TTL semantics) so name/email
+// changes made on the profile page are reflected wherever the cached user is read.
+export function setUser(user: object): void {
+  setWithExpiry(USER_KEY, user)
+}
+
 export function isLoggedIn(): boolean {
   return !!getToken()
 }

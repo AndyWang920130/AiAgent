@@ -47,8 +47,9 @@ public class SecurityConfig {
                 // unhandled controller exception forwards to /error unauthenticated and is reported
                 // as a misleading 401 instead of its true status (e.g. 500).
                 .requestMatchers("/error").permitAll()
-                // Must precede the /api/v1/auth/** permitAll below — changing a password requires auth.
+                // Must precede the /api/v1/auth/** permitAll below — these act on the current user.
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/change-password").authenticated()
+                .requestMatchers("/api/v1/auth/profile").authenticated()
                 .requestMatchers("/api/v1/auth/**", "/api/v1/code/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/blog-configs/**", "/api/v1/game-configs/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/v1/blog-configs/**", "/api/v1/game-configs/**").hasRole("ADMIN")

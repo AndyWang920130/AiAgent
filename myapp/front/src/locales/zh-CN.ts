@@ -280,6 +280,7 @@ export default {
     signOutContent: '确定要退出登录吗？',
     yesSignOut: '确定退出',
     profileUpdated: '资料更新成功',
+    profileUpdateFailed: '资料更新失败',
     fillAllFields: '请填写所有字段',
     passwordsNoMatch: '新密码不匹配',
     passwordTooShort: '新密码至少需要 6 个字符',

@@ -280,6 +280,7 @@ export default {
     signOutContent: 'Are you sure you want to sign out?',
     yesSignOut: 'Yes, sign out',
     profileUpdated: 'Profile updated successfully',
+    profileUpdateFailed: 'Failed to update profile',
     fillAllFields: 'Please fill in all fields',
     passwordsNoMatch: 'New passwords do not match',
     passwordTooShort: 'New password must be at least 6 characters',
