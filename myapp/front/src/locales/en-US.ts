@@ -24,6 +24,7 @@ export default {
     lottery: 'Wheel Lottery',
     classLottery: 'List Lottery',
     gameConfig: 'Game Config',
+    dataCenter: 'Data Center',
     ecgChart: 'ECG Chart',
     dataIntegration: 'Data Integration',
   },

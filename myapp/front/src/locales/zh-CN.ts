@@ -24,6 +24,7 @@ export default {
     lottery: '转盘抽奖',
     classLottery: '名单抽奖',
     gameConfig: '游戏配置',
+    dataCenter: '数据中心',
     ecgChart: '心电图',
     dataIntegration: '数据集成',
   },

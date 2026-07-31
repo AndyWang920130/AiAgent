@@ -29,6 +29,7 @@ import {
   NumberOutlined,
   ApiOutlined,
   CodeOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons-vue'
 import { theme as appTheme, toggleTheme } from '../utils/theme'
 import { clearAuth, getUser } from '../utils/auth'
@@ -184,14 +185,20 @@ function formatPopoverTime(timeStr: string): string {
               <span>{{ t('menu.gameConfig') }}</span>
             </a-menu-item>
           </a-sub-menu>
-          <a-menu-item v-if="isAdmin" key="ecg-chart" @click="navigate('ecg-chart')">
-            <HeartOutlined />
-            <span>{{ t('menu.ecgChart') }}</span>
-          </a-menu-item>
-          <a-menu-item v-if="isAdmin" key="data-integration" @click="navigate('data-integration')">
-            <ApiOutlined />
-            <span>{{ t('menu.dataIntegration') }}</span>
-          </a-menu-item>
+          <a-sub-menu v-if="isAdmin" key="data-center-sub">
+            <template #title>
+              <DatabaseOutlined />
+              <span>{{ t('menu.dataCenter') }}</span>
+            </template>
+            <a-menu-item key="ecg-chart" @click="navigate('ecg-chart')">
+              <HeartOutlined />
+              <span>{{ t('menu.ecgChart') }}</span>
+            </a-menu-item>
+            <a-menu-item key="data-integration" @click="navigate('data-integration')">
+              <ApiOutlined />
+              <span>{{ t('menu.dataIntegration') }}</span>
+            </a-menu-item>
+          </a-sub-menu>
           <a-sub-menu key="mini-game-sub">
             <template #title>
               <GiftOutlined />
