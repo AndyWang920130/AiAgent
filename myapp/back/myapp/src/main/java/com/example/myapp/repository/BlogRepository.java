@@ -22,6 +22,10 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
 
     Page<Blog> findByAuthor(String author, Pageable pageable);
 
+    Page<Blog> findByAuthorAndVisibility(String author, BlogVisibility visibility, Pageable pageable);
+
+    long countByAuthorAndVisibility(String author, BlogVisibility visibility);
+
     /**
      * Aggregate site-wide stats over blogs matching the given visibility, mirroring
      * the predicate used by {@code findByVisibility}. Returns a single row (element 0):

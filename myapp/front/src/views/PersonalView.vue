@@ -19,6 +19,7 @@ import { deletePost, fetchMyPosts, loadingMyPosts, myPosts, type Post } from '..
 import { blogApi } from '../api/blog'
 import { achievementApi } from '../api/achievement'
 import { authApi } from '../api/auth'
+import { userApi, type FollowUser } from '../api/user'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -44,6 +45,33 @@ const likesReceived = ref(0)
 const achievementPoints = ref(0)
 const achievementItems = ref<{ type: string; points: number }[]>([])
 
+const followerCount = ref(0)
+const followingCount = ref(0)
+const followers = ref<FollowUser[]>([])
+const following = ref<FollowUser[]>([])
+const activeFollowTab = ref<'followers' | 'following'>('followers')
+const loadingFollows = ref(false)
+
+async function loadFollows() {
+  const login = profile.username || storedUser?.username
+  if (!login) return
+  loadingFollows.value = true
+  try {
+    const [f1, f2] = await Promise.all([
+      userApi.getFollowers(login),
+      userApi.getFollowing(login),
+    ])
+    followers.value = f1
+    following.value = f2
+    followerCount.value = f1.length
+    followingCount.value = f2.length
+  } catch {
+    // A follow-list failure should not break the rest of the profile page.
+  } finally {
+    loadingFollows.value = false
+  }
+}
+
 async function loadProfile() {
   const data = await authApi.getProfile()
   profile.name = data.name || ''
@@ -65,7 +93,13 @@ onMounted(async () => {
       achievementItems.value = summary.items
     }),
   ])
+  // Load follows after the profile so we have the resolved username.
+  await loadFollows()
 })
+
+function goToUser(login: string) {
+  if (login) router.push('/users/' + login)
+}
 
 const activityData = computed(() => [
   { label: () => t('personal.postsWritten'), value: myPosts.value.length, icon: FileTextOutlined, color: '#1890ff' },
@@ -208,6 +242,19 @@ function logout() {
 
           <a-divider />
 
+          <div class="follow-counts">
+            <div class="count-item" @click="activeFollowTab = 'followers'">
+              <div class="count-value">{{ followerCount }}</div>
+              <div class="count-label">{{ t('userProfile.followers') }}</div>
+            </div>
+            <div class="count-item" @click="activeFollowTab = 'following'">
+              <div class="count-value">{{ followingCount }}</div>
+              <div class="count-label">{{ t('userProfile.followingCount') }}</div>
+            </div>
+          </div>
+
+          <a-divider />
+
           <div class="profile-meta">
             <div class="meta-item"><MailOutlined /> {{ profile.email }}</div>
             <div class="meta-item" v-if="profile.joinDate">📅 {{ t('personal.joined') }} {{ profile.joinDate }}</div>
@@ -255,6 +302,60 @@ function logout() {
               </a-list-item>
             </template>
           </a-list>
+        </a-card>
+
+        <!-- Followers / Following -->
+        <a-card :bordered="false" style="margin-bottom: 24px">
+          <a-tabs v-model:activeKey="activeFollowTab">
+            <a-tab-pane key="followers" :tab="`${t('userProfile.followers')} (${followerCount})`">
+              <a-list
+                :data-source="followers"
+                :loading="loadingFollows"
+                :locale="{ emptyText: t('userProfile.noFollowers') }"
+                size="small"
+              >
+                <template #renderItem="{ item }">
+                  <a-list-item>
+                    <a-list-item-meta>
+                      <template #title>
+                        <a class="user-link" @click="goToUser(item.login)">{{ item.name || item.login }}</a>
+                      </template>
+                      <template #description>@{{ item.login }}</template>
+                      <template #avatar>
+                        <a-avatar :src="item.avatar || undefined" style="background: #667eea">
+                          {{ (item.name || item.login).charAt(0).toUpperCase() }}
+                        </a-avatar>
+                      </template>
+                    </a-list-item-meta>
+                  </a-list-item>
+                </template>
+              </a-list>
+            </a-tab-pane>
+            <a-tab-pane key="following" :tab="`${t('userProfile.followingCount')} (${followingCount})`">
+              <a-list
+                :data-source="following"
+                :loading="loadingFollows"
+                :locale="{ emptyText: t('userProfile.noFollowing') }"
+                size="small"
+              >
+                <template #renderItem="{ item }">
+                  <a-list-item>
+                    <a-list-item-meta>
+                      <template #title>
+                        <a class="user-link" @click="goToUser(item.login)">{{ item.name || item.login }}</a>
+                      </template>
+                      <template #description>@{{ item.login }}</template>
+                      <template #avatar>
+                        <a-avatar :src="item.avatar || undefined" style="background: #667eea">
+                          {{ (item.name || item.login).charAt(0).toUpperCase() }}
+                        </a-avatar>
+                      </template>
+                    </a-list-item-meta>
+                  </a-list-item>
+                </template>
+              </a-list>
+            </a-tab-pane>
+          </a-tabs>
         </a-card>
 
         <!-- Edit Profile Form -->
@@ -372,4 +473,10 @@ function logout() {
 .ach-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
 .ach-label { font-size: 14px; color: #555; }
 .ach-points { margin: 0; font-weight: 600; }
+.follow-counts { display: flex; justify-content: space-around; }
+.count-item { text-align: center; cursor: pointer; }
+.count-value { font-size: 20px; font-weight: 700; color: #333; }
+.count-label { font-size: 13px; color: #888; }
+.user-link { color: #1890ff; cursor: pointer; }
+.user-link:hover { text-decoration: underline; }
 </style>

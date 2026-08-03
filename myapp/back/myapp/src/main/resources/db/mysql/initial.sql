@@ -133,6 +133,22 @@ CREATE TABLE IF NOT EXISTS `twsny_achievement` (
   KEY `idx_twsny_achievement_login` (`login`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `twsny_user_follow` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `follower_username` varchar(100) NOT NULL,
+  `following_username` varchar(100) NOT NULL,
+  `followed_date` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `created_by` varchar(50) NOT NULL DEFAULT 'system',
+  `created_date` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  `last_modified_by` varchar(50) DEFAULT NULL,
+  `last_modified_date` datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_twsny_user_follow_follower_following` (`follower_username`, `following_username`),
+  KEY `idx_twsny_user_follow_follower` (`follower_username`),
+  KEY `idx_twsny_user_follow_following` (`following_username`),
+  KEY `idx_twsny_user_follow_followed_date` (`followed_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 INSERT IGNORE INTO `twsny_user`
   (`id`, `login`, `real_name`, `nick_name`, `password`, `email`, `role`, `deleted`, `created_by`, `created_date`, `last_modified_by`, `last_modified_date`)
@@ -173,5 +189,6 @@ ALTER TABLE `twsny_blog_config` AUTO_INCREMENT = 1000;
 ALTER TABLE `twsny_blog_view_history` AUTO_INCREMENT = 1000;
 ALTER TABLE `twsny_blog_like_history` AUTO_INCREMENT = 1000;
 ALTER TABLE `twsny_achievement` AUTO_INCREMENT = 1000;
+ALTER TABLE `twsny_user_follow` AUTO_INCREMENT = 1000;
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -104,6 +104,10 @@ function handleDelete(id: number, title: string) {
           <template v-if="column.key === 'title'">
             <a class="post-link" @click="router.push('/blog/' + record.id)">{{ record.title }}</a>
           </template>
+          <template v-else-if="column.key === 'author'">
+            <a v-if="record.author" class="user-link" @click="router.push('/users/' + record.author)">{{ record.author }}</a>
+            <span v-else>-</span>
+          </template>
           <template v-else-if="column.key === 'tag'">
             <a-tag :color="record.tagColor">{{ record.tag }}</a-tag>
           </template>
@@ -144,4 +148,6 @@ function handleDelete(id: number, title: string) {
 .filter-bar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .post-link { color: #1890ff; cursor: pointer; }
 .post-link:hover { text-decoration: underline; }
+.user-link { color: #1890ff; cursor: pointer; }
+.user-link:hover { text-decoration: underline; }
 </style>

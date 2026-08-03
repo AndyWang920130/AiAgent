@@ -4,6 +4,8 @@ import com.example.myapp.domain.User;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -14,6 +16,8 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findOneByLogin(String login);
+
+    List<User> findByLoginIn(Collection<String> logins);
 
     Optional<User> findOneByEmailIgnoreCase(String email);
 

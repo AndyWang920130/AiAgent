@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
 import { DeleteOutlined } from '@ant-design/icons-vue'
@@ -9,6 +10,11 @@ const props = defineProps<{ blogId: number }>()
 const emit = defineEmits<{ (e: 'update:count', count: number): void }>()
 
 const { t } = useI18n()
+const router = useRouter()
+
+function goToUser(username: string) {
+  if (username) router.push('/users/' + username)
+}
 
 const comments = ref<BlogComment[]>([])
 const loading = ref(false)
@@ -74,7 +80,10 @@ function handleDelete(comment: BlogComment) {
       <a-list :data-source="comments" :locale="{ emptyText: t('blog.comment.empty') }">
         <template #renderItem="{ item }">
           <a-list-item>
-            <a-comment :author="item.username" :content="item.content">
+            <a-comment :content="item.content">
+              <template #author>
+                <a class="user-link" @click="goToUser(item.username)">{{ item.username }}</a>
+              </template>
               <template #datetime>{{ item.createdDate }}</template>
               <template v-if="item.canDelete" #actions>
                 <span @click="handleDelete(item)"><DeleteOutlined /> {{ t('blog.delete') }}</span>
@@ -108,4 +117,6 @@ function handleDelete(comment: BlogComment) {
 .comment-section { border-radius: 10px; }
 .comment-form { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
 .submit-button { align-self: flex-end; }
+.user-link { color: #1890ff; cursor: pointer; }
+.user-link:hover { text-decoration: underline; }
 </style>

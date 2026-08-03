@@ -39,7 +39,7 @@ export interface BlogComment {
   canDelete: boolean
 }
 
-function mapBlog(dto: any): Post {
+export function mapBlog(dto: any): Post {
   return {
     id: Number(dto.id),
     title: dto.title || '',

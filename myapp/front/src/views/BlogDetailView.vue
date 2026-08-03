@@ -9,6 +9,7 @@ import {
   EyeOutlined,
   LikeOutlined,
   MessageOutlined,
+  UserOutlined,
 } from '@ant-design/icons-vue'
 import { getPost, deletePost, type Post } from '../stores/blog'
 import { blogApi } from '../api/blog'
@@ -107,6 +108,9 @@ function handleDelete() {
           </template>
           <template #footer>
             <a-space size="large" class="meta-row">
+              <a v-if="post.author" class="user-link" @click="router.push('/users/' + post.author)">
+                <UserOutlined /> {{ post.author }}
+              </a>
               <span>📅 {{ post.date }}</span>
               <span><EyeOutlined /> {{ post.views }}</span>
               <a-button
@@ -167,6 +171,8 @@ function handleDelete() {
   border: none;
 }
 .meta-row { color: #888; }
+.user-link { color: #1890ff; cursor: pointer; }
+.user-link:hover { text-decoration: underline; }
 .like-button { padding: 0 4px; color: inherit; }
 .like-button.liked { color: #1677ff; }
 </style>
