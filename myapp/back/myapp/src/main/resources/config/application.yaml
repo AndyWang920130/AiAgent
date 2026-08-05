@@ -14,3 +14,7 @@ app:
     expiration: 86400000   # 1 day in ms
   cors:
     allowed-origins: http://localhost:5173
+  gomoku:
+    invite-timeout-seconds: 300   # a pending invite expires after 5 minutes
+    game-timeout-seconds: 1800    # a game running longer than 30 minutes ends in a draw
+    move-timeout-seconds: 120     # a player who does not move within 120s forfeits

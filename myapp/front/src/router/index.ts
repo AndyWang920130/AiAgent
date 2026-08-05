@@ -22,6 +22,7 @@ const router = createRouter({
         { path: 'users/:login', name: 'user-profile', component: () => import('../views/UserProfileView.vue') },
         { path: 'mini-game/lottery', name: 'lottery', component: () => import('../views/LotteryView.vue') },
         { path: 'mini-game/class-lottery', name: 'class-lottery', component: () => import('../views/ClassLotteryView.vue') },
+        { path: 'mini-game/gomoku', name: 'gomoku', component: () => import('../views/GomokuView.vue') },
         { path: 'blog', name: 'blog-list', component: () => import('../views/BlogListView.vue') },
         { path: 'blog/add', name: 'add-blog', component: () => import('../views/AddBlogView.vue') },
         { path: 'blog/:id', name: 'blog-detail', component: () => import('../views/BlogDetailView.vue') },

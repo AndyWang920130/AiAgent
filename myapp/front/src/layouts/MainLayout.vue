@@ -30,6 +30,7 @@ import {
   ApiOutlined,
   CodeOutlined,
   DatabaseOutlined,
+  BorderOutlined,
 } from '@ant-design/icons-vue'
 import { theme as appTheme, toggleTheme } from '../utils/theme'
 import { clearAuth, getUser } from '../utils/auth'
@@ -68,6 +69,7 @@ const keyToPath: Record<string, string> = {
   'data-integration': '/data-integration',
   'lottery': '/mini-game/lottery',
   'class-lottery': '/mini-game/class-lottery',
+  'gomoku': '/mini-game/gomoku',
 }
 
 const pathToKey: Record<string, string> = Object.fromEntries(
@@ -211,6 +213,10 @@ function formatPopoverTime(timeStr: string): string {
             <a-menu-item key="class-lottery" @click="navigate('class-lottery')">
               <TeamOutlined />
               <span>{{ t('menu.classLottery') }}</span>
+            </a-menu-item>
+            <a-menu-item key="gomoku" @click="navigate('gomoku')">
+              <BorderOutlined />
+              <span>{{ t('menu.gomoku') }}</span>
             </a-menu-item>
           </a-sub-menu>
           <a-sub-menu key="tools-sub">

@@ -149,6 +149,30 @@ CREATE TABLE IF NOT EXISTS `twsny_user_follow` (
   KEY `idx_twsny_user_follow_followed_date` (`followed_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `twsny_gomoku_game` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `black_username` varchar(100) NOT NULL,
+  `white_username` varchar(100) NOT NULL,
+  `status` varchar(20) NOT NULL,
+  `board` varchar(225) NOT NULL,
+  `current_player` int NOT NULL DEFAULT 1,
+  `winner` int DEFAULT NULL,
+  `last_move_row` int DEFAULT NULL,
+  `last_move_col` int DEFAULT NULL,
+  `move_count` int NOT NULL DEFAULT 0,
+  `started_date` datetime(6) DEFAULT NULL,
+  `last_move_date` datetime(6) DEFAULT NULL,
+  `version` bigint DEFAULT NULL,
+  `created_by` varchar(50) NOT NULL DEFAULT 'system',
+  `created_date` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  `last_modified_by` varchar(50) DEFAULT NULL,
+  `last_modified_date` datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`),
+  KEY `idx_twsny_gomoku_game_black` (`black_username`),
+  KEY `idx_twsny_gomoku_game_white` (`white_username`),
+  KEY `idx_twsny_gomoku_game_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 INSERT IGNORE INTO `twsny_user`
   (`id`, `login`, `real_name`, `nick_name`, `password`, `email`, `role`, `deleted`, `created_by`, `created_date`, `last_modified_by`, `last_modified_date`)
@@ -190,5 +214,6 @@ ALTER TABLE `twsny_blog_view_history` AUTO_INCREMENT = 1000;
 ALTER TABLE `twsny_blog_like_history` AUTO_INCREMENT = 1000;
 ALTER TABLE `twsny_achievement` AUTO_INCREMENT = 1000;
 ALTER TABLE `twsny_user_follow` AUTO_INCREMENT = 1000;
+ALTER TABLE `twsny_gomoku_game` AUTO_INCREMENT = 1000;
 
 SET FOREIGN_KEY_CHECKS = 1;
