@@ -11,6 +11,7 @@ import com.example.myapp.service.dto.BlogDTO;
 import com.example.myapp.service.dto.FollowStatusDTO;
 import com.example.myapp.service.dto.FollowUserDTO;
 import com.example.myapp.service.dto.PublicUserProfileDTO;
+import com.example.myapp.service.dto.UserSearchDTO;
 import com.example.myapp.service.mapper.BlogMapper;
 import com.example.myapp.utils.SecurityUtil;
 import com.example.myapp.web.rest.errors.BadRequestAlertException;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -88,6 +90,22 @@ public class UserProfileService {
                 userFollowRepository.existsByFollowerUsernameAndFollowingUsername(current, login)
             );
         });
+    }
+
+    /**
+     * Search users by login / real name / nickname (case-insensitive, partial), for the header
+     * search box. Excludes the current user and is capped at 10 results.
+     */
+    @Transactional(readOnly = true)
+    public List<UserSearchDTO> searchUsers(String query) {
+        if (query == null || query.isBlank()) {
+            return List.of();
+        }
+        String current = SecurityUtil.getCurrentUsername();
+        return userRepository.search(query.trim(), PageRequest.of(0, 10)).stream()
+            .filter(user -> !user.getLogin().equals(current))
+            .map(user -> new UserSearchDTO(user.getLogin(), displayName(user), user.getAvatar()))
+            .toList();
     }
 
     /**

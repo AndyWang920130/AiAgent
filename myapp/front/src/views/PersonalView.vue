@@ -12,6 +12,7 @@ import {
   FileTextOutlined,
   HeartOutlined,
   EyeOutlined,
+  SearchOutlined,
 } from '@ant-design/icons-vue'
 import { message, Modal } from 'ant-design-vue'
 import { clearAuth, getUser, setUser } from '../utils/auth'
@@ -19,7 +20,7 @@ import { deletePost, fetchMyPosts, loadingMyPosts, myPosts, type Post } from '..
 import { blogApi } from '../api/blog'
 import { achievementApi } from '../api/achievement'
 import { authApi } from '../api/auth'
-import { userApi, type FollowUser } from '../api/user'
+import { userApi, type FollowUser, type UserSearchResult } from '../api/user'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -99,6 +100,41 @@ onMounted(async () => {
 
 function goToUser(login: string) {
   if (login) router.push('/users/' + login)
+}
+
+// ----- Find users to follow -----------------------------------------------------------------
+const userSearchValue = ref<string | undefined>(undefined)
+const userSearchOptions = ref<UserSearchResult[]>([])
+const userSearching = ref(false)
+let userSearchTimer: ReturnType<typeof setTimeout> | null = null
+let userSearchSeq = 0 // guards against out-of-order responses
+
+function handleUserSearch(q: string) {
+  if (userSearchTimer) clearTimeout(userSearchTimer)
+  const query = q.trim()
+  if (!query) {
+    userSearchOptions.value = []
+    userSearching.value = false
+    return
+  }
+  userSearching.value = true
+  userSearchTimer = setTimeout(async () => {
+    const seq = ++userSearchSeq
+    try {
+      const results = await userApi.search(query)
+      if (seq === userSearchSeq) userSearchOptions.value = results
+    } catch {
+      if (seq === userSearchSeq) userSearchOptions.value = []
+    } finally {
+      if (seq === userSearchSeq) userSearching.value = false
+    }
+  }, 300)
+}
+
+function onSelectUser(login: string) {
+  userSearchValue.value = undefined
+  userSearchOptions.value = []
+  goToUser(login)
 }
 
 const activityData = computed(() => [
@@ -306,6 +342,29 @@ function logout() {
 
         <!-- Followers / Following -->
         <a-card :bordered="false" style="margin-bottom: 24px">
+          <a-select
+            v-model:value="userSearchValue"
+            class="user-search"
+            show-search
+            :placeholder="t('userProfile.findUsers')"
+            :filter-option="false"
+            :default-active-first-option="false"
+            :not-found-content="userSearching ? t('userProfile.searching') : (userSearchValue ? t('userProfile.searchNoResult') : null)"
+            @search="handleUserSearch"
+            @select="onSelectUser"
+          >
+            <template #suffixIcon><SearchOutlined /></template>
+            <a-select-option v-for="u in userSearchOptions" :key="u.login" :value="u.login">
+              <span class="search-opt">
+                <a-avatar :size="20" :src="u.avatar || undefined" :style="{ background: '#667eea', fontSize: '11px' }">
+                  {{ (u.name || u.login).charAt(0).toUpperCase() }}
+                </a-avatar>
+                <span>{{ u.name || u.login }}</span>
+                <span class="search-opt-login">@{{ u.login }}</span>
+              </span>
+            </a-select-option>
+          </a-select>
+
           <a-tabs v-model:activeKey="activeFollowTab">
             <a-tab-pane key="followers" :tab="`${t('userProfile.followers')} (${followerCount})`">
               <a-list
@@ -479,4 +538,7 @@ function logout() {
 .count-label { font-size: 13px; color: #888; }
 .user-link { color: #1890ff; cursor: pointer; }
 .user-link:hover { text-decoration: underline; }
+.user-search { width: 100%; margin-bottom: 12px; }
+.search-opt { display: flex; align-items: center; gap: 8px; }
+.search-opt-login { color: #999; font-size: 12px; }
 </style>

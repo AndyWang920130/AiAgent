@@ -5,6 +5,7 @@ import com.example.myapp.service.dto.BlogDTO;
 import com.example.myapp.service.dto.FollowStatusDTO;
 import com.example.myapp.service.dto.FollowUserDTO;
 import com.example.myapp.service.dto.PublicUserProfileDTO;
+import com.example.myapp.service.dto.UserSearchDTO;
 import com.example.myapp.utils.PageUtils;
 import java.util.List;
 import org.springframework.data.domain.Page;
@@ -28,6 +29,12 @@ public class UserProfileResource {
 
     public UserProfileResource(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
+    }
+
+    /** Search users for the header search box. Exact path precedence over {@code /{login}}. */
+    @GetMapping("/search")
+    public ResponseEntity<List<UserSearchDTO>> search(@RequestParam("q") String q) {
+        return ResponseEntity.ok(userProfileService.searchUsers(q));
     }
 
     @GetMapping("/{login}")

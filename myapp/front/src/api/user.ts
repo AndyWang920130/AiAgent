@@ -31,7 +31,16 @@ export interface FollowUser {
   followedDate: string
 }
 
+export interface UserSearchResult {
+  login: string
+  name: string
+  avatar: string | null
+}
+
 export const userApi = {
+  search: (q: string): Promise<UserSearchResult[]> =>
+    http.get('/api/v1/users/search', { params: { q } }).then(r => r.data),
+
   getProfile: (login: string): Promise<PublicUserProfile> =>
     http.get(`/api/v1/users/${encodeURIComponent(login)}`).then(r => r.data),
 
