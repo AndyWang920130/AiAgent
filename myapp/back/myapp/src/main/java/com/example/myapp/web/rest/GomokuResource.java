@@ -62,6 +62,11 @@ public class GomokuResource {
         return ResponseEntity.ok(gomokuService.resign(id));
     }
 
+    @PostMapping("/games/{id}/leave")
+    public ResponseEntity<GomokuGameDTO> leave(@PathVariable Long id) {
+        return ResponseEntity.ok(gomokuService.leave(id));
+    }
+
     /** Full game state — polled during play. */
     @GetMapping("/games/{id}")
     public ResponseEntity<GomokuGameDTO> game(@PathVariable Long id) {

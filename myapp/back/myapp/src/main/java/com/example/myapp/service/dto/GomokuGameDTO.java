@@ -24,6 +24,7 @@ public record GomokuGameDTO(
     Integer lastMoveCol,
     int moveCount,
     int myColor,
+    String leftByUsername,
     Instant createdDate,
     // Timeout clocks (seconds). moveTimeoutSeconds is the full per-move budget; the *Remaining
     // fields are computed at response time and are null when not applicable to the current status.

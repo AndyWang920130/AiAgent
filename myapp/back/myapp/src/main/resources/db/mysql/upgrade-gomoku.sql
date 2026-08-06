@@ -62,3 +62,18 @@ SET @add_last_move_date = (
 PREPARE add_last_move_date_stmt FROM @add_last_move_date;
 EXECUTE add_last_move_date_stmt;
 DEALLOCATE PREPARE add_last_move_date_stmt;
+
+SET @add_left_by_username = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `twsny_gomoku_game` ADD COLUMN `left_by_username` varchar(100) DEFAULT NULL AFTER `winner`',
+    'SELECT ''twsny_gomoku_game.left_by_username already exists'' AS message'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @schema_name
+    AND TABLE_NAME = 'twsny_gomoku_game'
+    AND COLUMN_NAME = 'left_by_username'
+);
+PREPARE add_left_by_username_stmt FROM @add_left_by_username;
+EXECUTE add_left_by_username_stmt;
+DEALLOCATE PREPARE add_left_by_username_stmt;

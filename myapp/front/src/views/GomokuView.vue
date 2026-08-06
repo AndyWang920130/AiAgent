@@ -192,6 +192,9 @@ const opponentLogin = computed(() => {
 const onlineStatus = computed(() => {
   const g = game.value
   if (!g) return ''
+  if (g.leftByUsername) {
+    return g.leftByUsername === myUsername(g) ? t('gomoku.youLeft') : t('gomoku.opponentLeft')
+  }
   if (g.status === 'TIMED_OUT') {
     return g.winner === g.myColor ? t('gomoku.wonOnTime') : t('gomoku.lostOnTime')
   }
@@ -217,6 +220,10 @@ function mmss(total: number | null): string {
 
 function opponentOf(g: GomokuGame): { name: string } {
   return g.myColor === 1 ? { name: g.whiteName } : { name: g.blackName }
+}
+
+function myUsername(g: GomokuGame): string {
+  return g.myColor === 1 ? g.blackUsername : g.whiteUsername
 }
 
 // Re-seed the countdowns from authoritative server values whenever the game state changes.
@@ -390,6 +397,18 @@ async function pollGame(): Promise<void> {
   if (!g) return
   try {
     const fresh = await gomokuApi.getGame(g.id)
+    if (fresh.leftByUsername) {
+      if (fresh.leftByUsername !== myUsername(fresh)) {
+        message.warning(t('gomoku.opponentLeftAlert', { name: opponentOf(fresh).name }))
+      }
+      game.value = null
+      rematchIncoming.value = null
+      rematchOutgoing.value = null
+      resetSeries()
+      stopGamePolling()
+      startLobbyPolling()
+      return
+    }
     game.value = fresh
     if (fresh.status !== 'ACTIVE') stopGamePolling()
   } catch {
@@ -404,6 +423,19 @@ function enterGame(g: GomokuGame): void {
 }
 
 async function backToLobby(): Promise<void> {
+  const currentGame = game.value
+  if (currentGame) {
+    actionLoading.value = true
+    try {
+      await gomokuApi.leave(currentGame.id)
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || t('gomoku.actionFailed'))
+      actionLoading.value = false
+      return
+    }
+    actionLoading.value = false
+    stopGamePolling()
+  }
   // Clean up any in-flight rematch handshake server-side before leaving: withdraw my own
   // pending rematch invite and decline any the opponent sent me. This stops them waiting on
   // a ghost offer (they get a notification via cancel/decline) and prevents an accepted
@@ -455,6 +487,20 @@ async function pollRematch(): Promise<void> {
   const g = game.value
   if (!g) return
   try {
+    const fresh = await gomokuApi.getGame(g.id)
+    if (fresh.leftByUsername) {
+      if (fresh.leftByUsername !== myUsername(fresh)) {
+        message.warning(t('gomoku.opponentLeftAlert', { name: opponentOf(fresh).name }))
+      }
+      game.value = null
+      rematchIncoming.value = null
+      rematchOutgoing.value = null
+      resetSeries()
+      stopRematchWatch()
+      startLobbyPolling()
+      return
+    }
+    game.value = fresh
     const active = await gomokuApi.getActiveGame()
     if (active) {
       enterGame(active)
@@ -685,6 +731,9 @@ onUnmounted(stopAllPolling)
             <a-space v-if="!onlineOver">
               <a-button danger :loading="actionLoading" @click="resignOnline">
                 {{ t('gomoku.resign') }}
+              </a-button>
+              <a-button :loading="actionLoading" @click="backToLobby">
+                {{ t('gomoku.backToLobby') }}
               </a-button>
             </a-space>
             <a-space v-else class="rematch-bar" wrap>

@@ -58,6 +58,10 @@ public class GomokuGame extends AbstractAuditingEntity {
     @Column(name = "winner")
     private Integer winner;
 
+    /** Participant who left the match screen for the lobby. Used to close the opponent's UI too. */
+    @Column(name = "left_by_username", length = 100)
+    private String leftByUsername;
+
     @Column(name = "last_move_row")
     private Integer lastMoveRow;
 
@@ -93,6 +97,8 @@ public class GomokuGame extends AbstractAuditingEntity {
     public void setCurrentPlayer(int currentPlayer) { this.currentPlayer = currentPlayer; }
     public Integer getWinner() { return winner; }
     public void setWinner(Integer winner) { this.winner = winner; }
+    public String getLeftByUsername() { return leftByUsername; }
+    public void setLeftByUsername(String leftByUsername) { this.leftByUsername = leftByUsername; }
     public Integer getLastMoveRow() { return lastMoveRow; }
     public void setLastMoveRow(Integer lastMoveRow) { this.lastMoveRow = lastMoveRow; }
     public Integer getLastMoveCol() { return lastMoveCol; }

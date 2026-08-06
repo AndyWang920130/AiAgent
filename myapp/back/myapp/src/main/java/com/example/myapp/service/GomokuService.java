@@ -301,6 +301,29 @@ public class GomokuService {
         return toDto(gameRepository.save(game), me);
     }
 
+    public GomokuGameDTO leave(Long id) {
+        String me = SecurityUtil.getCurrentUsername();
+        GomokuGame game = resolveTimeouts(requireParticipant(id, me));
+        if (game.getLeftByUsername() != null) {
+            return toDto(game, me);
+        }
+        if (game.getStatus() == GomokuGameStatus.ACTIVE) {
+            game.setStatus(GomokuGameStatus.ABANDONED);
+            game.setWinner(null);
+        }
+        game.setLeftByUsername(me);
+        game.setLastModifiedBy(me);
+        GomokuGame saved = gameRepository.save(game);
+        notificationService.notify(
+            opponentUsername(saved, me),
+            NotificationType.WARNING,
+            "Gomoku match ended",
+            nameOf(me) + " returned to the lobby. The current match was ended.",
+            GOMOKU_LINK
+        );
+        return toDto(saved, me);
+    }
+
     // ----- Win detection ------------------------------------------------------------------
 
     private boolean isWin(char[] cells, int row, int col, int player) {
@@ -359,6 +382,10 @@ public class GomokuService {
 
     private int colorOf(GomokuGame game, String username) {
         return username.equals(game.getBlackUsername()) ? 1 : 2;
+    }
+
+    private String opponentUsername(GomokuGame game, String username) {
+        return username.equals(game.getBlackUsername()) ? game.getWhiteUsername() : game.getBlackUsername();
     }
 
     // ----- Timeouts (lazy, resolved on read/act) ------------------------------------------
@@ -457,6 +484,7 @@ public class GomokuService {
             game.getLastMoveCol(),
             game.getMoveCount(),
             colorOf(game, me),
+            game.getLeftByUsername(),
             game.getCreatedDate(),
             (int) moveTimeoutSeconds,
             active ? secondsRemaining(game.getLastMoveDate(), moveTimeoutSeconds, now) : null,

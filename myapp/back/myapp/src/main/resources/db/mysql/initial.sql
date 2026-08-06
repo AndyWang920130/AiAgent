@@ -157,6 +157,7 @@ CREATE TABLE IF NOT EXISTS `twsny_gomoku_game` (
   `board` varchar(225) NOT NULL,
   `current_player` int NOT NULL DEFAULT 1,
   `winner` int DEFAULT NULL,
+  `left_by_username` varchar(100) DEFAULT NULL,
   `last_move_row` int DEFAULT NULL,
   `last_move_col` int DEFAULT NULL,
   `move_count` int NOT NULL DEFAULT 0,

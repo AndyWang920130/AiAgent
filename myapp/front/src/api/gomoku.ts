@@ -8,7 +8,7 @@ export interface GomokuGame {
   whiteUsername: string
   whiteName: string
   whiteAvatar: string | null
-  status: 'PENDING' | 'ACTIVE' | 'FINISHED' | 'DECLINED' | 'CANCELLED' | 'RESIGNED' | 'EXPIRED' | 'TIMED_OUT'
+  status: 'PENDING' | 'ACTIVE' | 'FINISHED' | 'DECLINED' | 'CANCELLED' | 'RESIGNED' | 'EXPIRED' | 'TIMED_OUT' | 'ABANDONED'
   board: string // 225 chars of '0' | '1' | '2', row-major
   currentPlayer: number // 1 = black, 2 = white
   winner: number | null // 1, 2, or 0 (draw); null while unresolved
@@ -16,6 +16,7 @@ export interface GomokuGame {
   lastMoveCol: number | null
   moveCount: number
   myColor: number // 1 or 2 — which side the current user plays
+  leftByUsername: string | null
   createdDate: string
   moveTimeoutSeconds: number // full per-move budget
   moveSecondsRemaining: number | null // remaining move clock (ACTIVE only)
@@ -55,6 +56,9 @@ export const gomokuApi = {
 
   resign: (id: number): Promise<GomokuGame> =>
     http.post(`/api/v1/gomoku/games/${id}/resign`).then(r => r.data),
+
+  leave: (id: number): Promise<GomokuGame> =>
+    http.post(`/api/v1/gomoku/games/${id}/leave`).then(r => r.data),
 
   getGame: (id: number): Promise<GomokuGame> =>
     http.get(`/api/v1/gomoku/games/${id}`).then(r => r.data),

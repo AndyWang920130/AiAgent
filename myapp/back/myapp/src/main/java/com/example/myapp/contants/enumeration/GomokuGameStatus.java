@@ -12,5 +12,6 @@ public enum GomokuGameStatus {
     CANCELLED,  // inviter cancelled the pending invite
     RESIGNED,   // a participant resigned an active game
     EXPIRED,    // invite not accepted within the invite timeout
-    TIMED_OUT   // player to move did not play within the move timeout (they forfeit)
+    TIMED_OUT,  // player to move did not play within the move timeout (they forfeit)
+    ABANDONED   // a participant left the active match and returned to the lobby
 }
