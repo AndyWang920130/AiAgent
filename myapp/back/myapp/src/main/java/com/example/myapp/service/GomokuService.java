@@ -1,6 +1,7 @@
 package com.example.myapp.service;
 
 import com.example.myapp.contants.enumeration.GomokuGameStatus;
+import com.example.myapp.contants.enumeration.NotificationType;
 import com.example.myapp.domain.GomokuGame;
 import com.example.myapp.domain.User;
 import com.example.myapp.repository.GomokuGameRepository;
@@ -43,10 +44,12 @@ public class GomokuService {
     private static final int SIZE = GomokuGame.BOARD_SIZE;
     private static final int[][] DIRS = { { 0, 1 }, { 1, 0 }, { 1, 1 }, { 1, -1 } };
     private static final List<GomokuGameStatus> LIVE = List.of(GomokuGameStatus.PENDING, GomokuGameStatus.ACTIVE);
+    private static final String GOMOKU_LINK = "/mini-game/gomoku";
 
     private final GomokuGameRepository gameRepository;
     private final UserFollowRepository userFollowRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Value("${app.gomoku.invite-timeout-seconds:300}")
     private long inviteTimeoutSeconds;
@@ -60,11 +63,13 @@ public class GomokuService {
     public GomokuService(
         GomokuGameRepository gameRepository,
         UserFollowRepository userFollowRepository,
-        UserRepository userRepository
+        UserRepository userRepository,
+        NotificationService notificationService
     ) {
         this.gameRepository = gameRepository;
         this.userFollowRepository = userFollowRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     // ----- Opponents (mutual follows) -----------------------------------------------------
@@ -140,7 +145,16 @@ public class GomokuService {
         game.setCurrentPlayer(1);
         game.setCreatedBy(me);
         game.setLastModifiedBy(me);
-        return toDto(gameRepository.save(game), me);
+        GomokuGame saved = gameRepository.save(game);
+        // Notify the invited player so it shows in their bell with a link into the game.
+        notificationService.notify(
+            opponentLogin,
+            NotificationType.INFO,
+            "Gomoku invitation",
+            nameOf(me) + " invited you to a Gomoku match",
+            GOMOKU_LINK
+        );
+        return toDto(saved, me);
     }
 
     public GomokuInvitesDTO getInvites() {
@@ -172,7 +186,15 @@ public class GomokuService {
         game.setStartedDate(now);
         game.setLastMoveDate(now); // starts black's first-move clock
         game.setLastModifiedBy(me);
-        return toDto(gameRepository.save(game), me);
+        GomokuGame saved = gameRepository.save(game);
+        notificationService.notify(
+            game.getCreatedBy(),
+            NotificationType.SUCCESS,
+            "Invitation accepted",
+            nameOf(me) + " accepted your Gomoku invitation",
+            GOMOKU_LINK
+        );
+        return toDto(saved, me);
     }
 
     public GomokuGameDTO decline(Long id) {
@@ -181,7 +203,15 @@ public class GomokuService {
         requireInvitee(game, me);
         game.setStatus(GomokuGameStatus.DECLINED);
         game.setLastModifiedBy(me);
-        return toDto(gameRepository.save(game), me);
+        GomokuGame saved = gameRepository.save(game);
+        notificationService.notify(
+            game.getCreatedBy(),
+            NotificationType.INFO,
+            "Invitation declined",
+            nameOf(me) + " declined your Gomoku invitation",
+            GOMOKU_LINK
+        );
+        return toDto(saved, me);
     }
 
     public GomokuGameDTO cancel(Long id) {
@@ -385,6 +415,11 @@ public class GomokuService {
             return user.getNickName();
         }
         return user.getLogin();
+    }
+
+    /** Display name for a login (falls back to the login itself), for notification text. */
+    private String nameOf(String login) {
+        return userRepository.findOneByLogin(login).map(this::displayName).orElse(login);
     }
 
     private GomokuGameDTO toDto(GomokuGame game, String me) {

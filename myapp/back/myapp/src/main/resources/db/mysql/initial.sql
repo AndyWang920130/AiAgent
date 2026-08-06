@@ -173,6 +173,23 @@ CREATE TABLE IF NOT EXISTS `twsny_gomoku_game` (
   KEY `idx_twsny_gomoku_game_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `twsny_notification` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `recipient` varchar(100) NOT NULL,
+  `type` varchar(20) NOT NULL,
+  `title` varchar(200) NOT NULL,
+  `content` varchar(500) DEFAULT NULL,
+  `link` varchar(200) DEFAULT NULL,
+  `is_read` bit(1) NOT NULL DEFAULT b'0',
+  `created_by` varchar(50) NOT NULL DEFAULT 'system',
+  `created_date` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  `last_modified_by` varchar(50) DEFAULT NULL,
+  `last_modified_date` datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`),
+  KEY `idx_twsny_notification_recipient` (`recipient`),
+  KEY `idx_twsny_notification_recipient_read` (`recipient`, `is_read`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 INSERT IGNORE INTO `twsny_user`
   (`id`, `login`, `real_name`, `nick_name`, `password`, `email`, `role`, `deleted`, `created_by`, `created_date`, `last_modified_by`, `last_modified_date`)
@@ -215,5 +232,6 @@ ALTER TABLE `twsny_blog_like_history` AUTO_INCREMENT = 1000;
 ALTER TABLE `twsny_achievement` AUTO_INCREMENT = 1000;
 ALTER TABLE `twsny_user_follow` AUTO_INCREMENT = 1000;
 ALTER TABLE `twsny_gomoku_game` AUTO_INCREMENT = 1000;
+ALTER TABLE `twsny_notification` AUTO_INCREMENT = 1000;
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import {
   InfoCircleOutlined,
   CheckCircleOutlined,
@@ -16,9 +17,23 @@ import {
   markAllAsRead,
   deleteNotification,
   clearRead,
+  fetchNotifications,
+  type Notification,
 } from '../stores/notification'
+import { onMounted } from 'vue'
 
 const { t, locale } = useI18n()
+const router = useRouter()
+
+onMounted(fetchNotifications)
+
+// A notification with a link navigates on click (and is marked read); otherwise just marks read.
+function onRowClick(item: Notification) {
+  if (item.link) {
+    markAsRead(item.id)
+    router.push(item.link)
+  }
+}
 
 const activeTab = ref('all')
 
@@ -140,7 +155,11 @@ function formatTime(timeStr: string): string {
               <template #title>
                 <div class="notif-title-row">
                   <span class="unread-dot" v-if="!item.read" />
-                  <span class="notif-title" :class="{ bold: !item.read }">{{ item.title }}</span>
+                  <span
+                    class="notif-title"
+                    :class="{ bold: !item.read, linked: !!item.link }"
+                    @click="onRowClick(item)"
+                  >{{ item.title }}</span>
                   <span class="notif-time">{{ formatTime(item.time) }}</span>
                 </div>
               </template>
@@ -217,6 +236,15 @@ function formatTime(timeStr: string): string {
 
 .notif-title.bold {
   font-weight: 600;
+}
+
+.notif-title.linked {
+  cursor: pointer;
+}
+
+.notif-title.linked:hover {
+  color: #1890ff;
+  text-decoration: underline;
 }
 
 .notif-time {

@@ -27,7 +27,11 @@ import {
   unreadCount,
   markAsRead,
   markAllAsRead,
+  fetchNotifications,
+  startPolling,
+  stopPolling,
   type NotificationType,
+  type Notification,
 } from '../stores/notification'
 
 const { t, locale } = useI18n()
@@ -48,8 +52,12 @@ function updateIsMobile() {
 onMounted(() => {
   updateIsMobile()
   window.addEventListener('resize', updateIsMobile)
+  startPolling()
 })
-onUnmounted(() => window.removeEventListener('resize', updateIsMobile))
+onUnmounted(() => {
+  window.removeEventListener('resize', updateIsMobile)
+  stopPolling()
+})
 
 function toggleNav() {
   if (isMobile.value) drawerOpen.value = !drawerOpen.value
@@ -129,6 +137,20 @@ function goToNotifications() {
   bellOpen.value = false
   router.push('/notifications')
 }
+
+// Clicking a notification marks it read and, if it carries a link, navigates there.
+function onNotificationClick(item: Notification) {
+  markAsRead(item.id)
+  if (item.link) {
+    bellOpen.value = false
+    router.push(item.link)
+  }
+}
+
+// Refetch the list whenever the bell is opened so it's current.
+watch(bellOpen, open => {
+  if (open) fetchNotifications()
+})
 
 function formatPopoverTime(timeStr: string): string {
   const date = new Date(timeStr.replace(' ', 'T'))
@@ -249,7 +271,7 @@ function formatPopoverTime(timeStr: string): string {
                       :key="item.id"
                       class="notif-pop-item"
                       :class="{ 'is-unread': !item.read }"
-                      @click="markAsRead(item.id)"
+                      @click="onNotificationClick(item)"
                     >
                       <div
                         class="notif-pop-icon"
