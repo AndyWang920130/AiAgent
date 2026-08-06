@@ -1,37 +1,21 @@
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute, RouterView } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
-  HomeOutlined,
   UserOutlined,
   LogoutOutlined,
   BulbOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  ToolOutlined,
-  UnorderedListOutlined,
-  PlusCircleOutlined,
   TranslationOutlined,
   BellOutlined,
   InfoCircleOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   CloseCircleOutlined,
-  SettingOutlined,
-  TagsOutlined,
-  GiftOutlined,
-  TrophyOutlined,
-  TeamOutlined,
-  HeartOutlined,
-  AppstoreOutlined,
-  LockOutlined,
-  NumberOutlined,
-  ApiOutlined,
-  CodeOutlined,
-  DatabaseOutlined,
-  BorderOutlined,
 } from '@ant-design/icons-vue'
+import AppMenu from './AppMenu.vue'
 import { theme as appTheme, toggleTheme } from '../utils/theme'
 import { clearAuth, getUser } from '../utils/auth'
 import { theme as antTheme } from 'ant-design-vue'
@@ -53,6 +37,24 @@ const collapsed = ref(false)
 const bellOpen = ref(false)
 const user = getUser<{ username: string; name: string; role?: string }>()
 const isAdmin = computed(() => user?.role === 'ADMIN')
+
+// Responsive shell: below 768px the sider is replaced by an off-canvas drawer.
+const isMobile = ref(false)
+const drawerOpen = ref(false)
+function updateIsMobile() {
+  isMobile.value = window.innerWidth < 768
+  if (!isMobile.value) drawerOpen.value = false
+}
+onMounted(() => {
+  updateIsMobile()
+  window.addEventListener('resize', updateIsMobile)
+})
+onUnmounted(() => window.removeEventListener('resize', updateIsMobile))
+
+function toggleNav() {
+  if (isMobile.value) drawerOpen.value = !drawerOpen.value
+  else collapsed.value = !collapsed.value
+}
 
 const keyToPath: Record<string, string> = {
   'home': '/home',
@@ -116,6 +118,7 @@ function logout() {
 function navigate(key: string) {
   selectedKeys.value = [key]
   router.push(keyToPath[key] || '/' + key)
+  if (isMobile.value) drawerOpen.value = false
 }
 
 function toggleLang() {
@@ -143,110 +146,40 @@ function formatPopoverTime(timeStr: string): string {
 <template>
   <a-config-provider :theme="themeConfig" :locale="antLocale">
     <a-layout style="min-height: 100vh">
-      <!-- Sider -->
-      <a-layout-sider v-model:collapsed="collapsed" collapsible :trigger="null" :width="220" class="app-sider">
-        <div class="logo" @click="navigate('home')">
-          <span v-if="!collapsed">🚀 MyApp</span>
-          <span v-else>🚀</span>
-        </div>
-        <a-menu
+      <!-- Sider (desktop) -->
+      <a-layout-sider
+        v-if="!isMobile"
+        v-model:collapsed="collapsed"
+        collapsible
+        :trigger="null"
+        :width="220"
+        class="app-sider"
+      >
+        <AppMenu
           v-model:selectedKeys="selectedKeys"
           v-model:openKeys="openKeys"
-          theme="dark"
-          mode="inline"
-        >
-          <a-menu-item key="home" @click="navigate('home')">
-            <HomeOutlined />
-            <span>{{ t('menu.home') }}</span>
-          </a-menu-item>
-          <a-sub-menu key="home-sub">
-            <template #title>
-              <UnorderedListOutlined />
-              <span>{{ t('menu.blog') }}</span>
-            </template>
-            <a-menu-item key="blog-list" @click="navigate('blog-list')">
-              <UnorderedListOutlined />
-              <span>{{ t('menu.blogList') }}</span>
-            </a-menu-item>
-            <a-menu-item key="blog-add" @click="navigate('blog-add')">
-              <PlusCircleOutlined />
-              <span>{{ t('menu.addBlog') }}</span>
-            </a-menu-item>
-          </a-sub-menu>
-          <a-sub-menu v-if="isAdmin" key="settings-sub">
-            <template #title>
-              <SettingOutlined />
-              <span>{{ t('menu.systemSetting') }}</span>
-            </template>
-            <a-menu-item key="blog-config" @click="navigate('blog-config')">
-              <TagsOutlined />
-              <span>{{ t('menu.blogConfig') }}</span>
-            </a-menu-item>
-            <a-menu-item key="game-config" @click="navigate('game-config')">
-              <TrophyOutlined />
-              <span>{{ t('menu.gameConfig') }}</span>
-            </a-menu-item>
-          </a-sub-menu>
-          <a-sub-menu v-if="isAdmin" key="data-center-sub">
-            <template #title>
-              <DatabaseOutlined />
-              <span>{{ t('menu.dataCenter') }}</span>
-            </template>
-            <a-menu-item key="ecg-chart" @click="navigate('ecg-chart')">
-              <HeartOutlined />
-              <span>{{ t('menu.ecgChart') }}</span>
-            </a-menu-item>
-            <a-menu-item key="data-integration" @click="navigate('data-integration')">
-              <ApiOutlined />
-              <span>{{ t('menu.dataIntegration') }}</span>
-            </a-menu-item>
-          </a-sub-menu>
-          <a-sub-menu key="mini-game-sub">
-            <template #title>
-              <GiftOutlined />
-              <span>{{ t('menu.miniGame') }}</span>
-            </template>
-            <a-menu-item key="lottery" @click="navigate('lottery')">
-              <GiftOutlined />
-              <span>{{ t('menu.lottery') }}</span>
-            </a-menu-item>
-            <a-menu-item key="class-lottery" @click="navigate('class-lottery')">
-              <TeamOutlined />
-              <span>{{ t('menu.classLottery') }}</span>
-            </a-menu-item>
-            <a-menu-item key="gomoku" @click="navigate('gomoku')">
-              <BorderOutlined />
-              <span>{{ t('menu.gomoku') }}</span>
-            </a-menu-item>
-          </a-sub-menu>
-          <a-sub-menu key="tools-sub">
-            <template #title>
-              <ToolOutlined />
-              <span>{{ t('menu.tools') }}</span>
-            </template>
-            <a-menu-item key="third-party-tools" @click="navigate('third-party-tools')">
-              <AppstoreOutlined />
-              <span>{{ t('menu.thirdPartyTools') }}</span>
-            </a-menu-item>
-            <a-menu-item key="aes-tool" @click="navigate('aes-tool')">
-              <LockOutlined />
-              <span>{{ t('menu.aesTool') }}</span>
-            </a-menu-item>
-            <a-menu-item key="sha-tool" @click="navigate('sha-tool')">
-              <NumberOutlined />
-              <span>{{ t('menu.shaTool') }}</span>
-            </a-menu-item>
-            <a-menu-item key="json-to-entity" @click="navigate('json-to-entity')">
-              <CodeOutlined />
-              <span>{{ t('menu.jsonToEntity') }}</span>
-            </a-menu-item>
-          </a-sub-menu>
-          <a-menu-item key="personal" @click="navigate('personal')">
-            <UserOutlined />
-            <span>{{ t('menu.personal') }}</span>
-          </a-menu-item>
-        </a-menu>
+          :is-admin="isAdmin"
+          :collapsed="collapsed"
+          @navigate="navigate"
+        />
       </a-layout-sider>
+
+      <!-- Nav drawer (mobile) -->
+      <a-drawer
+        v-else
+        v-model:open="drawerOpen"
+        placement="left"
+        :width="220"
+        :closable="false"
+        :body-style="{ padding: 0, background: '#001529' }"
+      >
+        <AppMenu
+          v-model:selectedKeys="selectedKeys"
+          v-model:openKeys="openKeys"
+          :is-admin="isAdmin"
+          @navigate="navigate"
+        />
+      </a-drawer>
 
       <a-layout>
         <!-- Header -->
@@ -259,10 +192,10 @@ function formatPopoverTime(timeStr: string): string {
         >
           <div class="header-left">
             <component
-              :is="collapsed ? MenuUnfoldOutlined : MenuFoldOutlined"
+              :is="isMobile ? MenuUnfoldOutlined : (collapsed ? MenuUnfoldOutlined : MenuFoldOutlined)"
               class="trigger"
               :style="{ color: appTheme === 'dark' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)' }"
-              @click="collapsed = !collapsed"
+              @click="toggleNav"
             />
           </div>
           <div class="header-right">
@@ -270,7 +203,7 @@ function formatPopoverTime(timeStr: string): string {
             <a-tooltip :title="appTheme === 'dark' ? t('theme.switchToLight') : t('theme.switchToDark')">
               <a-button type="text" @click="toggleTheme">
                 <BulbOutlined />
-                {{ appTheme === 'dark' ? t('theme.light') : t('theme.dark') }}
+                <span v-if="!isMobile">{{ appTheme === 'dark' ? t('theme.light') : t('theme.dark') }}</span>
               </a-button>
             </a-tooltip>
 
@@ -278,7 +211,7 @@ function formatPopoverTime(timeStr: string): string {
             <a-tooltip :title="locale === 'zh-CN' ? t('lang.en') : t('lang.zh')">
               <a-button type="text" @click="toggleLang">
                 <TranslationOutlined />
-                {{ locale === 'zh-CN' ? t('lang.en') : t('lang.zh') }}
+                <span v-if="!isMobile">{{ locale === 'zh-CN' ? t('lang.en') : t('lang.zh') }}</span>
               </a-button>
             </a-tooltip>
 
@@ -363,7 +296,7 @@ function formatPopoverTime(timeStr: string): string {
             <a-dropdown>
               <a-button type="text">
                 <UserOutlined />
-                {{ user?.name || user?.username || 'User' }}
+                <span v-if="!isMobile">{{ user?.name || user?.username || 'User' }}</span>
               </a-button>
               <template #overlay>
                 <a-menu>
@@ -397,18 +330,6 @@ function formatPopoverTime(timeStr: string): string {
 </template>
 
 <style scoped>
-.logo {
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 18px;
-  font-weight: bold;
-  background: rgba(255, 255, 255, 0.05);
-  cursor: pointer;
-  user-select: none;
-}
 .app-sider {
   position: sticky;
   top: 0;
@@ -447,6 +368,17 @@ function formatPopoverTime(timeStr: string): string {
   border-radius: 8px;
   min-height: 280px;
   transition: background 0.3s;
+}
+
+/* Mobile: reclaim horizontal space the desktop chrome would otherwise waste. */
+@media (max-width: 768px) {
+  .app-content {
+    margin: 12px;
+    padding: 12px;
+  }
+  .app-header {
+    padding: 0 8px;
+  }
 }
 
 /* Notification popover */
