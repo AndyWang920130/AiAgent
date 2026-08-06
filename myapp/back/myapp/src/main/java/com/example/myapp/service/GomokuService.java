@@ -222,7 +222,18 @@ public class GomokuService {
         }
         game.setStatus(GomokuGameStatus.CANCELLED);
         game.setLastModifiedBy(me);
-        return toDto(gameRepository.save(game), me);
+        GomokuGame saved = gameRepository.save(game);
+        // Tell the invitee (the participant who did not create the invite) that it was withdrawn,
+        // so a player waiting on a rematch offer isn't left hanging when the inviter leaves.
+        String invitee = me.equals(game.getBlackUsername()) ? game.getWhiteUsername() : game.getBlackUsername();
+        notificationService.notify(
+            invitee,
+            NotificationType.INFO,
+            "Gomoku invitation withdrawn",
+            nameOf(me) + " withdrew the Gomoku invitation",
+            GOMOKU_LINK
+        );
+        return toDto(saved, me);
     }
 
     // ----- Gameplay -----------------------------------------------------------------------

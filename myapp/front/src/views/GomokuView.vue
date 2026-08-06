@@ -119,14 +119,47 @@ const game = ref<GomokuGame | null>(null)
 const inviting = ref(false)
 const actionLoading = ref(false)
 
+// Rematch (post-game "play again") state. A rematch is just a fresh invite between the same
+// two players, so it reuses the invite/accept/notification machinery.
+const rematchIncoming = ref<GomokuGame | null>(null) // opponent proposed a rematch
+const rematchOutgoing = ref<GomokuGame | null>(null) // my rematch invite, awaiting the opponent
+const rematchLoading = ref(false)
+
 // Locally-ticked countdowns (seconds). Seeded from the server on each poll and decremented
 // once per second between polls so the display stays smooth; re-synced on the next poll.
 const moveRemaining = ref<number | null>(null)
 const gameRemaining = ref<number | null>(null)
 
+// Client-side session score for the current match series between the two players. Keyed by
+// login, it accumulates while the two keep rematching and resets when a new series starts
+// (fresh invite/accept, back to lobby, or (re)entering online). Both clients compute the same
+// tally by observing each game's terminal winner, so they agree; a page refresh clears it.
+const seriesScores = ref<Record<string, number>>({})
+const countedGames = new Set<number>() // game ids already scored, so each game counts once
+
+function resetSeries(): void {
+  seriesScores.value = {}
+  countedGames.clear()
+}
+
+// Count the winner of a just-decided game exactly once. Draws (winner 0) score nothing.
+function recordResultIfNeeded(g: GomokuGame | null): void {
+  if (!g) return
+  const decided = g.status === 'FINISHED' || g.status === 'RESIGNED' || g.status === 'TIMED_OUT'
+  if (!decided || !g.winner || g.winner < 1) return
+  if (countedGames.has(g.id)) return
+  countedGames.add(g.id)
+  const winnerLogin = g.winner === 1 ? g.blackUsername : g.whiteUsername
+  seriesScores.value = { ...seriesScores.value, [winnerLogin]: (seriesScores.value[winnerLogin] || 0) + 1 }
+}
+
+const blackScore = computed(() => (game.value ? seriesScores.value[game.value.blackUsername] || 0 : 0))
+const whiteScore = computed(() => (game.value ? seriesScores.value[game.value.whiteUsername] || 0 : 0))
+
 let lobbyTimer: ReturnType<typeof setInterval> | null = null
 let gameTimer: ReturnType<typeof setInterval> | null = null
 let uiTimer: ReturnType<typeof setInterval> | null = null
+let rematchTimer: ReturnType<typeof setInterval> | null = null
 
 // Convert the server's 225-char board string into the 2D array the board component renders.
 const onlineBoard = computed<Cell[][]>(() => {
@@ -148,6 +181,13 @@ const onlineLastMove = computed<Move | null>(() => {
 
 const isMyTurn = computed(() => !!game.value && game.value.status === 'ACTIVE' && game.value.currentPlayer === game.value.myColor)
 const onlineOver = computed(() => !!game.value && game.value.status !== 'ACTIVE')
+
+// The opponent's login in the current game (whichever colour I am not).
+const opponentLogin = computed(() => {
+  const g = game.value
+  if (!g) return ''
+  return g.myColor === 1 ? g.whiteUsername : g.blackUsername
+})
 
 const onlineStatus = computed(() => {
   const g = game.value
@@ -183,6 +223,7 @@ function opponentOf(g: GomokuGame): { name: string } {
 watch(game, g => {
   moveRemaining.value = g?.moveSecondsRemaining ?? null
   gameRemaining.value = g?.gameSecondsRemaining ?? null
+  recordResultIfNeeded(g) // tally the winner once when a game reaches a terminal state
 })
 
 async function loadOpponents(): Promise<void> {
@@ -211,6 +252,7 @@ async function pollLobby(): Promise<void> {
 async function sendInvite(): Promise<void> {
   if (!selectedOpponent.value) return
   inviting.value = true
+  resetSeries() // a fresh invite from the lobby starts a new series at 0–0
   try {
     const g = await gomokuApi.invite(selectedOpponent.value)
     if (g.status === 'ACTIVE') {
@@ -228,8 +270,12 @@ async function sendInvite(): Promise<void> {
 }
 
 async function acceptInvite(g: GomokuGame): Promise<void> {
+  // Accepting while a finished game is on screen is a rematch (continue the series); accepting
+  // from the lobby (no game shown) is a fresh match, so reset the score.
+  const isRematch = game.value != null
   actionLoading.value = true
   try {
+    if (!isRematch) resetSeries()
     enterGame(await gomokuApi.accept(g.id))
   } catch (err: any) {
     message.error(err?.response?.data?.message || t('gomoku.actionFailed'))
@@ -255,6 +301,54 @@ async function cancelInvite(g: GomokuGame): Promise<void> {
   try {
     await gomokuApi.cancel(g.id)
     outgoing.value = outgoing.value.filter(o => o.id !== g.id)
+  } catch (err: any) {
+    message.error(err?.response?.data?.message || t('gomoku.actionFailed'))
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+/* ----- Rematch (from the game-over screen) --------------------------------- */
+
+// Propose a rematch to the same opponent. Reuses invite(): a rematch is a fresh invite.
+async function sendRematch(): Promise<void> {
+  const oppo = opponentLogin.value
+  if (!oppo) return
+  rematchLoading.value = true
+  try {
+    const res = await gomokuApi.invite(oppo)
+    if (res.status === 'ACTIVE') {
+      enterGame(res)
+      return
+    }
+    message.success(t('gomoku.inviteSent'))
+    // Reconcile incoming/outgoing — handles both players clicking Rematch at once, where
+    // invite() returns the opponent's existing pending invite (which we should accept).
+    await pollRematch()
+  } catch (err: any) {
+    message.error(err?.response?.data?.message || t('gomoku.actionFailed'))
+  } finally {
+    rematchLoading.value = false
+  }
+}
+
+async function declineRematch(inv: GomokuGame): Promise<void> {
+  actionLoading.value = true
+  try {
+    await gomokuApi.decline(inv.id)
+    rematchIncoming.value = null
+  } catch (err: any) {
+    message.error(err?.response?.data?.message || t('gomoku.actionFailed'))
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+async function cancelRematch(o: GomokuGame): Promise<void> {
+  actionLoading.value = true
+  try {
+    await gomokuApi.cancel(o.id)
+    rematchOutgoing.value = null
   } catch (err: any) {
     message.error(err?.response?.data?.message || t('gomoku.actionFailed'))
   } finally {
@@ -309,8 +403,24 @@ function enterGame(g: GomokuGame): void {
   if (g.status === 'ACTIVE') startGamePolling()
 }
 
-function backToLobby(): void {
+async function backToLobby(): Promise<void> {
+  // Clean up any in-flight rematch handshake server-side before leaving: withdraw my own
+  // pending rematch invite and decline any the opponent sent me. This stops them waiting on
+  // a ghost offer (they get a notification via cancel/decline) and prevents an accepted
+  // rematch from pulling me back into a game after I've left. Read the refs first — nulling
+  // `game` triggers the onlineOver watcher, which clears them.
+  const outgoing = rematchOutgoing.value
+  const incoming = rematchIncoming.value
+  if (outgoing) {
+    try { await gomokuApi.cancel(outgoing.id) } catch { /* non-fatal — leaving anyway */ }
+  }
+  if (incoming) {
+    try { await gomokuApi.decline(incoming.id) } catch { /* non-fatal — leaving anyway */ }
+  }
   game.value = null
+  rematchIncoming.value = null
+  rematchOutgoing.value = null
+  resetSeries() // leaving the match ends the series; the score resets to 0–0
   startLobbyPolling()
 }
 
@@ -338,6 +448,47 @@ function stopGamePolling(): void {
     gameTimer = null
   }
 }
+
+// While the game is over, watch for the opponent's rematch response: a new active game
+// (either side accepted) → enter it; otherwise surface the pending rematch invite between us.
+async function pollRematch(): Promise<void> {
+  const g = game.value
+  if (!g) return
+  try {
+    const active = await gomokuApi.getActiveGame()
+    if (active) {
+      enterGame(active)
+      return
+    }
+    const oppo = opponentLogin.value
+    const data = await gomokuApi.getInvites()
+    rematchIncoming.value = data.incoming.find(i => i.blackUsername === oppo || i.whiteUsername === oppo) ?? null
+    rematchOutgoing.value = data.outgoing.find(o => o.blackUsername === oppo || o.whiteUsername === oppo) ?? null
+  } catch {
+    // non-fatal — keep watching
+  }
+}
+
+function startRematchWatch(): void {
+  if (rematchTimer) return
+  pollRematch()
+  rematchTimer = setInterval(pollRematch, 2000)
+}
+
+function stopRematchWatch(): void {
+  if (rematchTimer) {
+    clearInterval(rematchTimer)
+    rematchTimer = null
+  }
+  rematchIncoming.value = null
+  rematchOutgoing.value = null
+}
+
+// Run the rematch watch exactly while an online game is finished (and not while playing/in lobby).
+watch(onlineOver, over => {
+  if (over) startRematchWatch()
+  else stopRematchWatch()
+})
 
 // Ticks the displayed countdowns down once per second between server polls, flooring at 0.
 function tick(): void {
@@ -368,10 +519,12 @@ function stopAllPolling(): void {
   stopLobbyPolling()
   stopGamePolling()
   stopUiTicker()
+  stopRematchWatch()
 }
 
 async function enterOnline(): Promise<void> {
   startUiTicker()
+  resetSeries() // entering/resuming online can't recover a prior series, so start clean
   await loadOpponents()
   const active = await gomokuApi.getActiveGame().catch(() => null)
   if (active) {
@@ -504,6 +657,7 @@ onUnmounted(stopAllPolling)
               <span class="turn-dot black" />
               {{ game.blackName }}
               <a-tag v-if="game.myColor === 1" color="blue">{{ t('gomoku.you') }}</a-tag>
+              <span class="win-tally" :title="t('gomoku.seriesScore')">{{ blackScore }}</span>
               <!-- Move clock belongs only to whoever is to move -->
               <span
                 v-if="!onlineOver && game.currentPlayer === 1"
@@ -516,6 +670,7 @@ onUnmounted(stopAllPolling)
               <span class="turn-dot white" />
               {{ game.whiteName }}
               <a-tag v-if="game.myColor === 2" color="blue">{{ t('gomoku.you') }}</a-tag>
+              <span class="win-tally" :title="t('gomoku.seriesScore')">{{ whiteScore }}</span>
               <span
                 v-if="!onlineOver && game.currentPlayer === 2"
                 class="move-clock"
@@ -527,11 +682,32 @@ onUnmounted(stopAllPolling)
           <div class="toolbar">
             <span class="status-text">{{ onlineStatus }}</span>
             <a-tag v-if="!onlineOver" color="default">{{ t('gomoku.roundTimeLeft', { time: mmss(gameRemaining) }) }}</a-tag>
-            <a-space>
-              <a-button v-if="!onlineOver" danger :loading="actionLoading" @click="resignOnline">
+            <a-space v-if="!onlineOver">
+              <a-button danger :loading="actionLoading" @click="resignOnline">
                 {{ t('gomoku.resign') }}
               </a-button>
-              <a-button v-else type="primary" @click="backToLobby">
+            </a-space>
+            <a-space v-else class="rematch-bar" wrap>
+              <template v-if="rematchIncoming">
+                <span class="rematch-text">{{ t('gomoku.rematchIncoming', { name: opponentOf(game).name }) }}</span>
+                <a-button type="primary" :loading="actionLoading" @click="acceptInvite(rematchIncoming)">
+                  {{ t('gomoku.accept') }}
+                </a-button>
+                <a-button :loading="actionLoading" @click="declineRematch(rematchIncoming)">
+                  {{ t('gomoku.decline') }}
+                </a-button>
+              </template>
+              <template v-else-if="rematchOutgoing">
+                <span class="rematch-text">{{ t('gomoku.rematchWaiting', { name: opponentOf(game).name }) }}</span>
+                <a-button :loading="actionLoading" @click="cancelRematch(rematchOutgoing)">
+                  {{ t('gomoku.cancel') }}
+                </a-button>
+              </template>
+              <a-button v-else type="primary" :loading="rematchLoading" @click="sendRematch">
+                <template #icon><RedoOutlined /></template>
+                {{ t('gomoku.rematch') }}
+              </a-button>
+              <a-button @click="backToLobby">
                 {{ t('gomoku.backToLobby') }}
               </a-button>
             </a-space>
@@ -663,5 +839,22 @@ onUnmounted(stopAllPolling)
 .vs {
   color: #999;
   font-weight: 400;
+}
+.rematch-text {
+  font-weight: 600;
+}
+.win-tally {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: rgba(24, 144, 255, 0.12);
+  color: #1890ff;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 </style>
