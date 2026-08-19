@@ -123,6 +123,18 @@ public class BlogResource {
     }
 
     /**
+     * GET /blogs/following : Get the following feed — public blogs authored by users the
+     * current user follows, newest first.
+     */
+    @GetMapping("/blogs/following")
+    public ResponseEntity<List<BlogDTO>> getFollowingBlogs(@PageableDefault(sort = {"id"}, direction = Sort.Direction.DESC) Pageable pageable) {
+        LOG.debug("REST request to get a page of the current user's following feed");
+        Page<BlogDTO> page = blogService.findFollowing(pageable);
+        HttpHeaders headers = PageUtils.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
+        return ResponseEntity.ok().headers(headers).body(page.getContent());
+    }
+
+    /**
      * GET /blogs/my : Get current user's blogs.
      */
     @GetMapping("/blogs/my")

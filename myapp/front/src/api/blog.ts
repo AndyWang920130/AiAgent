@@ -66,6 +66,10 @@ export const blogApi = {
     http.get('/api/v1/blogs/my', { params: { size: 100, sort: 'id,desc' } })
       .then(r => (r.data as any[]).map(mapBlog)),
 
+  listFollowing: () =>
+    http.get('/api/v1/blogs/following', { params: { size: 100, sort: 'id,desc' } })
+      .then(r => (r.data as any[]).map(mapBlog)),
+
   get: (id: number) =>
     http.get(`/api/v1/blogs/${id}`).then(r => mapBlog(r.data)),
 

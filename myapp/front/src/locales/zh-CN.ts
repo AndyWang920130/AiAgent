@@ -249,6 +249,10 @@ export default {
     tagline: '您的个人技术博客与知识中心，每天探索、学习与成长。',
     latestPosts: '📝 最新文章',
     all: '全部',
+    recommended: '🔥 推荐',
+    following: '👥 关注',
+    noPosts: '暂无文章',
+    noFollowingPosts: '你关注的用户还没有发布文章。搜索并关注作者，即可在此看到他们的文章。',
     writePost: '写文章',
   },
   personal: {

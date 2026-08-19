@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -23,6 +24,8 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
     Page<Blog> findByAuthor(String author, Pageable pageable);
 
     Page<Blog> findByAuthorAndVisibility(String author, BlogVisibility visibility, Pageable pageable);
+
+    Page<Blog> findByAuthorInAndVisibility(Collection<String> authors, BlogVisibility visibility, Pageable pageable);
 
     long countByAuthorAndVisibility(String author, BlogVisibility visibility);
 

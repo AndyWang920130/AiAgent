@@ -15,7 +15,6 @@ import {
   TrophyOutlined,
   TeamOutlined,
   HeartOutlined,
-  AppstoreOutlined,
   LockOutlined,
   NumberOutlined,
   ApiOutlined,
@@ -71,6 +70,24 @@ const { t } = useI18n()
         <span>{{ t('menu.addBlog') }}</span>
       </a-menu-item>
     </a-sub-menu>
+    <a-sub-menu key="mini-game-sub">
+      <template #title>
+        <GiftOutlined />
+        <span>{{ t('menu.miniGame') }}</span>
+      </template>
+      <a-menu-item key="lottery" @click="emit('navigate', 'lottery')">
+        <GiftOutlined />
+        <span>{{ t('menu.lottery') }}</span>
+      </a-menu-item>
+      <a-menu-item key="class-lottery" @click="emit('navigate', 'class-lottery')">
+        <TeamOutlined />
+        <span>{{ t('menu.classLottery') }}</span>
+      </a-menu-item>
+      <a-menu-item key="gomoku" @click="emit('navigate', 'gomoku')">
+        <BorderOutlined />
+        <span>{{ t('menu.gomoku') }}</span>
+      </a-menu-item>
+    </a-sub-menu>
     <a-sub-menu v-if="isAdmin" key="settings-sub">
       <template #title>
         <SettingOutlined />
@@ -99,33 +116,11 @@ const { t } = useI18n()
         <span>{{ t('menu.dataIntegration') }}</span>
       </a-menu-item>
     </a-sub-menu>
-    <a-sub-menu key="mini-game-sub">
-      <template #title>
-        <GiftOutlined />
-        <span>{{ t('menu.miniGame') }}</span>
-      </template>
-      <a-menu-item key="lottery" @click="emit('navigate', 'lottery')">
-        <GiftOutlined />
-        <span>{{ t('menu.lottery') }}</span>
-      </a-menu-item>
-      <a-menu-item key="class-lottery" @click="emit('navigate', 'class-lottery')">
-        <TeamOutlined />
-        <span>{{ t('menu.classLottery') }}</span>
-      </a-menu-item>
-      <a-menu-item key="gomoku" @click="emit('navigate', 'gomoku')">
-        <BorderOutlined />
-        <span>{{ t('menu.gomoku') }}</span>
-      </a-menu-item>
-    </a-sub-menu>
     <a-sub-menu key="tools-sub">
       <template #title>
         <ToolOutlined />
         <span>{{ t('menu.tools') }}</span>
       </template>
-      <a-menu-item key="third-party-tools" @click="emit('navigate', 'third-party-tools')">
-        <AppstoreOutlined />
-        <span>{{ t('menu.thirdPartyTools') }}</span>
-      </a-menu-item>
       <a-menu-item key="aes-tool" @click="emit('navigate', 'aes-tool')">
         <LockOutlined />
         <span>{{ t('menu.aesTool') }}</span>

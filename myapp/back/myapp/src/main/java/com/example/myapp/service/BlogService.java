@@ -5,6 +5,7 @@ import com.example.myapp.contants.enumeration.BlogStatus;
 import com.example.myapp.contants.enumeration.BlogVisibility;
 import com.example.myapp.domain.Blog;
 import com.example.myapp.repository.BlogRepository;
+import com.example.myapp.repository.UserFollowRepository;
 import com.example.myapp.service.dto.BlogViewHistoryDTO;
 import com.example.myapp.service.dto.BlogDTO;
 import com.example.myapp.service.mapper.BlogMapper;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -38,11 +40,14 @@ public class BlogService {
 
     private final AchievementService achievementService;
 
-    public BlogService(BlogRepository blogRepository, BlogMapper blogMapper, BlogViewHistoryService blogViewHistoryService, AchievementService achievementService) {
+    private final UserFollowRepository userFollowRepository;
+
+    public BlogService(BlogRepository blogRepository, BlogMapper blogMapper, BlogViewHistoryService blogViewHistoryService, AchievementService achievementService, UserFollowRepository userFollowRepository) {
         this.blogRepository = blogRepository;
         this.blogMapper = blogMapper;
         this.blogViewHistoryService = blogViewHistoryService;
         this.achievementService = achievementService;
+        this.userFollowRepository = userFollowRepository;
     }
 
     /**
@@ -152,6 +157,24 @@ public class BlogService {
             ((Number) row[2]).longValue(),
             ((Number) row[3]).longValue()
         );
+    }
+
+    /**
+     * Get the public blogs authored by the users the current user follows, newest first.
+     * Returns an empty page when the current user follows no one.
+     *
+     * @param pageable the pagination information.
+     * @return the following feed.
+     */
+    @Transactional(readOnly = true)
+    public Page<BlogDTO> findFollowing(Pageable pageable) {
+        LOG.debug("Request to get current user's following feed");
+        String currentUsername = SecurityUtil.getCurrentUsername();
+        List<String> authors = userFollowRepository.findFollowingUsernames(currentUsername);
+        if (authors.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        return blogRepository.findByAuthorInAndVisibility(authors, BlogVisibility.PUBLIC, pageable).map(blogMapper::toDto);
     }
 
     /**

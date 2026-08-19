@@ -19,8 +19,10 @@ export interface Post {
 
 export const posts = ref<Post[]>([])
 export const myPosts = ref<Post[]>([])
+export const followingPosts = ref<Post[]>([])
 export const loading = ref(false)
 export const loadingMyPosts = ref(false)
+export const loadingFollowing = ref(false)
 
 export async function fetchPosts() {
   loading.value = true
@@ -28,6 +30,15 @@ export async function fetchPosts() {
     posts.value = await blogApi.list()
   } finally {
     loading.value = false
+  }
+}
+
+export async function fetchFollowingPosts() {
+  loadingFollowing.value = true
+  try {
+    followingPosts.value = await blogApi.listFollowing()
+  } finally {
+    loadingFollowing.value = false
   }
 }
 

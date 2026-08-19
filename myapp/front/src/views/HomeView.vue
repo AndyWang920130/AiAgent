@@ -2,10 +2,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { posts, loading, fetchPosts } from '../stores/blog'
-import { blogApi } from '../api/blog'
 import {
-  RocketOutlined,
+  posts, loading, fetchPosts,
+  followingPosts, loadingFollowing, fetchFollowingPosts,
+} from '../stores/blog'
+import {
   EyeOutlined,
   LikeOutlined,
   MessageOutlined,
@@ -15,36 +16,29 @@ import {
 const { t } = useI18n()
 const router = useRouter()
 
-const statsLoading = ref(true)
-const siteStats = ref({ totalPosts: 0, totalViews: 0, totalLikes: 0, totalComments: 0 })
-
-const stats = computed(() => [
-  { title: t('home.totalPosts'), value: siteStats.value.totalPosts, icon: RocketOutlined, color: '#1890ff' },
-  { title: t('home.totalViews'), value: siteStats.value.totalViews, icon: EyeOutlined, color: '#52c41a' },
-  { title: t('home.totalLikes'), value: siteStats.value.totalLikes, icon: LikeOutlined, color: '#eb2f96' },
-  { title: t('home.totalComments'), value: siteStats.value.totalComments, icon: MessageOutlined, color: '#faad14' },
-])
-
-const activeTab = ref('all')
+const feedTab = ref<'recommended' | 'following'>('recommended')
 
 onMounted(() => {
   fetchPosts()
-  blogApi.getStats()
-    .then(data => { siteStats.value = data })
-    .finally(() => { statsLoading.value = false })
+  fetchFollowingPosts()
 })
 
-const categories = computed(() => [
-  'all',
-  ...Array.from(new Set(posts.value.map(p => p.category).filter(Boolean))),
-])
+// "Recommended" ranks public posts by engagement (likes, then views) and shows the top slice.
+const recommendedPosts = computed(() =>
+  [...posts.value]
+    .sort((a, b) => (b.likes - a.likes) || (b.views - a.views))
+    .slice(0, 6),
+)
 
-const latestPosts = computed(() => {
-  const source = activeTab.value === 'all'
-    ? posts.value
-    : posts.value.filter(p => p.category === activeTab.value)
-  return source.slice(0, 4)
-})
+const followingList = computed(() => followingPosts.value.slice(0, 6))
+
+const displayedPosts = computed(() =>
+  feedTab.value === 'following' ? followingList.value : recommendedPosts.value,
+)
+
+const listLoading = computed(() =>
+  feedTab.value === 'following' ? loadingFollowing.value : loading.value,
+)
 </script>
 
 <template>
@@ -57,38 +51,22 @@ const latestPosts = computed(() => {
       </div>
     </div>
 
-    <!-- Stats -->
-    <a-row :gutter="[16, 16]" style="margin-bottom: 24px">
-      <a-col :xs="24" :sm="12" :lg="6" v-for="stat in stats" :key="stat.title">
-        <a-card :bordered="false" class="stat-card" :loading="statsLoading">
-          <a-statistic
-            :title="stat.title"
-            :value="stat.value"
-            :value-style="{ color: stat.color, fontSize: '28px', fontWeight: '700' }"
-          >
-            <template #prefix>
-              <component :is="stat.icon" :style="{ color: stat.color }" />
-            </template>
-          </a-statistic>
-        </a-card>
-      </a-col>
-    </a-row>
-
     <!-- Posts -->
-    <a-card :title="t('home.latestPosts')" :bordered="false">
+    <a-card :bordered="false" class="feed-card">
+      <template #title>
+        <a-tabs v-model:activeKey="feedTab" size="small" class="feed-tabs">
+          <a-tab-pane key="recommended" :tab="t('home.recommended')" />
+          <a-tab-pane key="following" :tab="t('home.following')" />
+        </a-tabs>
+      </template>
       <template #extra>
-        <a-space>
-          <a-tabs v-model:activeKey="activeTab" size="small">
-            <a-tab-pane v-for="cat in categories" :key="cat" :tab="cat === 'all' ? t('home.all') : cat" />
-          </a-tabs>
-          <a-button type="primary" size="small" @click="router.push('/blog/add')">
-            <template #icon><EditOutlined /></template>
-            {{ t('home.writePost') }}
-          </a-button>
-        </a-space>
+        <a-button type="primary" size="small" @click="router.push('/blog/add')">
+          <template #icon><EditOutlined /></template>
+          {{ t('home.writePost') }}
+        </a-button>
       </template>
 
-      <a-list :data-source="latestPosts" :loading="loading" item-layout="vertical">
+      <a-list :data-source="displayedPosts" :loading="listLoading" item-layout="vertical">
         <template #renderItem="{ item }">
           <a-list-item>
             <a-list-item-meta>
@@ -98,7 +76,7 @@ const latestPosts = computed(() => {
                   <a-tag :color="item.tagColor">{{ item.tag }}</a-tag>
                 </div>
               </template>
-              <template #description>{{ item.date }} · {{ item.category }}</template>
+              <template #description>{{ item.date }} · {{ item.category }} · {{ item.author }}</template>
             </a-list-item-meta>
             <p class="post-excerpt">{{ item.excerpt }}</p>
             <template #actions>
@@ -107,6 +85,11 @@ const latestPosts = computed(() => {
               <span><MessageOutlined /> {{ item.comments }}</span>
             </template>
           </a-list-item>
+        </template>
+        <template #empty>
+          <a-empty
+            :description="feedTab === 'following' ? t('home.noFollowingPosts') : t('home.noPosts')"
+          />
         </template>
       </a-list>
     </a-card>
@@ -125,8 +108,6 @@ const latestPosts = computed(() => {
 .welcome-banner h1 { color: #fff; margin: 0 0 8px; font-size: 28px; }
 .welcome-banner p { margin: 0; opacity: 0.9; font-size: 15px; }
 
-.stat-card { border-radius: 10px; }
-
 .post-title-row {
   display: flex;
   align-items: center;
@@ -136,4 +117,9 @@ const latestPosts = computed(() => {
 .post-title { font-size: 16px; font-weight: 600; cursor: pointer; }
 .post-title:hover { color: #1890ff; }
 .post-excerpt { color: #888; margin: 4px 0 0; line-height: 1.6; }
+
+/* The feed tabs live in the card title, whose default `overflow: hidden` clips the top of
+   the tab labels. Let the title overflow show and drop the tab-bar's own bottom margin. */
+.feed-card :deep(.ant-card-head-title) { overflow: visible; }
+.feed-tabs :deep(.ant-tabs-nav) { margin: 0; }
 </style>

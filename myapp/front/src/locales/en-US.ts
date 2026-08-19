@@ -249,6 +249,10 @@ export default {
     tagline: 'Your personal tech blog & knowledge hub. Explore, learn, and grow every day.',
     latestPosts: '📝 Latest Posts',
     all: 'All',
+    recommended: '🔥 Recommended',
+    following: '👥 Following',
+    noPosts: 'No posts yet',
+    noFollowingPosts: 'No posts from people you follow yet. Find and follow authors to see their posts here.',
     writePost: 'Write Post',
   },
   personal: {
