@@ -56,7 +56,7 @@ const { t } = useI18n()
       <HomeOutlined />
       <span>{{ t('menu.home') }}</span>
     </a-menu-item>
-    <a-sub-menu key="home-sub">
+    <a-sub-menu v-if="isAdmin" key="home-sub">
       <template #title>
         <UnorderedListOutlined />
         <span>{{ t('menu.blog') }}</span>

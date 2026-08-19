@@ -60,9 +60,9 @@ const listLoading = computed(() =>
         </a-tabs>
       </template>
       <template #extra>
-        <a-button type="primary" size="small" @click="router.push('/blog/add')">
+        <a-button type="primary" size="small" class="write-btn" @click="router.push('/blog/add')">
           <template #icon><EditOutlined /></template>
-          {{ t('home.writePost') }}
+          <span class="write-label">{{ t('home.writePost') }}</span>
         </a-button>
       </template>
 
@@ -120,6 +120,17 @@ const listLoading = computed(() =>
 
 /* The feed tabs live in the card title, whose default `overflow: hidden` clips the top of
    the tab labels. Let the title overflow show and drop the tab-bar's own bottom margin. */
-.feed-card :deep(.ant-card-head-title) { overflow: visible; }
+.feed-card :deep(.ant-card-head-title) { overflow: visible; min-width: 0; }
 .feed-tabs :deep(.ant-tabs-nav) { margin: 0; }
+
+/* Keep the tabs and the Write Post button on one stable row: the title may shrink, the
+   button never does (prevents the English label squeezing / overlapping the tabs). */
+.feed-card :deep(.ant-card-head-wrapper) { align-items: center; gap: 8px; }
+.feed-card :deep(.ant-card-extra) { flex: 0 0 auto; }
+.write-btn { white-space: nowrap; }
+
+/* On phones, collapse the button to its icon so the tabs get the full width. */
+@media (max-width: 575px) {
+  .write-label { display: none; }
+}
 </style>
