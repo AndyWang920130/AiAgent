@@ -53,3 +53,6 @@ app:
     allowed-origins: http://localhost:5173
   mail:
     from: ${APP_MAIL_FROM:${spring.mail.username}}
+twsny:
+  excel:
+    default-sheet-name: Data

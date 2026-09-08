@@ -8,8 +8,10 @@ import {
   EditOutlined,
   DeleteOutlined,
   PlusOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons-vue'
 import { posts, loading, fetchPosts, deletePost, type Post } from '../stores/blog'
+import { blogApi } from '../api/blog'
 import { getUser } from '../utils/auth'
 
 const { t } = useI18n()
@@ -24,6 +26,46 @@ function canManage(post: Post) {
 const searchText = ref('')
 const selectedCategory = ref<string | undefined>(undefined)
 const categories = ['Frontend', 'Backend', 'Language', 'DevOps']
+
+const exporting = ref(false)
+
+// Pull the download filename out of the Content-Disposition header (RFC 5987
+// `filename*=` first, then plain `filename=`), falling back to a sensible default.
+function filenameFromDisposition(cd?: string): string {
+  const fallback = 'blogs.xlsx'
+  if (!cd) return fallback
+  const match = /filename\*=(?:UTF-8'')?([^;]+)/i.exec(cd) || /filename="?([^";]+)"?/i.exec(cd)
+  if (!match) return fallback
+  try {
+    return decodeURIComponent(match[1].trim().replace(/["']/g, ''))
+  } catch {
+    return match[1].trim().replace(/["']/g, '')
+  }
+}
+
+async function handleExport() {
+  exporting.value = true
+  try {
+    const res = await blogApi.exportExcel()
+    const contentType = (res.headers['content-type'] as string | undefined)
+      || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    const blob = new Blob([res.data], { type: contentType })
+    const filename = filenameFromDisposition(res.headers['content-disposition'] as string | undefined)
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+    message.success(t('blog.exportSuccess'))
+  } catch {
+    message.error(t('blog.exportFailed'))
+  } finally {
+    exporting.value = false
+  }
+}
 
 onMounted(() => fetchPosts())
 
@@ -69,10 +111,16 @@ function handleDelete(id: number, title: string) {
     <a-card :bordered="false">
       <template #title>{{ t('blog.listTitle') }}</template>
       <template #extra>
-        <a-button type="primary" @click="router.push('/blog/add')">
-          <template #icon><PlusOutlined /></template>
-          {{ t('blog.addPost') }}
-        </a-button>
+        <a-space>
+          <a-button :loading="exporting" @click="handleExport">
+            <template #icon><DownloadOutlined /></template>
+            {{ exporting ? t('blog.exporting') : t('blog.exportPost') }}
+          </a-button>
+          <a-button type="primary" @click="router.push('/blog/add')">
+            <template #icon><PlusOutlined /></template>
+            {{ t('blog.addPost') }}
+          </a-button>
+        </a-space>
       </template>
 
       <div class="filter-bar">

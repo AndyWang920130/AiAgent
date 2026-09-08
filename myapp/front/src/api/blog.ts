@@ -134,6 +134,11 @@ export const blogApi = {
       totalPosts: number; totalViews: number; totalLikes: number; totalComments: number
     }),
 
+  // Admin-only: download all blogs as an .xlsx file. Returns the raw response so the
+  // caller can read the Content-Disposition filename and build the blob download.
+  exportExcel: () =>
+    http.get('/api/v1/blogs/export', { responseType: 'blob' }),
+
   remove: (id: number) =>
     http.delete(`/api/v1/blogs/${id}`),
 

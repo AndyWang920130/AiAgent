@@ -1,12 +1,15 @@
 package com.example.myapp.web.rest;
 
+import cn.twsny.excel.core.ExcelTemplate;
 import com.example.myapp.service.BlogService;
 import com.example.myapp.service.BlogViewHistoryService;
 import com.example.myapp.service.dto.BlogDTO;
+import com.example.myapp.service.dto.BlogExportDTO;
 import com.example.myapp.service.dto.BlogViewHistoryDTO;
 import com.example.myapp.utils.PageUtils;
 import com.example.myapp.web.rest.vm.BlogStats;
 import com.example.myapp.web.rest.errors.BadRequestAlertException;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.slf4j.Logger;
@@ -42,9 +45,12 @@ public class BlogResource {
 
     private final BlogViewHistoryService blogViewHistoryService;
 
-    public BlogResource(BlogService blogService, BlogViewHistoryService blogViewHistoryService) {
+    private final ExcelTemplate excelTemplate;
+
+    public BlogResource(BlogService blogService, BlogViewHistoryService blogViewHistoryService, ExcelTemplate excelTemplate) {
         this.blogService = blogService;
         this.blogViewHistoryService = blogViewHistoryService;
+        this.excelTemplate = excelTemplate;
     }
 
     /**
@@ -120,6 +126,21 @@ public class BlogResource {
     public ResponseEntity<BlogStats> getBlogStats() {
         LOG.debug("REST request to get public Blog stats");
         return ResponseEntity.ok(blogService.getStats());
+    }
+
+    /**
+     * GET /blogs/export : Export all blogs to an .xlsx file.
+     *
+     * <p>Administrator-only; access is restricted in SecurityConfig
+     * ({@code GET /api/v1/blogs/export} requires ROLE_ADMIN). The starter's
+     * {@link ExcelTemplate} streams the workbook straight to the response and sets
+     * the download headers, so this method returns {@code void}.
+     */
+    @GetMapping("/blogs/export")
+    public void exportBlogs(HttpServletResponse response) {
+        LOG.debug("REST request to export all Blogs to Excel");
+        List<BlogExportDTO> rows = blogService.exportAll();
+        excelTemplate.writeToResponse(response, "blogs", rows, BlogExportDTO.class);
     }
 
     /**

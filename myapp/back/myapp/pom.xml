@@ -110,6 +110,13 @@
 			<artifactId>mapstruct</artifactId>
 			<version>1.6.3</version>
 		</dependency>
+
+		<!-- custom maven jar, Temporarily, it was installed manually by copying the JAR file directly into the local Maven repository.-->
+		<dependency>
+			<groupId>cn.twsny</groupId>
+			<artifactId>excel-spring-boot-starter</artifactId>
+			<version>1.0.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>

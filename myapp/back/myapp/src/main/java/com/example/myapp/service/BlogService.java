@@ -8,6 +8,7 @@ import com.example.myapp.repository.BlogRepository;
 import com.example.myapp.repository.UserFollowRepository;
 import com.example.myapp.service.dto.BlogViewHistoryDTO;
 import com.example.myapp.service.dto.BlogDTO;
+import com.example.myapp.service.dto.BlogExportDTO;
 import com.example.myapp.service.mapper.BlogMapper;
 import com.example.myapp.utils.SecurityUtil;
 import com.example.myapp.web.rest.vm.BlogStats;
@@ -15,11 +16,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,6 +37,10 @@ import java.util.Optional;
 public class BlogService {
 
     private static final Logger LOG = LoggerFactory.getLogger(BlogService.class);
+
+    /** Renders audit {@link Instant}s as {@code yyyy-MM-dd HH:mm:ss} in UTC for the export. */
+    private static final DateTimeFormatter EXPORT_DATE_FORMATTER =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC);
 
     private final BlogRepository blogRepository;
 
@@ -139,6 +149,46 @@ public class BlogService {
     public Page<BlogDTO> findAll(Pageable pageable) {
         LOG.debug("Request to get all Blogs");
         return blogRepository.findByVisibility(BlogVisibility.PUBLIC, pageable).map(blogMapper::toDto);
+    }
+
+    /**
+     * Export every blog as a flat list of Excel rows, newest first. Intended for
+     * administrators only (enforced in SecurityConfig): unlike {@link #findAll(Pageable)}
+     * this deliberately includes non-public blogs (private, drafts, archived).
+     *
+     * @return all blogs mapped to {@link BlogExportDTO}.
+     */
+    @Transactional(readOnly = true)
+    public List<BlogExportDTO> exportAll() {
+        LOG.debug("Request to export all Blogs");
+        List<Blog> blogs = blogRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
+        List<BlogExportDTO> rows = new ArrayList<>(blogs.size());
+        for (Blog blog : blogs) {
+            rows.add(toExportDto(blog));
+        }
+        return rows;
+    }
+
+    private BlogExportDTO toExportDto(Blog blog) {
+        BlogExportDTO dto = new BlogExportDTO();
+        dto.setId(blog.getId());
+        dto.setTitle(blog.getTitle());
+        dto.setAuthor(blog.getAuthor());
+        dto.setCategory(blog.getCategory());
+        dto.setTag(blog.getTag());
+        dto.setStatus(blog.getStatus() != null ? blog.getStatus().name() : null);
+        dto.setVisibility(blog.getVisibility() != null ? blog.getVisibility().name() : null);
+        dto.setViewCount(blog.getViewCount());
+        dto.setLikes(blog.getLikes());
+        dto.setCommentCount(blog.getCommentCount());
+        dto.setCreatedBy(blog.getCreatedBy());
+        dto.setCreatedDate(formatInstant(blog.getCreatedDate()));
+        dto.setLastModifiedDate(formatInstant(blog.getLastModifiedDate()));
+        return dto;
+    }
+
+    private String formatInstant(Instant instant) {
+        return instant != null ? EXPORT_DATE_FORMATTER.format(instant) : null;
     }
 
     /**

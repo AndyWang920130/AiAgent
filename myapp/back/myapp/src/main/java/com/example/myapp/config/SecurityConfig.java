@@ -56,6 +56,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/blog-configs/**", "/api/v1/game-configs/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/ecg-records/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/data-integrations/**").hasRole("ADMIN")
+                // Blog export is administrator-only; must precede the authenticated fallthrough.
+                .requestMatchers(HttpMethod.GET, "/api/v1/blogs/export").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex
