@@ -120,6 +120,19 @@ public class BlogResource {
     }
 
     /**
+     * GET /blogs/recommended : Get a page of public blogs ranked for the home feed by
+     * engagement (likes, then views, then newest). Paginated so the feed can grow via
+     * "Show more" without loading everything at once.
+     */
+    @GetMapping("/blogs/recommended")
+    public ResponseEntity<List<BlogDTO>> getRecommendedBlogs(@PageableDefault Pageable pageable) {
+        LOG.debug("REST request to get a page of recommended Blogs");
+        Page<BlogDTO> page = blogService.findRecommended(pageable);
+        HttpHeaders headers = PageUtils.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
+        return ResponseEntity.ok().headers(headers).body(page.getContent());
+    }
+
+    /**
      * GET /blogs/stats : Get site-wide aggregate stats over public blogs.
      */
     @GetMapping("/blogs/stats")

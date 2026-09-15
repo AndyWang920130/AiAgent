@@ -77,6 +77,9 @@ public class SecurityConfig {
         config.setAllowedOriginPatterns(List.of(allowedOrigins.split(",")));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
+        // Expose the pagination headers so the browser lets JS read them cross-origin
+        // (X-Total-Count drives "Show more"); Content-Disposition is read by the blog export.
+        config.setExposedHeaders(List.of("X-Total-Count", "Link", "Content-Disposition"));
         config.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

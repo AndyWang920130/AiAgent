@@ -254,6 +254,7 @@ export default {
     noPosts: '暂无文章',
     noFollowingPosts: '你关注的用户还没有发布文章。搜索并关注作者，即可在此看到他们的文章。',
     writePost: '写文章',
+    showMore: '显示更多',
   },
   personal: {
     postsWritten: '发布文章',

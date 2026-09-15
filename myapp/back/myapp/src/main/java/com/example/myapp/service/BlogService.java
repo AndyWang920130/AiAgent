@@ -152,6 +152,20 @@ public class BlogService {
     }
 
     /**
+     * Get a page of public blogs ranked for the home "Recommended" feed (likes, then views,
+     * then newest). Ranking is applied by the repository query, so the caller's {@code pageable}
+     * only needs to carry page and size.
+     *
+     * @param pageable the pagination information (page and size).
+     * @return one page of recommended blogs.
+     */
+    @Transactional(readOnly = true)
+    public Page<BlogDTO> findRecommended(Pageable pageable) {
+        LOG.debug("Request to get a page of recommended Blogs");
+        return blogRepository.findRecommended(BlogVisibility.PUBLIC, pageable).map(blogMapper::toDto);
+    }
+
+    /**
      * Export every blog as a flat list of Excel rows, newest first. Intended for
      * administrators only (enforced in SecurityConfig): unlike {@link #findAll(Pageable)}
      * this deliberately includes non-public blogs (private, drafts, archived).

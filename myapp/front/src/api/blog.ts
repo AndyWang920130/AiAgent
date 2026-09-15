@@ -57,6 +57,26 @@ export function mapBlog(dto: any): Post {
   }
 }
 
+export interface PageParams {
+  page: number
+  size: number
+}
+
+export interface PagedPosts {
+  items: Post[]
+  total: number
+}
+
+// Read a paginated blog response into {items, total}. The total comes from the
+// X-Total-Count header (set by the backend's PageUtils); if it's missing — e.g. the
+// header wasn't exposed — we fall back to the page length so the UI still renders.
+function toPagedPosts(r: any): PagedPosts {
+  const items = (r.data as any[]).map(mapBlog)
+  const header = r.headers?.['x-total-count']
+  const total = header != null && header !== '' ? Number(header) : items.length
+  return { items, total }
+}
+
 export const blogApi = {
   list: () =>
     http.get('/api/v1/blogs', { params: { size: 100, sort: 'id,desc' } })
@@ -66,9 +86,15 @@ export const blogApi = {
     http.get('/api/v1/blogs/my', { params: { size: 100, sort: 'id,desc' } })
       .then(r => (r.data as any[]).map(mapBlog)),
 
-  listFollowing: () =>
-    http.get('/api/v1/blogs/following', { params: { size: 100, sort: 'id,desc' } })
-      .then(r => (r.data as any[]).map(mapBlog)),
+  // Home "Recommended" feed — server-ranked by engagement, one page at a time.
+  listRecommended: (p: PageParams) =>
+    http.get('/api/v1/blogs/recommended', { params: { page: p.page, size: p.size } })
+      .then(toPagedPosts),
+
+  // Home "Following" feed — newest first, one page at a time.
+  listFollowing: (p: PageParams) =>
+    http.get('/api/v1/blogs/following', { params: { page: p.page, size: p.size, sort: 'id,desc' } })
+      .then(toPagedPosts),
 
   get: (id: number) =>
     http.get(`/api/v1/blogs/${id}`).then(r => mapBlog(r.data)),

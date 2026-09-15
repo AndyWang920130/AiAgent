@@ -17,12 +17,14 @@ export interface Post {
   visibility: 'PUBLIC' | 'PRIVATE'
 }
 
+// Page size for the home feeds. "Show more" fetches one more page of this size from the
+// server, so the number of rendered posts stays bounded no matter how large the dataset grows.
+export const PAGE_SIZE = 6
+
 export const posts = ref<Post[]>([])
 export const myPosts = ref<Post[]>([])
-export const followingPosts = ref<Post[]>([])
 export const loading = ref(false)
 export const loadingMyPosts = ref(false)
-export const loadingFollowing = ref(false)
 
 export async function fetchPosts() {
   loading.value = true
@@ -33,10 +35,65 @@ export async function fetchPosts() {
   }
 }
 
+// --- Home "Recommended" feed (server-ranked by engagement, paged) ---
+export const recommendedPosts = ref<Post[]>([])
+export const recommendedTotal = ref(0)
+export const loadingRecommended = ref(false)
+let recommendedPage = 0
+
+export async function fetchRecommended() {
+  loadingRecommended.value = true
+  try {
+    const { items, total } = await blogApi.listRecommended({ page: 0, size: PAGE_SIZE })
+    recommendedPosts.value = items
+    recommendedTotal.value = total
+    recommendedPage = 0
+  } finally {
+    loadingRecommended.value = false
+  }
+}
+
+export async function loadMoreRecommended() {
+  if (loadingRecommended.value) return
+  loadingRecommended.value = true
+  try {
+    const next = recommendedPage + 1
+    const { items, total } = await blogApi.listRecommended({ page: next, size: PAGE_SIZE })
+    recommendedPosts.value = [...recommendedPosts.value, ...items]
+    recommendedTotal.value = total
+    recommendedPage = next
+  } finally {
+    loadingRecommended.value = false
+  }
+}
+
+// --- Home "Following" feed (newest first, paged) ---
+export const followingPosts = ref<Post[]>([])
+export const followingTotal = ref(0)
+export const loadingFollowing = ref(false)
+let followingPage = 0
+
 export async function fetchFollowingPosts() {
   loadingFollowing.value = true
   try {
-    followingPosts.value = await blogApi.listFollowing()
+    const { items, total } = await blogApi.listFollowing({ page: 0, size: PAGE_SIZE })
+    followingPosts.value = items
+    followingTotal.value = total
+    followingPage = 0
+  } finally {
+    loadingFollowing.value = false
+  }
+}
+
+export async function loadMoreFollowing() {
+  if (loadingFollowing.value) return
+  loadingFollowing.value = true
+  try {
+    const next = followingPage + 1
+    const { items, total } = await blogApi.listFollowing({ page: next, size: PAGE_SIZE })
+    followingPosts.value = [...followingPosts.value, ...items]
+    followingTotal.value = total
+    followingPage = next
   } finally {
     loadingFollowing.value = false
   }

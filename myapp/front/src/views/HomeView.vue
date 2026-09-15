@@ -3,8 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
-  posts, loading, fetchPosts,
-  followingPosts, loadingFollowing, fetchFollowingPosts,
+  recommendedPosts, recommendedTotal, loadingRecommended, fetchRecommended, loadMoreRecommended,
+  followingPosts, followingTotal, loadingFollowing, fetchFollowingPosts, loadMoreFollowing,
 } from '../stores/blog'
 import {
   EyeOutlined,
@@ -19,26 +19,38 @@ const router = useRouter()
 const feedTab = ref<'recommended' | 'following'>('recommended')
 
 onMounted(() => {
-  fetchPosts()
+  fetchRecommended()
   fetchFollowingPosts()
 })
 
-// "Recommended" ranks public posts by engagement (likes, then views) and shows the top slice.
-const recommendedPosts = computed(() =>
-  [...posts.value]
-    .sort((a, b) => (b.likes - a.likes) || (b.views - a.views))
-    .slice(0, 6),
-)
-
-const followingList = computed(() => followingPosts.value.slice(0, 6))
+// Each tab is a server-paginated feed: the store holds the posts loaded so far plus the
+// server's total. "Show more" fetches the next page and appends it, so the feed grows on
+// demand and stays bounded — never loading more than the user has asked to see.
+const isFollowing = computed(() => feedTab.value === 'following')
 
 const displayedPosts = computed(() =>
-  feedTab.value === 'following' ? followingList.value : recommendedPosts.value,
+  isFollowing.value ? followingPosts.value : recommendedPosts.value,
 )
 
-const listLoading = computed(() =>
-  feedTab.value === 'following' ? loadingFollowing.value : loading.value,
+const activeLoading = computed(() =>
+  isFollowing.value ? loadingFollowing.value : loadingRecommended.value,
 )
+
+// The list spinner covers the initial (empty) load; once posts are showing, an in-flight
+// fetch is a "Show more" append, so the spinner moves to the button instead of dimming the feed.
+const listLoading = computed(() => activeLoading.value && displayedPosts.value.length === 0)
+const loadingMore = computed(() => activeLoading.value && displayedPosts.value.length > 0)
+
+const hasMore = computed(() =>
+  isFollowing.value
+    ? followingPosts.value.length < followingTotal.value
+    : recommendedPosts.value.length < recommendedTotal.value,
+)
+
+function showMore() {
+  if (isFollowing.value) loadMoreFollowing()
+  else loadMoreRecommended()
+}
 </script>
 
 <template>
@@ -92,6 +104,10 @@ const listLoading = computed(() =>
           />
         </template>
       </a-list>
+
+      <div v-if="hasMore" class="show-more">
+        <a-button :loading="loadingMore" @click="showMore">{{ t('home.showMore') }}</a-button>
+      </div>
     </a-card>
   </div>
 </template>
@@ -117,6 +133,8 @@ const listLoading = computed(() =>
 .post-title { font-size: 16px; font-weight: 600; cursor: pointer; }
 .post-title:hover { color: #1890ff; }
 .post-excerpt { color: #888; margin: 4px 0 0; line-height: 1.6; }
+
+.show-more { display: flex; justify-content: center; margin-top: 16px; }
 
 /* The feed tabs live in the card title, whose default `overflow: hidden` clips the top of
    the tab labels. Let the title overflow show and drop the tab-bar's own bottom margin. */

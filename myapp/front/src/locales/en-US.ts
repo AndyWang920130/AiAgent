@@ -254,6 +254,7 @@ export default {
     noPosts: 'No posts yet',
     noFollowingPosts: 'No posts from people you follow yet. Find and follow authors to see their posts here.',
     writePost: 'Write Post',
+    showMore: 'Show more',
   },
   personal: {
     postsWritten: 'Posts Written',

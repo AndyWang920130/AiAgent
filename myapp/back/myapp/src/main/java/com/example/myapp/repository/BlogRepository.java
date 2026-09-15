@@ -19,6 +19,16 @@ import java.util.List;
 public interface BlogRepository extends JpaRepository<Blog, Long> {
     Page<Blog> findByVisibility(BlogVisibility visibility, Pageable pageable);
 
+    /**
+     * Public blogs ranked for the home "Recommended" feed: most-liked first, then most-viewed,
+     * with id as a stable tie-breaker so pagination is deterministic (rows with equal likes and
+     * views keep a fixed order across pages). The ordering lives here rather than in the caller's
+     * {@link Pageable} so ranking stays authoritative on the server and pages line up correctly.
+     */
+    @Query(value = "select b from Blog b where b.visibility = :visibility order by b.likes desc, b.viewCount desc, b.id desc",
+           countQuery = "select count(b) from Blog b where b.visibility = :visibility")
+    Page<Blog> findRecommended(@Param("visibility") BlogVisibility visibility, Pageable pageable);
+
     Page<Blog> findByCreatedBy(String createdBy, Pageable pageable);
 
     Page<Blog> findByAuthor(String author, Pageable pageable);
