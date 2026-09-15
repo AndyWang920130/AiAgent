@@ -12,7 +12,7 @@ RUN mvn install:install-file \
     -DgroupId=cn.twsny \
     -DartifactId=excel-spring-boot-starter \
     -Dversion=1.0.0 \
-    -Dpackaging=jar \
+    -Dpackaging=jar
 
 # 下载项目依赖
 RUN mvn -B dependency:go-offline
