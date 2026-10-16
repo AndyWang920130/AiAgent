@@ -80,6 +80,7 @@ const keyToPath: Record<string, string> = {
   'lottery': '/mini-game/lottery',
   'class-lottery': '/mini-game/class-lottery',
   'gomoku': '/mini-game/gomoku',
+  'stock-list': '/stock/list',
 }
 
 const pathToKey: Record<string, string> = Object.fromEntries(

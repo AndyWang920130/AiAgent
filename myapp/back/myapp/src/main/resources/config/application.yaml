@@ -18,3 +18,12 @@ app:
     invite-timeout-seconds: 300   # a pending invite expires after 5 minutes
     game-timeout-seconds: 1800    # a game running longer than 30 minutes ends in a draw
     move-timeout-seconds: 120     # a player who does not move within 120s forfeits
+  stock:
+    # Quote source for the Stock Center: tencent (default, reachable from mainland China,
+    # batches every symbol into one request) or yahoo (one request per symbol).
+    provider: tencent
+    max-stocks: 200               # cap per user's watch list
+    tencent:
+      base-url: https://qt.gtimg.cn
+    yahoo:
+      base-url: https://query1.finance.yahoo.com

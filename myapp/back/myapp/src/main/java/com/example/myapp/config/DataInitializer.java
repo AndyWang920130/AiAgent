@@ -5,11 +5,14 @@ import com.example.myapp.contants.enumeration.BlogConfigType;
 import com.example.myapp.contants.enumeration.GameConfigType;
 import com.example.myapp.contants.enumeration.AchievementType;
 import com.example.myapp.contants.enumeration.Role;
+import com.example.myapp.contants.enumeration.StockMarket;
 import com.example.myapp.domain.Blog;
 import com.example.myapp.domain.BlogConfig;
 import com.example.myapp.domain.DataIntegration;
 import com.example.myapp.domain.EcgRecord;
 import com.example.myapp.domain.GameConfig;
+import com.example.myapp.domain.Stock;
+import com.example.myapp.domain.StockWatch;
 import com.example.myapp.domain.User;
 import com.example.myapp.repository.AchievementRepository;
 import com.example.myapp.repository.BlogConfigRepository;
@@ -17,6 +20,8 @@ import com.example.myapp.repository.BlogRepository;
 import com.example.myapp.repository.DataIntegrationRepository;
 import com.example.myapp.repository.EcgRecordRepository;
 import com.example.myapp.repository.GameConfigRepository;
+import com.example.myapp.repository.StockRepository;
+import com.example.myapp.repository.StockWatchRepository;
 import com.example.myapp.repository.UserRepository;
 import com.example.myapp.service.AchievementService;
 import com.example.myapp.service.EcgSignalGenerator;
@@ -43,6 +48,8 @@ public class DataInitializer {
     private final AchievementService achievementService;
     private final EcgRecordRepository ecgRecordRepository;
     private final DataIntegrationRepository dataIntegrationRepository;
+    private final StockRepository stockRepository;
+    private final StockWatchRepository stockWatchRepository;
 
     /**
      * Logins created by {@link #createUserIfMissing} at startup. These accounts are
@@ -118,8 +125,40 @@ public class DataInitializer {
         initGameConfig();
         seedEcgRecords();
         seedDataIntegrations();
+        seedStocks();
         backfillAchievements();
         backfillRegistrationAchievements();
+    }
+
+    /**
+     * Seed a small watch list across the supported markets so the Stock List page isn't
+     * empty on a fresh database. Names are defaults for display before the first quote;
+     * the provider overwrites each one on refresh. Prices stay null until then — startup
+     * deliberately does not call the quote API, so booting never depends on a third party
+     * being reachable. Runs only when no records exist.
+     *
+     * <p>The two seeded logins get deliberately different lists, overlapping on one symbol,
+     * so a fresh database shows both halves of the design at a glance: lists are private,
+     * and a symbol two users follow is still a single shared row with one history.
+     */
+    private void seedStocks() {
+        if (stockRepository.count() > 0) {
+            return;
+        }
+        Stock maotai = stockRepository.save(new Stock().market(StockMarket.SH).code("600519").name("贵州茅台").currency("CNY"));
+        Stock pingAn = stockRepository.save(new Stock().market(StockMarket.SZ).code("000001").name("平安银行").currency("CNY"));
+        Stock tencent = stockRepository.save(new Stock().market(StockMarket.HK).code("00700").name("腾讯控股").currency("HKD"));
+        Stock apple = stockRepository.save(new Stock().market(StockMarket.US).code("AAPL").name("苹果").currency("USD"));
+
+        watch("admin", maotai, tencent, apple);
+        watch("user", pingAn, apple);
+    }
+
+    /** Add each stock to one user's watch list. */
+    private void watch(String username, Stock... stocks) {
+        for (Stock stock : stocks) {
+            stockWatchRepository.save(new StockWatch().username(username).stock(stock));
+        }
     }
 
     /**

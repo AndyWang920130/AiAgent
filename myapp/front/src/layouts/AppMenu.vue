@@ -21,6 +21,7 @@ import {
   CodeOutlined,
   DatabaseOutlined,
   BorderOutlined,
+  LineChartOutlined,
 } from '@ant-design/icons-vue'
 
 defineProps<{
@@ -114,6 +115,16 @@ const { t } = useI18n()
       <a-menu-item key="data-integration" @click="emit('navigate', 'data-integration')">
         <ApiOutlined />
         <span>{{ t('menu.dataIntegration') }}</span>
+      </a-menu-item>
+    </a-sub-menu>
+    <a-sub-menu key="stock-center-sub">
+      <template #title>
+        <LineChartOutlined />
+        <span>{{ t('menu.stockCenter') }}</span>
+      </template>
+      <a-menu-item key="stock-list" @click="emit('navigate', 'stock-list')">
+        <UnorderedListOutlined />
+        <span>{{ t('menu.stockList') }}</span>
       </a-menu-item>
     </a-sub-menu>
     <a-sub-menu key="tools-sub">
