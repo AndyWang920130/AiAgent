@@ -8,6 +8,7 @@ import {
   DeleteOutlined,
   LineChartOutlined,
   AreaChartOutlined,
+  SettingOutlined,
 } from '@ant-design/icons-vue'
 import {
   stocks,
@@ -43,9 +44,9 @@ onMounted(async () => {
   }
 })
 
-const columns = computed(() => [
+const allColumns = computed(() => [
   { title: t('stock.code'), key: 'code', width: 130 },
-  { title: t('stock.name'), dataIndex: 'name', key: 'name', ellipsis: true },
+  { title: t('stock.name'), dataIndex: 'name', key: 'name', ellipsis: true, width: 180 },
   { title: t('stock.latestPrice'), key: 'latestPrice', width: 120, align: 'right' as const },
   { title: t('stock.change'), key: 'priceChange', width: 110, align: 'right' as const },
   { title: t('stock.changePercent'), key: 'changePercent', width: 110, align: 'right' as const },
@@ -54,6 +55,65 @@ const columns = computed(() => [
   { title: t('stock.marketTime'), dataIndex: 'marketTimeText', key: 'marketTimeText', width: 170 },
   { title: t('stock.actions'), key: 'actions', width: 150 },
 ])
+
+// --- Column visibility ----------------------------------------------------
+
+const COLUMNS_KEY = 'stock_list_columns'
+const DEFAULT_COLUMN_KEYS = [
+  'code',
+  'name',
+  'latestPrice',
+  'priceChange',
+  'changePercent',
+  'dayHigh',
+  'dayLow',
+  'marketTimeText',
+  'actions',
+]
+
+/** Drop any keys a previous version persisted that no longer exist. */
+function loadVisibleKeys(): string[] {
+  try {
+    const raw = localStorage.getItem(COLUMNS_KEY)
+    if (!raw) return [...DEFAULT_COLUMN_KEYS]
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return [...DEFAULT_COLUMN_KEYS]
+    const known = parsed.filter((k): k is string => DEFAULT_COLUMN_KEYS.includes(k))
+    return known.length ? known : [...DEFAULT_COLUMN_KEYS]
+  } catch {
+    return [...DEFAULT_COLUMN_KEYS]
+  }
+}
+
+const visibleKeys = ref<string[]>(loadVisibleKeys())
+const columnsOpen = ref(false)
+
+watch(visibleKeys, val => {
+  localStorage.setItem(COLUMNS_KEY, JSON.stringify(val))
+})
+
+// Filtering the full list keeps the configured column order regardless of
+// the order the user ticked the boxes in.
+const columns = computed(() => allColumns.value.filter(c => visibleKeys.value.includes(c.key)))
+
+/** Disable the last remaining box so the table can never end up with no columns. */
+const columnOptions = computed(() =>
+  allColumns.value.map(c => ({
+    label: c.title,
+    value: c.key,
+    disabled: visibleKeys.value.length === 1 && visibleKeys.value[0] === c.key,
+  }))
+)
+
+const allColumnsVisible = computed(() => visibleKeys.value.length === allColumns.value.length)
+
+// Shrink the scroll area as columns are hidden, otherwise the table keeps
+// scrolling past the last visible one.
+const scrollX = computed(() => columns.value.reduce((sum, c) => sum + (c.width ?? 120), 0))
+
+function resetColumns() {
+  visibleKeys.value = [...DEFAULT_COLUMN_KEYS]
+}
 
 const historyColumns = computed(() => [
   { title: t('stock.recordedDate'), key: 'recordedDate', width: 180 },
@@ -352,6 +412,30 @@ onBeforeUnmount(() => {
       </template>
       <template #extra>
         <a-space>
+          <a-dropdown v-model:open="columnsOpen" trigger="click" placement="bottomRight">
+            <a-button>
+              <template #icon><SettingOutlined /></template>
+              {{ t('stock.columns') }}
+            </a-button>
+            <template #overlay>
+              <a-card size="small" class="columns-panel" :bordered="false">
+                <div class="columns-panel-head">
+                  <span class="columns-panel-title">
+                    {{ t('stock.columnsVisible', { shown: visibleKeys.length, total: allColumns.length }) }}
+                  </span>
+                  <a-button
+                    type="link"
+                    size="small"
+                    :disabled="allColumnsVisible"
+                    @click="resetColumns"
+                  >
+                    {{ t('stock.columnsReset') }}
+                  </a-button>
+                </div>
+                <a-checkbox-group v-model:value="visibleKeys" :options="columnOptions" class="columns-group" />
+              </a-card>
+            </template>
+          </a-dropdown>
           <a-button :loading="refreshing" @click="handleRefreshAll">
             <template #icon><ReloadOutlined /></template>
             {{ t('stock.refreshAll') }}
@@ -369,7 +453,7 @@ onBeforeUnmount(() => {
         :loading="loading"
         :row-key="(r: StockDTO) => r.id"
         :pagination="{ pageSize: 10, showSizeChanger: false }"
-        :scroll="{ x: 1100 }"
+        :scroll="{ x: scrollX }"
       >
         <template #emptyText>
           <a-empty :description="t('stock.empty')" />
@@ -544,4 +628,18 @@ onBeforeUnmount(() => {
 .flat { color: inherit; }
 .chart-wrap { position: relative; min-height: 60px; }
 .chart { width: 100%; display: block; border-radius: 6px; }
+/* The dropdown overlay carries no surface of its own, so the card supplies the
+   background and shadow and picks up the dark algorithm with it. */
+.columns-panel { min-width: 200px; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12); }
+.columns-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.columns-panel-title { font-size: 12px; opacity: 0.65; }
+/* One column per row; the group lays its items out inline by default. */
+.columns-group { display: flex; flex-direction: column; gap: 8px; }
+.columns-group :deep(.ant-checkbox-wrapper) { margin-inline-start: 0; }
 </style>
