@@ -34,6 +34,7 @@ const router = createRouter({
         { path: 'data-integration/add', name: 'data-integration-add', component: () => import('../views/DataIntegrationEditView.vue'), meta: { requiresAdmin: true } },
         { path: 'data-integration/:id/edit', name: 'data-integration-edit', component: () => import('../views/DataIntegrationEditView.vue'), meta: { requiresAdmin: true } },
         { path: 'stock/list', name: 'stock-list', component: () => import('../views/StockListView.vue') },
+        { path: 'admin/users', name: 'user-list', component: () => import('../views/UserListView.vue'), meta: { requiresAdmin: true } },
         { path: 'notifications', name: 'notifications', component: () => import('../views/NotificationView.vue') },
       ],
     },

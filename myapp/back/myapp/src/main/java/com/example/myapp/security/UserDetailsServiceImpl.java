@@ -21,6 +21,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .map(u -> User.withUsername(u.getLogin())
                         .password(u.getPassword())
                         .roles((u.getRole() != null ? u.getRole() : Role.USER).name())
+                        // An account disabled in User Management must not authenticate.
+                        .disabled(Boolean.TRUE.equals(u.getDeleted()))
                         .build())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }

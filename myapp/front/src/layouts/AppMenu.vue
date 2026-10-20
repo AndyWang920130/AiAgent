@@ -127,6 +127,16 @@ const { t } = useI18n()
         <span>{{ t('menu.stockList') }}</span>
       </a-menu-item>
     </a-sub-menu>
+    <a-sub-menu v-if="isAdmin" key="user-management-sub">
+      <template #title>
+        <TeamOutlined />
+        <span>{{ t('menu.userManagement') }}</span>
+      </template>
+      <a-menu-item key="user-list" @click="emit('navigate', 'user-list')">
+        <UnorderedListOutlined />
+        <span>{{ t('menu.userList') }}</span>
+      </a-menu-item>
+    </a-sub-menu>
     <a-sub-menu key="tools-sub">
       <template #title>
         <ToolOutlined />

@@ -20,7 +20,7 @@ public class BadRequestAlertException extends ErrorResponseException {
     }
 
     public BadRequestAlertException(URI type, String defaultMessage, String entityName, String errorKey) {
-        super(HttpStatus.BAD_REQUEST, ExceptionUtils.buildProblemDetail(type, "Bad Request", entityName, errorKey), null);
+        super(HttpStatus.BAD_REQUEST, ExceptionUtils.buildProblemDetail(type, defaultMessage, entityName, errorKey), null);
         this.entityName = entityName;
         this.errorKey = errorKey;
     }

@@ -121,7 +121,7 @@ async function handleAdd() {
     message.success(t('stock.added'))
     addOpen.value = false
   } catch (e: unknown) {
-    const detail = (e as { response?: { data?: { title?: string } } })?.response?.data?.title
+    const detail = (e as { response?: { data?: { message?: string } } })?.response?.data?.message
     message.error(detail || t('stock.addFailed'))
   } finally {
     adding.value = false

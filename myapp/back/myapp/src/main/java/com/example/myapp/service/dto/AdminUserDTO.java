@@ -1,36 +1,32 @@
 package com.example.myapp.service.dto;
 
-
 import com.example.myapp.contants.enumeration.Gender;
 import com.example.myapp.contants.enumeration.Role;
 import com.example.myapp.contants.enumeration.UserType;
 import com.example.myapp.domain.User;
-import jakarta.validation.constraints.*;
+
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
 
 /**
- * A DTO for the {@link User } entity.
+ * A DTO for the {@link User} entity as seen by an administrator in User Management.
+ *
+ * <p>Deliberately has no {@code password} field. The stored value is a bcrypt hash and
+ * nothing outside the authentication flow has any reason to read it, so it is never
+ * mapped into a response — an administrator resets a password rather than reading it.
  */
-@SuppressWarnings("common-java:DuplicatedBlocks")
-public class UserDTO implements Serializable {
+public class AdminUserDTO implements Serializable {
 
-    @NotNull
+    private static final long serialVersionUID = 1L;
+
     private Long id;
 
-    @NotNull
-    @Size(max = 512)
     private String login;
 
-    @Size(max = 512)
     private String realName;
 
-    @Size(max = 512)
     private String nickName;
-
-    @Size(max = 512)
-    private String password;
 
     private Gender gender;
 
@@ -38,29 +34,21 @@ public class UserDTO implements Serializable {
 
     private Role role;
 
-    @Size(max = 32)
     private String phoneNumber;
 
-    @Size(max = 512)
     private String email;
 
-    @Size(max = 512)
     private String avatar;
 
-    @Size(max = 200)
     private String description;
 
+    /** True when the account is soft-deleted (disabled). Null is treated as active. */
     private Boolean deleted;
 
-    @Size(max = 100)
     private String deleteReason;
-
-    @Size(max = 50)
-    private String createdBy;
 
     private Instant createdDate;
 
-    @Size(max = 50)
     private String lastModifiedBy;
 
     private Instant lastModifiedDate;
@@ -95,14 +83,6 @@ public class UserDTO implements Serializable {
 
     public void setNickName(String nickName) {
         this.nickName = nickName;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
     }
 
     public Gender getGender() {
@@ -177,14 +157,6 @@ public class UserDTO implements Serializable {
         this.deleteReason = deleteReason;
     }
 
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
     public Instant getCreatedDate() {
         return createdDate;
     }
@@ -214,44 +186,14 @@ public class UserDTO implements Serializable {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof UserDTO)) {
+        if (!(o instanceof AdminUserDTO)) {
             return false;
         }
-
-        UserDTO userDTO = (UserDTO) o;
-        if (this.id == null) {
-            return false;
-        }
-        return Objects.equals(this.id, userDTO.id);
+        return id != null && Objects.equals(id, ((AdminUserDTO) o).id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.id);
-    }
-
-    // prettier-ignore
-    @Override
-    public String toString() {
-        return "MyAppUserDTO{" +
-            "id=" + getId() +
-            ", login='" + getLogin() + "'" +
-            ", realName='" + getRealName() + "'" +
-            ", nickName='" + getNickName() + "'" +
-            ", password='" + getPassword() + "'" +
-            ", gender='" + getGender() + "'" +
-            ", userType='" + getUserType() + "'" +
-            ", role='" + getRole() + "'" +
-            ", phoneNumber='" + getPhoneNumber() + "'" +
-            ", email='" + getEmail() + "'" +
-            ", avatar='" + getAvatar() + "'" +
-            ", description='" + getDescription() + "'" +
-            ", deleted='" + getDeleted() + "'" +
-            ", deleteReason='" + getDeleteReason() + "'" +
-            ", createdBy='" + getCreatedBy() + "'" +
-            ", createdDate='" + getCreatedDate() + "'" +
-            ", lastModifiedBy='" + getLastModifiedBy() + "'" +
-            ", lastModifiedDate='" + getLastModifiedDate() + "'" +
-            "}";
+        return Objects.hash(id);
     }
 }
