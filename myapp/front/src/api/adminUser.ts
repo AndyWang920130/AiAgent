@@ -1,7 +1,11 @@
 import http from '../utils/axios'
 
-/** Roles the backend recognises. */
-export type Role = 'USER' | 'ADMIN'
+/**
+ * A role code from the Role Config catalog, not a closed set: roles are rows in the
+ * catalog, so a code added on the Role Config page is assignable here too. The backend
+ * rejects any code that does not name an enabled role.
+ */
+export type Role = string
 export type Gender = 'MALE' | 'FEMALE'
 export type UserType = 'WEB' | 'APP' | 'MINI_PROGRAM'
 

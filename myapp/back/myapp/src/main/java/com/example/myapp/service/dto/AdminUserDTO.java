@@ -1,7 +1,6 @@
 package com.example.myapp.service.dto;
 
 import com.example.myapp.contants.enumeration.Gender;
-import com.example.myapp.contants.enumeration.Role;
 import com.example.myapp.contants.enumeration.UserType;
 import com.example.myapp.domain.User;
 
@@ -32,7 +31,8 @@ public class AdminUserDTO implements Serializable {
 
     private UserType userType;
 
-    private Role role;
+    /** The {@code code} of a role in the Role Config catalog. */
+    private String role;
 
     private String phoneNumber;
 
@@ -101,11 +101,11 @@ public class AdminUserDTO implements Serializable {
         this.userType = userType;
     }
 
-    public Role getRole() {
+    public String getRole() {
         return role;
     }
 
-    public void setRole(Role role) {
+    public void setRole(String role) {
         this.role = role;
     }
 

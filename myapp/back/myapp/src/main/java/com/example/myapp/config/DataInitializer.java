@@ -11,6 +11,7 @@ import com.example.myapp.domain.BlogConfig;
 import com.example.myapp.domain.DataIntegration;
 import com.example.myapp.domain.EcgRecord;
 import com.example.myapp.domain.GameConfig;
+import com.example.myapp.domain.RoleConfig;
 import com.example.myapp.domain.Stock;
 import com.example.myapp.domain.StockWatch;
 import com.example.myapp.domain.User;
@@ -20,6 +21,7 @@ import com.example.myapp.repository.BlogRepository;
 import com.example.myapp.repository.DataIntegrationRepository;
 import com.example.myapp.repository.EcgRecordRepository;
 import com.example.myapp.repository.GameConfigRepository;
+import com.example.myapp.repository.RoleConfigRepository;
 import com.example.myapp.repository.StockRepository;
 import com.example.myapp.repository.StockWatchRepository;
 import com.example.myapp.repository.UserRepository;
@@ -44,6 +46,7 @@ public class DataInitializer {
     private final BlogRepository blogRepository;
     private final BlogConfigRepository blogConfigRepository;
     private final GameConfigRepository gameConfigRepository;
+    private final RoleConfigRepository roleConfigRepository;
     private final AchievementRepository achievementRepository;
     private final AchievementService achievementService;
     private final EcgRecordRepository ecgRecordRepository;
@@ -60,8 +63,11 @@ public class DataInitializer {
 
     @PostConstruct
     void init() {
-        createUserIfMissing("admin", "Administrator", "admin@example.com", "admin", Role.ADMIN);
-        createUserIfMissing("user", "Demo User", "user@example.com", "password", Role.USER);
+        // Before the users, which reference these codes by value.
+        initRoleConfig();
+
+        createUserIfMissing("admin", "Administrator", "admin@example.com", "admin", Role.ADMIN.name());
+        createUserIfMissing("user", "Demo User", "user@example.com", "password", Role.USER.name());
 
         if (blogRepository.count() == 0) {
             blogRepository.save(new Blog()
@@ -312,6 +318,39 @@ public class DataInitializer {
         }
     }
 
+    /**
+     * Seed the two roles the app depends on. Both are flagged built-in, which stops the
+     * Role Config page deleting, disabling or re-coding them. Guarded per code, so it is
+     * safe across restarts and leaves any edit to their name or description alone.
+     */
+    private void initRoleConfig() {
+        createRoleConfigIfMissing(
+            Role.ADMIN.name(),
+            "Administrator",
+            "Full access, including system settings and user management",
+            10
+        );
+        createRoleConfigIfMissing(
+            Role.USER.name(),
+            "Regular User",
+            "Standard access for everyday accounts",
+            20
+        );
+    }
+
+    private void createRoleConfigIfMissing(String code, String name, String description, Integer sortOrder) {
+        if (roleConfigRepository.existsByCodeIgnoreCase(code)) {
+            return;
+        }
+        roleConfigRepository.save(new RoleConfig()
+            .code(code)
+            .name(name)
+            .description(description)
+            .sortOrder(sortOrder)
+            .enabled(true)
+            .builtIn(true));
+    }
+
     private void initBlogConfig() {
         createBlogConfigIfMissing(BlogConfigType.CATEGORY, "Frontend", null, "UI, Vue, JavaScript, CSS", 10);
         createBlogConfigIfMissing(BlogConfigType.CATEGORY, "Backend", null, "Services, APIs, databases", 20);
@@ -375,7 +414,7 @@ public class DataInitializer {
             .sortOrder(sortOrder));
     }
 
-    private void createUserIfMissing(String login, String name, String email, String password, Role role) {
+    private void createUserIfMissing(String login, String name, String email, String password, String role) {
         if (userRepository.existsByLogin(login)) {
             return;
         }

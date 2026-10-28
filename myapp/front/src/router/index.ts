@@ -29,6 +29,7 @@ const router = createRouter({
         { path: 'blog/:id/edit', name: 'blog-edit', component: () => import('../views/BlogEditView.vue') },
         { path: 'settings/blog-config', name: 'blog-config', component: () => import('../views/BlogConfigView.vue'), meta: { requiresAdmin: true } },
         { path: 'settings/game-config', name: 'game-config', component: () => import('../views/GameConfigView.vue'), meta: { requiresAdmin: true } },
+        { path: 'settings/role-config', name: 'role-config', component: () => import('../views/RoleConfigView.vue'), meta: { requiresAdmin: true } },
         { path: 'ecg', name: 'ecg-chart', component: () => import('../views/EcgChartView.vue'), meta: { requiresAdmin: true } },
         { path: 'data-integration', name: 'data-integration', component: () => import('../views/DataIntegrationView.vue'), meta: { requiresAdmin: true } },
         { path: 'data-integration/add', name: 'data-integration-add', component: () => import('../views/DataIntegrationEditView.vue'), meta: { requiresAdmin: true } },

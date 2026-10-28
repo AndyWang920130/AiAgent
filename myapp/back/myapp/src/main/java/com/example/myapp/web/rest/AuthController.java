@@ -59,9 +59,9 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("message", "Invalid username or password"));
         }
         User user = userRepository.findOneByLogin(req.username()).orElseThrow();
-        Role role = user.getRole() != null ? user.getRole() : Role.USER;
-        String token = jwtUtil.generate(req.username(), List.of("ROLE_" + role.name()));
-        return ResponseEntity.ok(new AuthResponse(token, new UserInfo(user.getLogin(), user.getRealName(), user.getEmail(), role.name())));
+        String role = user.getRole() != null && !user.getRole().isBlank() ? user.getRole() : Role.USER.name();
+        String token = jwtUtil.generate(req.username(), List.of("ROLE_" + role));
+        return ResponseEntity.ok(new AuthResponse(token, new UserInfo(user.getLogin(), user.getRealName(), user.getEmail(), role)));
     }
 
     @PostMapping("/register")

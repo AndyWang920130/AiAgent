@@ -28,12 +28,13 @@ import java.util.Optional;
  * User Management service, for administrators only (see the {@code /api/v1/admin/**}
  * rule in SecurityConfig).
  *
- * <p>Three rules are enforced here rather than left to the UI, since the API is reachable
+ * <p>Four rules are enforced here rather than left to the UI, since the API is reachable
  * without it: an administrator cannot lock themselves out (no self-demotion, no
- * self-disable), the last active administrator cannot lose that role or be disabled, and
- * passwords are always encoded on the way in. Accounts are disabled rather than deleted —
- * logins are referenced by value across blogs, comments and stock watches, so removing a
- * row would orphan that content.
+ * self-disable), the last active administrator cannot lose that role or be disabled, an
+ * assigned role must name an enabled row in the Role Config catalog, and passwords are
+ * always encoded on the way in. Accounts are disabled rather than deleted — logins are
+ * referenced by value across blogs, comments and stock watches, so removing a row would
+ * orphan that content.
  */
 @Service
 @Transactional
@@ -49,31 +50,36 @@ public class AdminUserService {
 
     private final PasswordEncoder passwordEncoder;
 
+    private final RoleConfigService roleConfigService;
+
     public AdminUserService(
         UserRepository userRepository,
         AdminUserMapper adminUserMapper,
-        PasswordEncoder passwordEncoder
+        PasswordEncoder passwordEncoder,
+        RoleConfigService roleConfigService
     ) {
         this.userRepository = userRepository;
         this.adminUserMapper = adminUserMapper;
         this.passwordEncoder = passwordEncoder;
+        this.roleConfigService = roleConfigService;
     }
 
     /**
      * Page through accounts, narrowed by any combination of the list page's filters.
      *
      * @param query    free-text match on login, real name, nickname or email; blank for all.
-     * @param role     restrict to one role, or null for any.
+     * @param role     restrict to one role code, or null for any.
      * @param disabled true for disabled accounts, false for active, null for both.
      * @param pageable the pagination information.
      * @return a page of accounts.
      */
     @Transactional(readOnly = true)
-    public Page<AdminUserDTO> findAll(String query, Role role, Boolean disabled, Pageable pageable) {
+    public Page<AdminUserDTO> findAll(String query, String role, Boolean disabled, Pageable pageable) {
         LOG.debug("Request to get a page of Users : q={}, role={}, disabled={}", query, role, disabled);
         String term = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
+        String roleCode = role == null || role.isBlank() ? null : normalizeRole(role);
         return userRepository
-            .findForAdmin("%" + term + "%", role, disabled, pageable)
+            .findForAdmin("%" + term + "%", roleCode, disabled, pageable)
             .map(adminUserMapper::toDto);
     }
 
@@ -110,7 +116,7 @@ public class AdminUserService {
             .nickName(request.nickName())
             .email(request.email())
             .password(passwordEncoder.encode(request.password()))
-            .role(request.role())
+            .role(requireAssignableRole(request.role()))
             .gender(request.gender())
             .userType(request.userType())
             .phoneNumber(request.phoneNumber())
@@ -132,9 +138,10 @@ public class AdminUserService {
         if (emailTakenByOther(request.email(), user)) {
             throw new BadRequestAlertException("Email already in use", ENTITY_NAME, "emailexists");
         }
-        if (request.role() != user.getRole()) {
-            guardRoleChange(user, request.role());
-            user.setRole(request.role());
+        String newRole = requireAssignableRole(request.role());
+        if (!newRole.equals(user.getRole())) {
+            guardRoleChange(user, newRole);
+            user.setRole(newRole);
         }
         user.setRealName(request.realName());
         user.setNickName(request.nickName());
@@ -196,11 +203,30 @@ public class AdminUserService {
     }
 
     /**
-     * Refuse a role change that would lock administrators out of the app: demoting
-     * yourself, or demoting the only administrator left.
+     * Normalise a submitted role code and check it against the Role Config catalog. A code
+     * that does not exist, or names a disabled role, is refused — otherwise an account could
+     * be parked on a role that grants it nothing and cannot be reasoned about.
      */
-    private void guardRoleChange(User user, Role newRole) {
-        if (newRole == Role.ADMIN) {
+    private String requireAssignableRole(String role) {
+        String code = normalizeRole(role);
+        if (!roleConfigService.isAssignable(code)) {
+            throw new BadRequestAlertException("Unknown or disabled role: " + code, ENTITY_NAME, "roleinvalid");
+        }
+        return code;
+    }
+
+    private String normalizeRole(String role) {
+        return role.trim().toUpperCase(Locale.ROOT);
+    }
+
+    /**
+     * Refuse a role change that would lock administrators out of the app: demoting
+     * yourself, or demoting the only administrator left. Any role other than
+     * {@code ADMIN} counts as a demotion, since that is the only code the security
+     * rules grant privileged access to.
+     */
+    private void guardRoleChange(User user, String newRole) {
+        if (Role.ADMIN.name().equals(newRole)) {
             return;
         }
         guardSelf(user, "Administrators cannot change their own role");
@@ -214,8 +240,8 @@ public class AdminUserService {
     }
 
     private void guardLastAdmin(User user, String message) {
-        boolean activeAdmin = user.getRole() == Role.ADMIN && !Boolean.TRUE.equals(user.getDeleted());
-        if (activeAdmin && userRepository.countActiveByRole(Role.ADMIN) <= 1) {
+        boolean activeAdmin = Role.ADMIN.name().equals(user.getRole()) && !Boolean.TRUE.equals(user.getDeleted());
+        if (activeAdmin && userRepository.countActiveByRole(Role.ADMIN.name()) <= 1) {
             throw new BadRequestAlertException(message, ENTITY_NAME, "lastadmin");
         }
     }

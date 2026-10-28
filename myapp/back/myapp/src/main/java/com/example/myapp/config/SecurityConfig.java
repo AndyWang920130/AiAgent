@@ -51,9 +51,11 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/change-password").authenticated()
                 .requestMatchers("/api/v1/auth/profile").authenticated()
                 .requestMatchers("/api/v1/auth/**", "/api/v1/code/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/blog-configs/**", "/api/v1/game-configs/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/v1/blog-configs/**", "/api/v1/game-configs/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/v1/blog-configs/**", "/api/v1/game-configs/**").hasRole("ADMIN")
+                // Role config reads are left to any authenticated user: User Management fills
+                // its role dropdown from the catalog. Only writes are administrator-only.
+                .requestMatchers(HttpMethod.POST, "/api/v1/blog-configs/**", "/api/v1/game-configs/**", "/api/v1/role-configs/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/v1/blog-configs/**", "/api/v1/game-configs/**", "/api/v1/role-configs/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/blog-configs/**", "/api/v1/game-configs/**", "/api/v1/role-configs/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/ecg-records/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/data-integrations/**").hasRole("ADMIN")
                 // Everything under /api/v1/admin is administrator-only, including user management.

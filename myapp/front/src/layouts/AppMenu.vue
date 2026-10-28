@@ -14,6 +14,7 @@ import {
   GiftOutlined,
   TrophyOutlined,
   TeamOutlined,
+  SafetyCertificateOutlined,
   HeartOutlined,
   LockOutlined,
   NumberOutlined,
@@ -101,6 +102,10 @@ const { t } = useI18n()
       <a-menu-item key="game-config" @click="emit('navigate', 'game-config')">
         <TrophyOutlined />
         <span>{{ t('menu.gameConfig') }}</span>
+      </a-menu-item>
+      <a-menu-item key="role-config" @click="emit('navigate', 'role-config')">
+        <SafetyCertificateOutlined />
+        <span>{{ t('menu.roleConfig') }}</span>
       </a-menu-item>
     </a-sub-menu>
     <a-sub-menu v-if="isAdmin" key="data-center-sub">

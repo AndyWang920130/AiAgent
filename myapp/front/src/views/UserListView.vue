@@ -34,6 +34,7 @@ import type {
   Role,
   UserType,
 } from '../api/adminUser'
+import { assignableRoles, fetchRoleConfigs, roleLabel } from '../stores/roleConfig'
 import { getUser } from '../utils/auth'
 
 const { t } = useI18n()
@@ -41,8 +42,19 @@ const { t } = useI18n()
 /** Own login, used to hide the actions the backend would refuse anyway. */
 const currentLogin = getUser<{ login?: string }>()?.login ?? ''
 
-const roles: Role[] = ['USER', 'ADMIN']
 const genders: Gender[] = ['MALE', 'FEMALE']
+
+/** The built-in codes that ship with a translated label. */
+const translatedRoles = ['USER', 'ADMIN']
+
+/**
+ * USER and ADMIN keep their translated labels so the page stays localised. A role added on
+ * the Role Config page has no translation, so it shows the name configured there.
+ */
+function roleText(code?: string | null) {
+  const role = code || 'USER'
+  return translatedRoles.includes(role) ? t(`user.roles.${role}`) : roleLabel(role)
+}
 const userTypes: UserType[] = ['WEB', 'APP', 'MINI_PROGRAM']
 
 const columns = computed(() => [
@@ -66,7 +78,11 @@ const pagination = computed(() => ({
   showTotal: (n: number) => t('user.totalCount', { count: n }),
 }))
 
-onMounted(() => load())
+onMounted(() => {
+  load()
+  // The role dropdowns are filled from the Role Config catalog, not a hard-coded list.
+  fetchRoleConfigs()
+})
 
 async function load() {
   try {
@@ -355,8 +371,8 @@ async function handleDisable() {
           allow-clear
           style="width: 140px"
         >
-          <a-select-option v-for="r in roles" :key="r" :value="r">
-            {{ t(`user.roles.${r}`) }}
+          <a-select-option v-for="r in assignableRoles" :key="r.code" :value="r.code">
+            {{ roleText(r.code) }}
           </a-select-option>
         </a-select>
         <a-select
@@ -396,7 +412,7 @@ async function handleDisable() {
           </template>
           <template v-else-if="column.key === 'role'">
             <a-tag :color="record.role === 'ADMIN' ? 'gold' : 'default'">
-              {{ t(`user.roles.${record.role || 'USER'}`) }}
+              {{ roleText(record.role) }}
             </a-tag>
           </template>
           <template v-else-if="column.key === 'status'">
@@ -466,8 +482,8 @@ async function handleDisable() {
           </a-form-item>
           <a-form-item :label="t('user.role')" required>
             <a-select v-model:value="form.role">
-              <a-select-option v-for="r in roles" :key="r" :value="r">
-                {{ t(`user.roles.${r}`) }}
+              <a-select-option v-for="r in assignableRoles" :key="r.code" :value="r.code">
+                {{ roleText(r.code) }}
               </a-select-option>
             </a-select>
           </a-form-item>

@@ -1,6 +1,5 @@
 package com.example.myapp.repository;
 
-import com.example.myapp.contants.enumeration.Role;
 import com.example.myapp.domain.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -65,12 +64,27 @@ public interface UserRepository extends JpaRepository<User, Long> {
         """)
     Page<User> findForAdmin(
         @Param("q") String q,
-        @Param("role") Role role,
+        @Param("role") String role,
         @Param("disabled") Boolean disabled,
         Pageable pageable
     );
 
     /** Active accounts holding a role, used to refuse removing the last administrator. */
     @Query("select count(u) from User u where u.role = :role and coalesce(u.deleted, false) = false")
-    long countActiveByRole(@Param("role") Role role);
+    long countActiveByRole(@Param("role") String role);
+
+    /**
+     * Accounts per role across the whole table, used by the Role Config page for its usage
+     * column and to refuse deleting a role someone still holds. Disabled accounts are
+     * counted too: they keep their role, so dropping it would strand them on re-enable.
+     */
+    @Query("select u.role as role, count(u) as count from User u group by u.role")
+    List<RoleCount> countAllGroupedByRole();
+
+    /** One row of {@link #countAllGroupedByRole()}. */
+    interface RoleCount {
+        String getRole();
+
+        long getCount();
+    }
 }

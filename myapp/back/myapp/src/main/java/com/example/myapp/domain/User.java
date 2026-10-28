@@ -47,9 +47,15 @@ public class User extends AbstractAuditingEntity {
     @Column(name = "user_type")
     private UserType userType;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role")
-    private Role role;
+    /**
+     * The {@code code} of a row in {@code twsny_role_config}, which is the catalog of
+     * assignable roles. Held as a string rather than an enum so a role added on the Role
+     * Config page can be assigned without a code change; {@link Role} still names the two
+     * built-in codes the application itself depends on.
+     */
+    @Size(max = 50)
+    @Column(name = "role", length = 255)
+    private String role;
 
     @Size(max = 32)
     @Column(name = "phone_number", length = 32)
@@ -168,16 +174,16 @@ public class User extends AbstractAuditingEntity {
         this.userType = userType;
     }
 
-    public Role getRole() {
+    public String getRole() {
         return this.role;
     }
 
-    public User role(Role role) {
+    public User role(String role) {
         this.setRole(role);
         return this;
     }
 
-    public void setRole(Role role) {
+    public void setRole(String role) {
         this.role = role;
     }
 

@@ -20,7 +20,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         return userRepository.findOneByLogin(username)
                 .map(u -> User.withUsername(u.getLogin())
                         .password(u.getPassword())
-                        .roles((u.getRole() != null ? u.getRole() : Role.USER).name())
+                        .roles(u.getRole() != null && !u.getRole().isBlank() ? u.getRole() : Role.USER.name())
                         // An account disabled in User Management must not authenticate.
                         .disabled(Boolean.TRUE.equals(u.getDeleted()))
                         .build())

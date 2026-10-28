@@ -75,6 +75,7 @@ const keyToPath: Record<string, string> = {
   'personal': '/personal',
   'blog-config': '/settings/blog-config',
   'game-config': '/settings/game-config',
+  'role-config': '/settings/role-config',
   'ecg-chart': '/ecg',
   'data-integration': '/data-integration',
   'lottery': '/mini-game/lottery',

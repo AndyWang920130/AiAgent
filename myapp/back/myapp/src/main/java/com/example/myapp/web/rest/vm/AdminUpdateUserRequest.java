@@ -1,11 +1,9 @@
 package com.example.myapp.web.rest.vm;
 
 import com.example.myapp.contants.enumeration.Gender;
-import com.example.myapp.contants.enumeration.Role;
 import com.example.myapp.contants.enumeration.UserType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -21,7 +19,8 @@ public record AdminUpdateUserRequest(
 
         @NotBlank @Email @Size(max = 512) String email,
 
-        @NotNull Role role,
+        /** A role code from the Role Config catalog; must name an enabled role. */
+        @NotBlank @Size(max = 50) String role,
 
         @Size(max = 512) String nickName,
         Gender gender,

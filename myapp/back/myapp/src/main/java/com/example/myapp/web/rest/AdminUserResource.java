@@ -1,6 +1,5 @@
 package com.example.myapp.web.rest;
 
-import com.example.myapp.contants.enumeration.Role;
 import com.example.myapp.service.AdminUserService;
 import com.example.myapp.service.dto.AdminUserDTO;
 import com.example.myapp.utils.PageUtils;
@@ -54,13 +53,13 @@ public class AdminUserResource {
      * {@code GET /api/v1/admin/users} : one page of accounts.
      *
      * @param query    free text matched against login, real name, nick name and email.
-     * @param role     keep only this role when set.
+     * @param role     keep only this role code when set.
      * @param disabled keep only disabled ({@code true}) or active ({@code false}) accounts when set.
      */
     @GetMapping("")
     public ResponseEntity<List<AdminUserDTO>> getAllUsers(
         @RequestParam(name = "query", required = false) String query,
-        @RequestParam(name = "role", required = false) Role role,
+        @RequestParam(name = "role", required = false) String role,
         @RequestParam(name = "disabled", required = false) Boolean disabled,
         @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {

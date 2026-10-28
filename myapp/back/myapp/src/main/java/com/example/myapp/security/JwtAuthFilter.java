@@ -56,7 +56,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     /** Authorities from the stored role, not from the token's claim, which may be stale. */
     private List<SimpleGrantedAuthority> currentAuthorities(User user) {
-        Role role = user.getRole() != null ? user.getRole() : Role.USER;
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+        String role = user.getRole() != null && !user.getRole().isBlank() ? user.getRole() : Role.USER.name();
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role));
     }
 }
