@@ -45,7 +45,9 @@ onMounted(async () => {
 })
 
 const allColumns = computed(() => [
-  { title: t('stock.code'), key: 'code', width: 130 },
+  // Pinned so the row stays identifiable and the buttons stay reachable while the middle
+  // columns scroll, which is most of the table on a phone.
+  { title: t('stock.code'), key: 'code', width: 130, fixed: 'left' as const },
   { title: t('stock.name'), dataIndex: 'name', key: 'name', ellipsis: true, width: 180 },
   { title: t('stock.latestPrice'), key: 'latestPrice', width: 120, align: 'right' as const },
   { title: t('stock.change'), key: 'priceChange', width: 110, align: 'right' as const },
@@ -53,7 +55,7 @@ const allColumns = computed(() => [
   { title: t('stock.dayHigh'), key: 'dayHigh', width: 100, align: 'right' as const },
   { title: t('stock.dayLow'), key: 'dayLow', width: 100, align: 'right' as const },
   { title: t('stock.marketTime'), dataIndex: 'marketTimeText', key: 'marketTimeText', width: 170 },
-  { title: t('stock.actions'), key: 'actions', width: 150 },
+  { title: t('stock.actions'), key: 'actions', width: 150, fixed: 'right' as const },
 ])
 
 // --- Column visibility ----------------------------------------------------
@@ -385,14 +387,19 @@ function draw() {
     ctx.fill()
   })
 
-  // First and last timestamps only — intermediate labels never fit.
+  // First and last timestamps only — intermediate labels never fit. On a narrow canvas even
+  // those two overlap, so the last one is dropped rather than drawn over the first.
   ctx.fillStyle = textColor
   ctx.textBaseline = 'bottom'
+  const firstLabel = points[0].label
+  const lastLabel = points[points.length - 1].label
+  const bothFit =
+    ctx.measureText(firstLabel).width + ctx.measureText(lastLabel).width + 16 <= plotWidth
   ctx.textAlign = 'left'
-  ctx.fillText(points[0].label, padding.left, height - 6)
-  if (points.length > 1) {
+  ctx.fillText(firstLabel, padding.left, height - 6)
+  if (points.length > 1 && bothFit) {
     ctx.textAlign = 'right'
-    ctx.fillText(points[points.length - 1].label, padding.left + plotWidth, height - 6)
+    ctx.fillText(lastLabel, padding.left + plotWidth, height - 6)
   }
 }
 
@@ -411,7 +418,7 @@ onBeforeUnmount(() => {
         <LineChartOutlined style="color: #1890ff; margin-right: 8px" />{{ t('stock.title') }}
       </template>
       <template #extra>
-        <a-space>
+        <a-space wrap>
           <a-dropdown v-model:open="columnsOpen" trigger="click" placement="bottomRight">
             <a-button>
               <template #icon><SettingOutlined /></template>
@@ -548,7 +555,12 @@ onBeforeUnmount(() => {
       @after-open-change="(open: boolean) => (open ? (observeCanvas(), draw()) : closeHistory())"
     >
       <template v-if="historyStock">
-        <a-descriptions bordered size="small" :column="2" style="margin-bottom: 16px">
+        <a-descriptions
+          bordered
+          size="small"
+          :column="{ xs: 1, sm: 1, md: 2 }"
+          style="margin-bottom: 16px"
+        >
           <a-descriptions-item :label="t('stock.latestPrice')">
             <span :class="['price', changeClass(historyStock.priceChange)]">
               {{ formatPrice(historyStock.latestPrice) }}
@@ -642,4 +654,28 @@ onBeforeUnmount(() => {
 /* One column per row; the group lays its items out inline by default. */
 .columns-group { display: flex; flex-direction: column; gap: 8px; }
 .columns-group :deep(.ant-checkbox-wrapper) { margin-inline-start: 0; }
+
+/* Below the layout's own 768px breakpoint the header has no room for the title and all
+   three buttons on one line, so the buttons take their own row and the card gives the
+   table back the side padding. */
+@media (max-width: 768px) {
+  .stock-list-view :deep(.ant-card-head-wrapper) {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  .stock-list-view :deep(.ant-card-extra) {
+    width: 100%;
+    margin-inline-start: 0;
+    padding-bottom: 12px;
+  }
+  .stock-list-view :deep(.ant-card-head-title) {
+    padding-bottom: 0;
+  }
+  .stock-list-view :deep(.ant-card-head) {
+    padding-inline: 12px;
+  }
+  .stock-list-view :deep(.ant-card-body) {
+    padding: 12px;
+  }
+}
 </style>
