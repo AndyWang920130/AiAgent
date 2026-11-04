@@ -124,4 +124,31 @@ const jokerMark = computed(() => t(isBigJoker(props.card) ? 'cardGame.jokerBig' 
   font-weight: 700;
   color: #d48806;
 }
+
+/* Phones: every card shrinks, which is where most of the height for a no-scroll table comes
+   from — the hand, the trick and the row under each seat are all sized off these two values.
+   Kept legible rather than minimal: the rank is the only part that must be readable at a
+   glance, so it loses the least. */
+@media (max-width: 768px) {
+  .playing-card {
+    --card-width: 38px;
+    --card-height: 54px;
+  }
+  .playing-card.is-small {
+    --card-width: 30px;
+    --card-height: 42px;
+  }
+  .rank {
+    font-size: 15px;
+  }
+  .playing-card.is-small .rank {
+    font-size: 13px;
+  }
+  .suit {
+    font-size: 12px;
+  }
+  .playing-card.is-selected {
+    transform: translateY(-10px);
+  }
+}
 </style>

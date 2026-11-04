@@ -28,6 +28,12 @@ const props = withDefaults(
     winner?: boolean
     /** Emptied their hand first, collecting the point cards left in the other hands. */
     firstOut?: boolean
+    /**
+     * The viewer's own seat. Only affects phone layout, where it collapses to a single line:
+     * the cards it would show beneath it are already in the hand directly below, so on a
+     * screen that cannot fit everything it is the one seat that can give up the space.
+     */
+    self?: boolean
   }>(),
   {
     active: false,
@@ -37,6 +43,7 @@ const props = withDefaults(
     place: null,
     winner: false,
     firstOut: false,
+    self: false,
   }
 )
 
@@ -57,7 +64,13 @@ const statusTag = computed(() => {
 <template>
   <div
     class="player-seat"
-    :class="{ 'is-active': active, 'is-leading': leading, 'is-winner': winner, 'is-lobby': lobby }"
+    :class="{
+      'is-active': active,
+      'is-leading': leading,
+      'is-winner': winner,
+      'is-lobby': lobby,
+      'is-self': self,
+    }"
   >
     <div class="seat-main">
       <!-- Final placing, in front of the avatar so the order reads down a column of seats. -->
@@ -232,5 +245,68 @@ const statusTag = computed(() => {
 .played-pass {
   font-size: 12px;
   color: rgba(0, 0, 0, 0.35);
+}
+
+/* Phones. The seat keeps its fixed-box behaviour — that is what stops the table shifting —
+   but every number in it comes down, because the whole table has to fit a screen without
+   scrolling. Narrower, tighter padding, smaller type, and a shorter played row off the
+   smaller cards. */
+@media (max-width: 768px) {
+  .player-seat {
+    --seat-width: 152px;
+    --seat-main-height: 48px;
+    /* 4px rule + 30x42 card from PlayingCard.vue's phone sizes. */
+    --seat-played-height: 38px;
+    gap: 4px;
+    padding: 6px 8px;
+  }
+  .player-seat:not(.is-lobby) {
+    /* 6px top + main + 4px gap + played + 6px bottom. */
+    height: calc(var(--seat-main-height) + var(--seat-played-height) + 16px);
+  }
+  .seat-main {
+    gap: 6px;
+  }
+  .seat-name {
+    gap: 4px;
+    font-size: 13px;
+  }
+  .seat-meta {
+    gap: 4px;
+    font-size: 11px;
+  }
+  /* The tags carry a lot of padding for their text at this size. */
+  .seat-meta :deep(.ant-tag) {
+    margin-inline-end: 0;
+    padding-inline: 4px;
+    font-size: 10px;
+    line-height: 16px;
+  }
+  .seat-name :deep(.ant-tag) {
+    margin-inline-end: 0;
+    padding-inline: 4px;
+    font-size: 10px;
+    line-height: 16px;
+  }
+  .seat-played {
+    padding-top: 4px;
+  }
+  .seat-played .playing-card + .playing-card {
+    margin-inline-start: -10px;
+  }
+
+  /* Your own seat, which sits directly above your hand: one line, no played row. Those cards
+     are the ones you just put down out of the hand immediately below it, and on a phone that
+     duplicate is the cheapest thing on the table to give up. */
+  .player-seat.is-self {
+    --seat-width: 100%;
+    --seat-main-height: 36px;
+  }
+  .player-seat.is-self:not(.is-lobby) {
+    height: calc(var(--seat-main-height) + 12px);
+  }
+  .player-seat.is-self .seat-played {
+    display: none;
+  }
 }
 </style>

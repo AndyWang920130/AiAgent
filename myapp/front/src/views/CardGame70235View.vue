@@ -719,6 +719,7 @@ onUnmounted(() => {
               :place="placeByUsername.get(me.username) ?? null"
               :winner="gameOver && me.username === game.winnerUsername"
               :first-out="gameOver && me.username === game.firstOutUsername"
+              self
             />
             <span v-if="selectionLabel" class="selection-points">{{ selectionLabel }}</span>
           </div>
@@ -740,41 +741,46 @@ onUnmounted(() => {
             {{ game.myTurn && !autoPlayOn ? t('cardGame.clickAgainToPlay') : '' }}
           </p>
 
-          <a-space v-if="inGame" wrap class="hand-actions">
-            <a-button
-              type="primary"
-              :loading="playing"
-              :disabled="!selectionPlayable || autoPlayOn"
-              @click="playSelection"
-            >
-              {{ t('cardGame.playCards') }}
-            </a-button>
-            <a-button
-              :loading="playing"
-              :disabled="!game.myTurn || mustLead || autoPlayOn"
-              @click="passTurn"
-            >
-              {{ t('cardGame.pass') }}
-            </a-button>
-            <a-button
-              :disabled="!selectedIndices.length || autoPlayOn"
-              @click="selectedIndices = []"
-            >
-              {{ t('cardGame.clearSelection') }}
-            </a-button>
-          </a-space>
+          <!-- The buttons and the auto-play switch, wrapped together so a phone can put them
+               on one line. They stay two rows on a desktop, where the switch reads better
+               under the actions it governs than beside them. -->
+          <div v-if="inGame" class="control-rows">
+            <a-space wrap class="hand-actions">
+              <a-button
+                type="primary"
+                :loading="playing"
+                :disabled="!selectionPlayable || autoPlayOn"
+                @click="playSelection"
+              >
+                {{ t('cardGame.playCards') }}
+              </a-button>
+              <a-button
+                :loading="playing"
+                :disabled="!game.myTurn || mustLead || autoPlayOn"
+                @click="passTurn"
+              >
+                {{ t('cardGame.pass') }}
+              </a-button>
+              <a-button
+                :disabled="!selectedIndices.length || autoPlayOn"
+                @click="selectedIndices = []"
+              >
+                {{ t('cardGame.clearSelection') }}
+              </a-button>
+            </a-space>
 
-          <!-- A mode rather than an action, so it sits with the hand it governs instead of in
-               the corner with Leave. The buttons above are disabled while it is on: the server
-               takes the turn on the next read, so a click would be racing something it cannot
-               beat. -->
-          <div v-if="inGame" class="auto-play-row">
-            <a-switch
-              :checked="autoPlayOn"
-              :loading="autoPlaySaving"
-              @change="(checked: any) => toggleAutoPlay(!!checked)"
-            />
-            <span class="auto-play-label">{{ t('cardGame.autoPlay') }}</span>
+            <!-- A mode rather than an action, so it sits with the hand it governs instead of in
+                 the corner with Leave. The buttons above are disabled while it is on: the
+                 server takes the turn on the next read, so a click would be racing something
+                 it cannot beat. -->
+            <div class="auto-play-row">
+              <a-switch
+                :checked="autoPlayOn"
+                :loading="autoPlaySaving"
+                @change="(checked: any) => toggleAutoPlay(!!checked)"
+              />
+              <span class="auto-play-label">{{ t('cardGame.autoPlay') }}</span>
+            </div>
           </div>
           <p v-if="inGame" class="play-hint">
             {{ autoPlayOn ? t('cardGame.autoPlayOnHint') : t('cardGame.autoPlayOffHint') }}
@@ -1034,6 +1040,12 @@ onUnmounted(() => {
 .play-hint.is-reserved {
   min-height: 18px;
 }
+/* Two rows on a desktop; a phone turns this into one. */
+.control-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 .hand-actions {
   margin-top: 4px;
 }
@@ -1094,24 +1106,126 @@ onUnmounted(() => {
   .seat-list {
     gap: 8px;
   }
+  /* The whole table on one screen, no page scroll.
+
+     Desktop fixes every band and lets the table be as tall as it needs. A phone cannot
+     afford that, so the relationship inverts: the table takes the height the screen has and
+     the trick area absorbs whatever the other bands leave. The centre still does not move
+     for a given device — the bands around it are all fixed — it is just measured from the
+     viewport instead of from a constant.
+
+     The 150px is this view's chrome at this breakpoint: 56px app header + 44px card head +
+     20px card body padding + 24px of .app-content frame left after the negative margin at
+     the bottom of this block + 6px slack. A magic number, but the alternative is making
+     MainLayout viewport-locked for every page in the app.
+     dvh first so a phone's collapsing address bar is handled; vh for anything without it. */
   .table-area {
-    --trick-height: 232px;
+    height: calc(100vh - 150px);
+    height: calc(100dvh - 150px);
+    gap: 8px;
+    /* Scroll, not clip, if a screen is smaller than anything budgeted for here — roughly
+       568px of device height, a first-generation SE. Nothing scrolls on the sizes above,
+       where it all fits; on one that small, a short scroll is much better than a Play button
+       cut off below the fold. */
+    overflow-y: auto;
   }
+  /* 6px + 48px main + 4px gap + 38px played + 6px + 2px border = 104px. */
+  .table-area .seat-list {
+    --seat-band-height: 106px;
+    gap: 8px;
+  }
+  /* The one band that is not fixed here: it takes what is left, down to a floor that still
+     fits a five-card play with its caption — 20px padding + 24px head + 8px gap + 42px card
+     + 16px owner line. */
   .trick {
-    padding: 14px 8px;
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 110px;
+    padding: 10px 8px;
+    gap: 8px;
+  }
+  .trick-head {
+    height: 24px;
+    flex: 0 0 24px;
+    font-size: 12px;
+  }
+  .trick:not(.is-result) {
+    justify-content: center;
   }
   .trick-play {
-    height: 92px;
-    flex: 0 0 92px;
+    height: auto;
+    flex: 0 1 auto;
   }
-  /* 232px box - 28px padding = 204px, spent as 28 + 92 + 60 with two 12px gaps. */
+  /* Dropped on a phone. It is the dimmed trail of plays already superseded, so of everything
+     on the table it is the part whose absence costs the least — and it is the only band that
+     grows with the game. The current play and who made it are still above it. */
   .trick-history {
-    height: 60px;
-    flex: 0 0 60px;
+    display: none;
   }
+  /* The hints go the same way, for the same reason: explanation rather than game state. The
+     second-click rule is also the one thing a phone player discovers by tapping. */
+  .play-hint {
+    display: none;
+  }
+  /* Buttons and the auto-play switch share a line. */
+  .control-rows {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .hand-actions {
+    margin-top: 0;
+  }
+  .my-area {
+    gap: 6px;
+    padding-top: 6px;
+  }
+  .status-bar {
+    height: 22px;
+  }
+  /* The card gives its padding back to the table, as StockListView does at this width. */
+  .card-game-view :deep(.ant-card-body) {
+    padding: 10px;
+  }
+  .card-game-view :deep(.ant-card-head) {
+    padding-inline: 12px;
+    min-height: 44px;
+  }
+
+  /* And the view claws back the layout's own frame — .app-content contributes 12px of margin
+     and 12px of padding on each side at this width (MainLayout.vue), 48px of vertical space
+     that a table trying to fit a 640px screen cannot spare. Pulled back with negative
+     margins rather than by changing MainLayout, which would affect every page in the app for
+     the sake of this one. A small side inset is kept so the cards do not touch the edge. */
+  .card-game-view {
+    margin: -12px -12px -12px;
+    padding-inline: 4px;
+  }
+
+  /* Lobby, not the table: an invite row has no width for a name and two buttons side by
+     side at this size. */
   .invite-item {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+/* Short screens — a small phone in portrait, roughly 640px of device height or less once the
+   browser's own bars are out. Everything above still leaves the trick area below its floor
+   here, so the played-card row under each opponent goes too, the way it already does on your
+   own seat. The current play is still in the middle of the table and the seats still carry
+   their counts and scores; what is lost is only which of those cards came from which seat.
+   Keyed on the viewport rather than a device width, since this is a question of height. */
+@media (max-width: 768px) and (max-height: 600px) {
+  .table-area .seat-list {
+    --seat-band-height: 68px;
+  }
+  .table-area :deep(.player-seat:not(.is-lobby)) {
+    height: 62px;
+  }
+  .table-area :deep(.seat-played) {
+    display: none;
   }
 }
 </style>

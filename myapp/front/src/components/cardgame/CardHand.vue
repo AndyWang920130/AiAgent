@@ -61,9 +61,17 @@ function onCardClick(index: number) {
   color: rgba(0, 0, 0, 0.35);
 }
 
+/* Phones: shorter, because the cards themselves are smaller here (see PlayingCard.vue) and
+   the whole table has to fit the screen. 10px of room above for a selected card's lift,
+   38x54 of card, 4px below for the shadow. Cards overlap further so a six-card hand still
+   fits the width. */
 @media (max-width: 768px) {
+  .card-hand {
+    padding: 10px 0 4px;
+    min-height: 68px;
+  }
   .card-slot + .card-slot {
-    margin-inline-start: -20px;
+    margin-inline-start: -14px;
   }
 }
 </style>

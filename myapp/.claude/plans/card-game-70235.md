@@ -512,7 +512,9 @@ getActiveGame: () => http.get('/api/v1/card-games/games/active')
   beneath the seat, so a play reads as belonging to the player who made it. Also the seat's
   `Auto` tag while auto-play is on, and once the game is over its placing badge, a trophy on
   the winner and a first-out tag — the final result reads off the seats rather than a
-  separate standings list.
+  separate standings list. A fixed-size box during play, since these sit in a row above the
+  trick area and anything that resizes a seat moves the middle of the table with it. The
+  `self` prop marks the viewer's own seat, which collapses to a single line on a phone.
 
 ### `src/views/CardGame70235View.vue`
 
@@ -584,6 +586,72 @@ three components above.
 - Local state in module-scope `ref()`s inside the view, no Pinia — the pattern this
   codebase uses, and `GomokuView.vue` keeps its game state in the view rather than a
   store, so a `stores/cardGame.ts` would be a departure with nothing to gain.
+
+### The table is a fixed box (requested 2026-10-28)
+
+The first version sized every band by its content, and the table moved constantly as a
+result: a seat grew when it picked up a tag or played its first card, the trick area grew
+with the owner line and each history row, and hints came and went under the hand. All of
+that shifted the middle of the table while the player was reading it and clicking cards in
+it. Four separate causes, three of them structural rather than just missing dimensions:
+
+- `.seat-played` was `v-if="played"`, so it appeared at full height the moment a seat acted
+  and vanished when the trick cleared — every seat at the table resizing several times a
+  trick. Now rendered for the whole game, empty or not.
+- `.trick` had `min-height`, and with `justify-content: center` a new history row nudged the
+  current play upward. Now a fixed height, with the play in its own reserved `.trick-play`
+  band and the history in a fixed band below it, stacked from the top rather than centred as
+  a group.
+- `.seat-list` was `flex-wrap: wrap` over content-sized seats, so seats re-wrapped as names
+  and tags changed width. At the table it is now one non-wrapping row of fixed-width seats;
+  the lobby keeps wrapping, having no trick area underneath to protect.
+- The `clickAgainToPlay` hint and the turn-clock tag appeared and disappeared with every turn
+  change, moving the buttons under the cursor reaching for them. Both now hold their space.
+
+Sizes live in custom properties — `--seat-width`, `--seat-main-height`,
+`--seat-played-height` on `PlayerSeat`, `--table-width`, `--seat-band-height`,
+`--trick-height` on `.table-area` — so the view and the component agree on one set of
+numbers, and each band's height budget is written out in a comment beside it (desktop:
+300px trick = 40px padding + 28 head + 110 play + 98 history + two 12px gaps). Content that
+overruns a box clips rather than resizing it: losing the tail of an unusually long name is
+better than the whole table shifting.
+
+### Fitting a phone screen (requested 2026-10-28)
+
+The table has to fit a phone with no page scroll, and the arithmetic does not allow it by
+shrinking alone. This view's chrome is 150px at that breakpoint, which leaves roughly 350px
+on a small Android and 530px on a tall phone, against the ~840px the desktop bands need —
+so more than half has to come out, and about 30% of that is available from smaller cards and
+tighter padding. The rest comes out of what is on screen. **The user chose to keep every
+piece of game state and drop explanatory text** (2026-10-28), so:
+
+- **The relationship inverts.** Desktop fixes every band and lets the table be as tall as it
+  needs; the phone gives the table `calc(100dvh - 150px)` and lets the trick area absorb
+  whatever the fixed bands leave, with a 110px floor. The centre still does not move for a
+  given device — everything around it is fixed — it is just measured from the viewport
+  instead of from a constant. `dvh` with a `vh` fallback, for a collapsing address bar.
+- **Cards shrink** (48x68 → 38x54, small 38x54 → 30x42), which is where most of the height
+  comes from: the hand, the trick and the row under each seat are all sized off those two
+  custom properties.
+- **Your own seat collapses to one line** (`self` prop on `PlayerSeat`), dropping its played
+  row. Those are the cards you just put down out of the hand immediately below it, so it is
+  the cheapest duplicate on the table to give up.
+- **The trick history and both hint paragraphs are dropped.** The history is the dimmed trail
+  of plays already superseded and the only band that grows with the game; the hints are
+  explanation rather than game state. Every score, count, tag and the current play stay.
+- **The buttons and the auto-play switch share one row**, two rows on a desktop where the
+  switch reads better under the actions it governs.
+- **The view claws back the layout's frame** with a negative margin — `.app-content`
+  contributes 24px of vertical margin and padding at this width, which a table fitting a
+  640px screen cannot spare. Done here rather than in `MainLayout.vue`, which would affect
+  every page in the app for the sake of this one.
+- **A second breakpoint at `max-height: 600px`** drops the played-card row under the
+  opponents too. Everything above still leaves the trick area below its floor on a ~640px
+  device, and this is the same trade your own seat already makes. Keyed on viewport height,
+  since that is the actual constraint.
+- **Below about 568px of device height it scrolls rather than clips.** `overflow-y: auto` on
+  the table, so nothing scrolls on the sizes budgeted for, and a first-generation SE gets a
+  short scroll instead of a Play button cut off below the fold.
 
 ## Frontend — modified files
 
