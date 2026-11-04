@@ -81,6 +81,7 @@ const keyToPath: Record<string, string> = {
   'lottery': '/mini-game/lottery',
   'class-lottery': '/mini-game/class-lottery',
   'gomoku': '/mini-game/gomoku',
+  'card-games': '/mini-game/card-games',
   'stock-list': '/stock/list',
   'user-list': '/admin/users',
 }

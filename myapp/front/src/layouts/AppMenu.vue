@@ -15,6 +15,7 @@ import {
   TrophyOutlined,
   TeamOutlined,
   SafetyCertificateOutlined,
+  CreditCardOutlined,
   HeartOutlined,
   LockOutlined,
   NumberOutlined,
@@ -43,7 +44,7 @@ const { t } = useI18n()
 
 <template>
   <div class="logo" @click="emit('navigate', 'home')">
-    <span v-if="!collapsed">🚀 MyApp</span>
+    <span v-if="!collapsed">🚀 Twsny</span>
     <span v-else>🚀</span>
   </div>
   <a-menu
@@ -88,6 +89,10 @@ const { t } = useI18n()
       <a-menu-item key="gomoku" @click="emit('navigate', 'gomoku')">
         <BorderOutlined />
         <span>{{ t('menu.gomoku') }}</span>
+      </a-menu-item>
+      <a-menu-item key="card-games" @click="emit('navigate', 'card-games')">
+        <CreditCardOutlined />
+        <span>{{ t('menu.cardGames') }}</span>
       </a-menu-item>
     </a-sub-menu>
     <a-sub-menu v-if="isAdmin" key="settings-sub">

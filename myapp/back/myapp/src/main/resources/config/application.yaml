@@ -18,6 +18,10 @@ app:
     invite-timeout-seconds: 300   # a pending invite expires after 5 minutes
     game-timeout-seconds: 1800    # a game running longer than 30 minutes ends in a draw
     move-timeout-seconds: 120     # a player who does not move within 120s forfeits
+  card-game:
+    invite-timeout-seconds: 300   # an unanswered 70235 table expires after 5 minutes
+    turn-timeout-seconds: 120     # an idle player's turn is auto-played after 120s
+    game-timeout-seconds: 3600    # a game running longer than an hour is scored as it stands
   stock:
     # Quote source for the Stock Center: tencent (default, reachable from mainland China,
     # batches every symbol into one request) or yahoo (one request per symbol).

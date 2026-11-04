@@ -75,7 +75,7 @@ async function copyOutput() {
           </a-col>
           <a-col :xs="24" :md="12">
             <a-form-item :label="t('jsonToEntity.packageName')">
-              <a-input v-model:value="packageName" placeholder="com.example.myapp.domain" />
+              <a-input v-model:value="packageName" placeholder="com.example.Twsny.domain" />
             </a-form-item>
           </a-col>
         </a-row>
