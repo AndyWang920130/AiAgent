@@ -54,6 +54,25 @@ body {
   margin: 0;
 }
 
+/* Set by utils/immersive.ts while a view owns the whole viewport (the 70235 table).
+
+   #app below is min-height: 100svh and the layout inside it asks for the viewport height.
+   Those agree on a desktop and do not on a phone, where svh and dvh differ by the height of
+   the URL bar — and an ancestor a pixel taller than the window scrolls the document, which no
+   rule inside the layout can reach. Turning the root scroll off is what makes "nothing
+   scrolls" a property of the page instead of a sum coming out right. The view inside scales
+   itself to fit (see utils/fitScale.ts), so nothing is hidden by this. */
+html.is-immersive,
+html.is-immersive body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+html.is-immersive #app {
+  height: 100%;
+  min-height: 0;
+}
+
 h1,
 h2 {
   font-family: var(--heading);

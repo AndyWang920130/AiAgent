@@ -17,6 +17,7 @@ import {
 } from '@ant-design/icons-vue'
 import AppMenu from './AppMenu.vue'
 import { theme as appTheme, toggleTheme } from '../utils/theme'
+import { immersive } from '../utils/immersive'
 import { clearAuth, getUser } from '../utils/auth'
 import { theme as antTheme } from 'ant-design-vue'
 import { setLocale, getLocale } from '../i18n'
@@ -73,6 +74,9 @@ const keyToPath: Record<string, string> = {
   'sha-tool': '/tools/sha',
   'json-to-entity': '/tools/json-to-entity',
   'personal': '/personal',
+  'user-guide': '/guide',
+  'guide-follow': '/guide/follow-users',
+  'guide-card-game': '/guide/invite-and-play-70235',
   'blog-config': '/settings/blog-config',
   'game-config': '/settings/game-config',
   'role-config': '/settings/role-config',
@@ -171,7 +175,10 @@ function formatPopoverTime(timeStr: string): string {
 
 <template>
   <a-config-provider :theme="themeConfig" :locale="antLocale">
-    <a-layout style="min-height: 100vh">
+    <!-- Normally the document grows past the window and the browser scrolls. A view that asks
+         for immersive mode gets the window exactly, with the overflow clipped here so the
+         view's own boxes divide up a known height. -->
+    <a-layout class="app-layout" :class="{ 'is-immersive': immersive }" :style="immersive ? '' : 'min-height: 100vh'">
       <!-- Sider (desktop) -->
       <a-layout-sider
         v-if="!isMobile"
@@ -347,7 +354,9 @@ function formatPopoverTime(timeStr: string): string {
           <RouterView />
         </a-layout-content>
 
-        <a-layout-footer style="text-align: center; opacity: 0.5">
+        <!-- Decoration, and the ~70px that put the page over the window height. Hidden rather
+             than scrolled past while a view owns the viewport. -->
+        <a-layout-footer v-if="!immersive" style="text-align: center; opacity: 0.5">
           {{ t('footer.copyright') }}
         </a-layout-footer>
       </a-layout>
@@ -396,6 +405,37 @@ function formatPopoverTime(timeStr: string): string {
   transition: background 0.3s;
 }
 
+/* Immersive mode: the shell is the window, and the content area is what is left of it after
+   the header. Nothing here scrolls — the view inside is expected to fit, and anything that
+   cannot is that view's problem to solve against a height it can now actually measure.
+
+   min-height: 0 on the content is what lets it shrink below its contents; without it a flex
+   item in a column refuses to go under its content height and the clipping moves to the
+   bottom of the window instead. The margin goes so the view gets the width too, and the
+   padding drops to a frame that is visible but not 24px of it. */
+/* svh, not dvh. `#app` in style.css is `min-height: 100svh`, and on a phone the two differ by
+   the height of the URL bar — asking for dvh inside an svh box makes this layout taller than
+   its own parent every time the bar is retracted, which is a scrollbar on the document that
+   no rule in here can reach. svh is the smaller of the two, so it fits under either. The
+   board inside scales to whatever this comes out as, so losing the URL bar's height costs a
+   little scale rather than correctness. All three units are the same on a desktop. */
+.app-layout.is-immersive {
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+}
+/* Vertical padding is halved and the margin and radius dropped: 12px of white space is worth
+   less than 12px of card table, and the view inside already draws its own border. The 16px at
+   the sides stays — the table is a centred box narrower than the window, so side padding costs
+   nothing. */
+.app-layout.is-immersive .app-content {
+  margin: 0;
+  padding: 6px 16px;
+  border-radius: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
 /* Mobile: reclaim horizontal space the desktop chrome would otherwise waste. */
 @media (max-width: 768px) {
   .app-content {
@@ -404,6 +444,10 @@ function formatPopoverTime(timeStr: string): string {
   }
   .app-header {
     padding: 0 8px;
+  }
+  /* A phone has less to spare, and an immersive view is tuned to the millimetre. */
+  .app-layout.is-immersive .app-content {
+    padding: 6px 8px;
   }
 }
 

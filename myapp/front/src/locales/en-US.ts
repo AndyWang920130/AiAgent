@@ -34,6 +34,75 @@ export default {
     stockList: 'Stock List',
     userManagement: 'User Management',
     userList: 'User List',
+    userGuide: 'User Guide',
+    allTutorials: 'All Tutorials',
+    guideFollow: 'Following Users',
+    guideCardGame: 'Playing 70235',
+  },
+  guide: {
+    title: 'User Guide',
+    subtitle: 'Short walkthroughs of the things you can do here.',
+    read: 'Read',
+    allTutorials: 'All tutorials',
+    beforeYouStart: 'Before you start',
+    openPersonal: 'Open Personal',
+    openHome: 'Open Home',
+    open70235: 'Open the 70235 table',
+    openNotifications: 'Open Notifications',
+
+    followTitle: 'How to follow other users',
+    followDesc: 'Find someone, follow them, and see their posts in your feed.',
+    followIntro:
+      'Following someone adds their posts to your Home feed. It also lets them invite you to games, and lets you invite them once they follow you back.',
+    followStep1Title: 'Open your Personal page',
+    followStep1Body:
+      'Pick Personal from the menu. The card holding your followers also has a search box labelled "Find users to follow…".',
+    followStep2Title: 'Search for the person',
+    followStep2Body:
+      'Type part of their name or login and pause for a moment — results appear just after you stop typing. Each result shows the display name and the @login so you can tell two similar names apart. Click one to open their profile.',
+    followStep3Title: 'Or click a name you come across',
+    followStep3Body:
+      'Author names in the blog list, on a post, and on comments all link to that person\'s profile, which is often quicker than searching.',
+    followStep4Title: 'Click Follow',
+    followStep4Body:
+      'The button on their profile turns into "Following", their follower count goes up, and a short confirmation appears. Clicking it again unfollows them.',
+    followStep5Title: 'Check that it worked',
+    followStep5Body:
+      'Your Personal page lists them under the Following tab, and their posts now show up on Home under the Following tab instead of Recommended.',
+    followTip:
+      'Following is also the key to playing together: you can invite anyone who follows you to a game of 70235.',
+
+    cardGameTitle: 'How to invite players to 70235 and play',
+    cardGameDesc: 'Set up a table, answer an invitation, and take your turns.',
+    cardGameIntro:
+      '70235 is played online against other people, computer players, or a mix of the two. A table seats 2 to 5 players including you.',
+    cardGamePrereq:
+      'You can invite your followers — the people who follow you — not everyone you follow. If the invite list is empty, nobody has followed you yet. See the tutorial on following users; once someone follows you, they appear in the list.',
+    cardGameStep1Title: 'Open the table',
+    cardGameStep1Body: 'From the menu, choose Mini Game, then Card Games, then 70235.',
+    cardGameStep2Title: 'Set up a new table',
+    cardGameStep2Body:
+      'Under "New table", choose how many CPU players you want and pick people under "Invite followers". The seat count shown underneath must be between 2 and 5 — you are one of those seats.',
+    cardGameStep3Title: 'Create it',
+    cardGameStep3Body:
+      'Click "Create table". Everyone you invited gets a notification that links straight back to the table. A table nobody answers expires after five minutes.',
+    cardGameStep4Title: 'Accepting an invitation',
+    cardGameStep4Body:
+      'When someone invites you, open the notification from the bell, or just open the 70235 page. The Invitations card names the host, shows how many seats the table has, and counts down the time left. Click Accept or Decline — the host is told either way.',
+    cardGameStep5Title: 'Starting the game',
+    cardGameStep5Body:
+      'As host, Start becomes available once every invitee has answered and at least two players are seated. The page tells you what it is still waiting for.',
+    cardGameStep6Title: 'Taking your turn',
+    cardGameStep6Body:
+      'Click a card to select it and click it again to play it, or select several cards and press "Play". "Pass" only declines the play in front of you — if someone after you raises it, your turn comes round again. Leave a turn for two minutes and it is played for you.',
+    cardGameStep7Title: 'Auto-play',
+    cardGameStep7Body:
+      'Switching auto-play on hands your turns to the server, which is handy if you need to step away. Switch it off to take control back — doing so does not cost you the turn you are on.',
+    cardGameStep8Title: 'Finishing',
+    cardGameStep8Body:
+      'When the game ends, the final score and placing appear on each player\'s seat. Use "Leave game" in the top-right corner to go back to the lobby.',
+    cardGameTip:
+      'A table with only computer players needs no invitations — it deals as soon as you create it, which makes it the quickest way to learn the game. The full rules are on the table page itself.',
   },
   sha: {
     title: 'SHA Signature',

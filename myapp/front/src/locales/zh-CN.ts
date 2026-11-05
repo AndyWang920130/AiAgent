@@ -34,6 +34,74 @@ export default {
     stockList: '股票列表',
     userManagement: '用户管理',
     userList: '用户列表',
+    userGuide: '使用指南',
+    allTutorials: '全部教程',
+    guideFollow: '关注用户',
+    guideCardGame: '玩 70235',
+  },
+  guide: {
+    title: '使用指南',
+    subtitle: '用简短的步骤介绍这里能做的事。',
+    read: '查看',
+    allTutorials: '全部教程',
+    beforeYouStart: '开始之前',
+    openPersonal: '打开个人中心',
+    openHome: '打开首页',
+    open70235: '打开 70235 牌桌',
+    openNotifications: '打开消息通知',
+
+    followTitle: '如何关注其他用户',
+    followDesc: '找到某个用户、关注他，并在首页看到他的文章。',
+    followIntro:
+      '关注之后，对方的文章会出现在你的首页动态中。同时对方可以邀请你一起玩游戏；等他也关注你之后，你也可以邀请他。',
+    followStep1Title: '打开个人中心',
+    followStep1Body:
+      '在菜单中选择「个人中心」。显示粉丝列表的那张卡片上有一个搜索框，提示文字是「搜索用户以关注…」。',
+    followStep2Title: '搜索该用户',
+    followStep2Body:
+      '输入昵称或登录名的一部分，然后稍等一下，停止输入后结果就会出现。每条结果都会显示昵称和 @登录名，方便区分重名的用户。点击其中一条即可打开他的主页。',
+    followStep3Title: '或者直接点击看到的用户名',
+    followStep3Body:
+      '文章列表、文章详情页和评论中的作者名都可以点击，直接跳转到该用户的主页，通常比搜索更快。',
+    followStep4Title: '点击「关注」',
+    followStep4Body:
+      '他主页上的按钮会变成「已关注」，粉丝数加一，并出现一条提示。再次点击该按钮即可取消关注。',
+    followStep5Title: '确认是否成功',
+    followStep5Body:
+      '个人中心的「关注」标签页中会列出该用户，他的文章也会出现在首页的「关注」标签页（而不是「推荐」）中。',
+    followTip: '关注也是一起玩游戏的前提：你可以邀请任何关注你的人加入 70235 牌局。',
+
+    cardGameTitle: '如何邀请好友玩 70235',
+    cardGameDesc: '创建牌桌、接受邀请，并完成自己的出牌。',
+    cardGameIntro:
+      '70235 是联网进行的：对手可以是其他玩家、电脑玩家，也可以两者混合。一桌连你在内共 2 到 5 人。',
+    cardGamePrereq:
+      '你能邀请的是你的粉丝——也就是关注了你的人，而不是你关注的所有人。如果邀请列表是空的，说明还没有人关注你。可以参考「如何关注其他用户」这篇教程；对方关注你之后就会出现在列表中。',
+    cardGameStep1Title: '打开牌桌',
+    cardGameStep1Body: '在菜单中依次选择「小游戏」→「纸牌游戏」→「70235」。',
+    cardGameStep2Title: '设置新牌桌',
+    cardGameStep2Body:
+      '在「创建牌桌」中选择电脑玩家的数量，并在「邀请粉丝」中选择要邀请的人。下方显示的座位数必须在 2 到 5 之间——你本人也占一个座位。',
+    cardGameStep3Title: '创建牌桌',
+    cardGameStep3Body:
+      '点击「创建牌桌」。被邀请的每个人都会收到一条通知，点击可直接回到这张牌桌。无人应答的牌桌五分钟后过期。',
+    cardGameStep4Title: '接受邀请',
+    cardGameStep4Body:
+      '有人邀请你时，可以点击铃铛中的通知，或者直接打开 70235 页面。「收到的邀请」卡片会显示房主是谁、这桌共有几个座位，以及剩余时间的倒计时。点击「接受」或「拒绝」，两种选择都会通知房主。',
+    cardGameStep5Title: '开始游戏',
+    cardGameStep5Body:
+      '作为房主，当所有被邀请的人都已答复、且至少有两人就座时，「开始」按钮就可以点击了。在此之前页面会说明还在等待什么。',
+    cardGameStep6Title: '轮到你出牌',
+    cardGameStep6Body:
+      '点击一张牌选中它，再点一次即可打出；也可以先选中多张牌，然后点击「出牌」。「不要」只表示不接你上家的这一手——如果你后面有人加大，轮次还会回到你。某一手超过两分钟未操作，系统会代你出牌。',
+    cardGameStep7Title: '自动出牌',
+    cardGameStep7Body:
+      '打开「自动出牌」后由服务器代你出牌，需要临时离开时很方便。关掉它即可收回控制权，而且不会浪费当前这一手。',
+    cardGameStep8Title: '结束',
+    cardGameStep8Body:
+      '游戏结束后，每位玩家的座位上都会显示最终得分和名次。点击右上角的「退出游戏」即可返回大厅。',
+    cardGameTip:
+      '只有电脑玩家的牌桌不需要邀请，创建后立即发牌，是最快的上手方式。完整规则就在牌桌页面上。',
   },
   sha: {
     title: 'SHA 签名',

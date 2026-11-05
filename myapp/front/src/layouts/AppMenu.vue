@@ -24,6 +24,8 @@ import {
   DatabaseOutlined,
   BorderOutlined,
   LineChartOutlined,
+  ReadOutlined,
+  UserAddOutlined,
 } from '@ant-design/icons-vue'
 
 defineProps<{
@@ -163,6 +165,24 @@ const { t } = useI18n()
       <a-menu-item key="json-to-entity" @click="emit('navigate', 'json-to-entity')">
         <CodeOutlined />
         <span>{{ t('menu.jsonToEntity') }}</span>
+      </a-menu-item>
+    </a-sub-menu>
+    <a-sub-menu key="guide-sub">
+      <template #title>
+        <ReadOutlined />
+        <span>{{ t('menu.userGuide') }}</span>
+      </template>
+      <a-menu-item key="user-guide" @click="emit('navigate', 'user-guide')">
+        <UnorderedListOutlined />
+        <span>{{ t('menu.allTutorials') }}</span>
+      </a-menu-item>
+      <a-menu-item key="guide-follow" @click="emit('navigate', 'guide-follow')">
+        <UserAddOutlined />
+        <span>{{ t('menu.guideFollow') }}</span>
+      </a-menu-item>
+      <a-menu-item key="guide-card-game" @click="emit('navigate', 'guide-card-game')">
+        <CreditCardOutlined />
+        <span>{{ t('menu.guideCardGame') }}</span>
       </a-menu-item>
     </a-sub-menu>
     <a-menu-item key="personal" @click="emit('navigate', 'personal')">

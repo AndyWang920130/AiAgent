@@ -11,6 +11,8 @@ import {
   type CardGameTrickEntry,
 } from '../api/cardGame'
 import { canPlay, rankOfPlay, totalPoints } from '../utils/cards'
+import { useImmersive } from '../utils/immersive'
+import { useFitScale } from '../utils/fitScale'
 import CardHand from '../components/cardgame/CardHand.vue'
 import PlayerSeat from '../components/cardgame/PlayerSeat.vue'
 import PlayingCard from '../components/cardgame/PlayingCard.vue'
@@ -58,6 +60,38 @@ const gameOver = computed(
 
 /** The table the host set up, still waiting on invitees. */
 const waitingTable = computed(() => (game.value?.status === 'PENDING' ? game.value : null))
+
+/* The table claims the whole window, so nothing about the game needs scrolling to.
+   Only once there is a table to show: the lobby is a list of invitations that can be longer
+   than the screen, and a waiting table is a small box that would just be stretched. The
+   result state keeps it, since it is drawn in the same box the game was played in. */
+const immersive = useImmersive()
+watch([inGame, gameOver], ([playing, over]) => immersive.set(playing || over), {
+  immediate: true,
+})
+
+/* The table is a fixed-size board scaled to whatever room the window actually has, rather
+   than a stack of bands whose heights are supposed to add up to the viewport. The sum was
+   the previous approach and it was off: it has to agree with the card's title row, the
+   layout header, two layers of padding, the browser font size and the zoom level.
+
+   fitBox is the measured space; tableEl keeps its natural height inside it. */
+const fitBox = ref<HTMLElement | null>(null)
+const tableEl = ref<HTMLElement | null>(null)
+const { scale: fitScale } = useFitScale(fitBox, tableEl)
+
+/* transform-origin: top centre — the table shrinks towards the top of the space rather than
+   away from its own middle, which keeps the seat row in the same place as the scale changes.
+   Width is divided back out so the board still fills the space sideways at any scale. */
+const tableStyle = computed(() =>
+  fitScale.value < 1
+    ? {
+        transform: `scale(${fitScale.value})`,
+        transformOrigin: 'top center',
+        width: `${100 / fitScale.value}%`,
+      }
+    : undefined,
+)
 
 const myHand = computed(() => game.value?.myHand ?? [])
 const selectedCards = computed(() => selectedIndices.value.map(i => myHand.value[i]).filter(Boolean))
@@ -501,7 +535,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="card-game-view">
+  <div class="card-game-view" :class="{ 'is-immersive': inGame || gameOver, 'is-over': gameOver }">
     <a-card :bordered="false">
       <template #title>
         <a-button type="text" size="small" class="back-btn" @click="back">
@@ -614,8 +648,15 @@ onUnmounted(() => {
           {{ t('cardGame.startBlocked') }}
         </p>
       </div>
-      <!-- ===================== TABLE ===================== -->
-      <div v-else class="table-area">
+      <!-- ===================== TABLE =====================
+           Two boxes, not one. .table-fit is the space the layout has given us, measured; the
+           .table-area inside it keeps its natural height and is scaled down by whatever it
+           takes to fit (utils/fitScale.ts). Adding the bands up and subtracting them from the
+           viewport was the previous approach and it left a scrollbar: the sum has to agree
+           with the card's title row, the header, two layers of padding, the font size and the
+           zoom level, and it did not. -->
+      <div v-else ref="fitBox" class="table-fit">
+      <div ref="tableEl" class="table-area" :style="tableStyle">
         <div class="seat-list">
           <PlayerSeat
             v-for="p in others"
@@ -788,6 +829,7 @@ onUnmounted(() => {
         </div>
 
       </div>
+      </div>
     </a-card>
   </div>
 </template>
@@ -797,6 +839,31 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* While a table is on screen MainLayout is locked to the window (see utils/immersive.ts) and
+   this view is handed what is left under the header. That height has to reach .table-area,
+   which means every box between here and it becomes a flex item that can shrink: the view,
+   the card, and the card's body. min-height: 0 at each step, or a flex item in a column
+   stops at its content height and the overflow reappears at the bottom of the window.
+
+   Scoped styles do not reach .ant-card-body, hence :deep. */
+.card-game-view.is-immersive {
+  height: 100%;
+  gap: 0;
+}
+.card-game-view.is-immersive > :deep(.ant-card) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.card-game-view.is-immersive :deep(.ant-card-body) {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 .back-btn {
   margin-inline-end: 4px;
@@ -869,9 +936,84 @@ onUnmounted(() => {
   --table-width: 960px;
   /* A seat is 130px (see PlayerSeat.vue) + 2px of border + 2px for the row's own padding. */
   --seat-band-height: 134px;
-  --trick-height: 300px;
+  /* 40px padding + 28px head + 12px gap + 110px play + 12px gap + 144px history band. */
+  --trick-height: 346px;
   width: min(var(--table-width), 100%);
   margin-inline: auto;
+}
+/* The space the layout has given us, and the only box in here with a height that comes from
+   the window rather than from its contents. min-height: 0 is what lets it shrink below its
+   own content; without it a flex item in a column refuses to go under its content height and
+   the overflow moves to the bottom of the window.
+
+   The clip is a backstop that should never fire: the table inside is scaled to fit this box,
+   so the two are the same height by construction. It is here so that if a measurement ever
+   arrives late — a web font swapping in, say — the result is one frame of a slightly large
+   table rather than a scrollbar. */
+.card-game-view.is-immersive .table-fit {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+/* The table keeps its natural height here and is scaled by utils/fitScale.ts. Nothing in the
+   immersive rules divides the viewport up any more — that arithmetic is what produced a
+   scrollbar twice, because it has to agree with the card's title row, the layout header, two
+   layers of padding, the font size and the zoom level, and anything that reads the sum wrong
+   by a pixel shows a scrollbar.
+
+   A transform does not affect layout, so this box's measured height is the same before and
+   after it is scaled: there is no feedback loop between the measurement and the fit. */
+.card-game-view.is-immersive .table-area {
+  height: auto;
+  flex: 0 0 auto;
+}
+.card-game-view.is-immersive .seat-list,
+.card-game-view.is-immersive .status-bar,
+.card-game-view.is-immersive .my-area,
+.card-game-view.is-immersive .trick {
+  flex: 0 0 auto;
+}
+
+/* Game over. Every band on the table is a fixed height with its overflow clipped, which is
+   right while the game runs — it is what stops a seat picking up a tag and moving the middle
+   of the table under the cursor. It is wrong once the game is over, because that is the
+   moment three of those bands get *more* in them: the seats gain a placing number and the
+   winner a trophy, the status line gains a full sentence about who won, and the trick area is
+   replaced by the result block. Clipped to the sizes that fitted during play, the ends of
+   those are cut off.
+   Nothing is moving any more, so the bands can size to their contents. The table as a whole
+   is still scaled to fit, so growing here cannot bring a scrollbar back. */
+.card-game-view.is-over .table-area .seat-list {
+  height: auto;
+  min-height: var(--seat-band-height);
+  overflow: visible;
+  flex-wrap: wrap;
+}
+.card-game-view.is-over .status-bar {
+  height: auto;
+  min-height: 24px;
+  overflow: visible;
+  flex-wrap: wrap;
+  white-space: normal;
+}
+.card-game-view.is-over .status-bar .status-text {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+.card-game-view.is-over .trick.is-result {
+  height: auto;
+  min-height: var(--trick-height);
+}
+.card-game-view.is-over .table-area :deep(.player-seat:not(.is-lobby)) {
+  height: auto;
+  min-height: 62px;
+}
+.card-game-view.is-over .table-area :deep(.seat-main) {
+  height: auto;
+  min-height: var(--seat-main-height);
 }
 .seat-list {
   display: flex;
@@ -910,7 +1052,7 @@ onUnmounted(() => {
 /* While the game runs the three bands are stacked from the top at fixed heights, rather than
    centred as a group: centring is what made a new history row nudge the current play upward.
    The result state keeps the centring, since it has one short block to place.
-   Budget: 300px box - 40px padding = 260px, spent as 28 + 110 + 98 with two 12px gaps. */
+   Budget: 346px box - 40px padding = 306px, spent as 28 + 110 + 144 with two 12px gaps. */
 .trick:not(.is-result) {
   justify-content: flex-start;
 }
@@ -952,16 +1094,21 @@ onUnmounted(() => {
 /* Earlier plays in the trick, dimmed so the play actually on the table stays dominant.
 
    Fixed height and always present, so the band is reserved from the first trick rather than
-   appearing under the play once someone raises. Three rows is the cap HISTORY_LIMIT sets and
-   they fit; the scroll is a fallback for a row that wraps, not the normal case. */
+   appearing under the play once someone raises.
+
+   Sized to hold HISTORY_LIMIT (3) rows exactly: 8px padding + 19px label + three 39px rows.
+   It used to be 98px with `overflow-y: auto` as a "fallback for a row that wraps", and that
+   fallback fired on every trick with more than one earlier play — see .history-cards below
+   for why the rows are taller than they look. That was a scrollbar inside the table on an
+   ordinary trick. Nothing here scrolls now; the band fits what the cap allows. */
 .trick-history {
   width: 100%;
-  height: 98px;
-  flex: 0 0 98px;
+  height: 144px;
+  flex: 0 0 144px;
   padding-top: 8px;
   border-top: 1px dashed #e8e8e8;
   opacity: 0.75;
-  overflow-y: auto;
+  overflow: hidden;
 }
 .history-label {
   display: block;
@@ -969,11 +1116,13 @@ onUnmounted(() => {
   font-size: 11px;
   color: rgba(0, 0, 0, 0.45);
 }
+/* One height for every row, whether it holds cards or the word "passed", so three rows is
+   always exactly the band above and a mixed trick does not change it. */
 .history-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 28px;
+  height: 39px;
 }
 .history-name {
   flex: 0 0 auto;
@@ -986,9 +1135,16 @@ onUnmounted(() => {
   color: rgba(0, 0, 0, 0.35);
 }
 /* The cards are shown at a reduced scale: these are superseded plays, so they should read as
-   a trail rather than compete with the current one. */
+   a trail rather than compete with the current one.
+
+   A transform does not affect layout, so without a height here each row reserves the full
+   54px of an unscaled small card while showing 39px of it — three rows then needed 189px in a
+   band built for 98px, which is where the scrollbar inside the table came from. The height is
+   the scaled one, 54 * 0.72, so the row reserves what it actually draws. */
 .history-cards {
   display: flex;
+  height: 39px;
+  align-items: center;
   transform: scale(0.72);
   transform-origin: left center;
 }
@@ -1114,33 +1270,28 @@ onUnmounted(() => {
      for a given device — the bands around it are all fixed — it is just measured from the
      viewport instead of from a constant.
 
-     The 150px is this view's chrome at this breakpoint: 56px app header + 44px card head +
-     20px card body padding + 24px of .app-content frame left after the negative margin at
-     the bottom of this block + 6px slack. A magic number, but the alternative is making
-     MainLayout viewport-locked for every page in the app.
-     dvh first so a phone's collapsing address bar is handled; vh for anything without it. */
+     The height itself comes from the immersive rules above, which get it from the flex chain
+     rather than from an estimate of the chrome. This used to subtract a hand-counted 150px,
+     which was both fragile and short by the footer's ~70px — the reason a phone still had a
+     little page scroll left. */
   .table-area {
-    height: calc(100vh - 150px);
-    height: calc(100dvh - 150px);
     gap: 8px;
-    /* Scroll, not clip, if a screen is smaller than anything budgeted for here — roughly
-       568px of device height, a first-generation SE. Nothing scrolls on the sizes above,
-       where it all fits; on one that small, a short scroll is much better than a Play button
-       cut off below the fold. */
-    overflow-y: auto;
+    /* A phone's trick band is a fixed size like every other band, and the table as a whole is
+       scaled to the screen (utils/fitScale.ts). This used to be a flexible band inside a
+       table stretched to `calc(100dvh - 150px)`, which is where the last of the phone's page
+       scroll came from: that 150px had to equal the real chrome and did not. */
+    --trick-height: 150px;
   }
   /* 6px + 48px main + 4px gap + 38px played + 6px + 2px border = 104px. */
   .table-area .seat-list {
     --seat-band-height: 106px;
     gap: 8px;
   }
-  /* The one band that is not fixed here: it takes what is left, down to a floor that still
-     fits a five-card play with its caption — 20px padding + 24px head + 8px gap + 42px card
-     + 16px owner line. */
-  .trick {
-    flex: 1 1 auto;
-    height: auto;
-    min-height: 110px;
+  /* Fixed at the phone's --trick-height, like every other band. Written at the same
+     specificity as the base immersive rule, which is not inside a media query and would
+     otherwise win here. */
+  .trick,
+  .card-game-view.is-immersive .trick {
     padding: 10px 8px;
     gap: 8px;
   }
@@ -1198,9 +1349,16 @@ onUnmounted(() => {
      that a table trying to fit a 640px screen cannot spare. Pulled back with negative
      margins rather than by changing MainLayout, which would affect every page in the app for
      the sake of this one. A small side inset is kept so the cards do not touch the edge. */
+  /* Claws back the .app-content frame, which on a phone is 12px of padding this view would
+     rather spend on cards. Immersive mode sets that padding down to 6px/8px itself, so there
+     is nothing left to reclaim and the negative margin would pull the card off the screen. */
   .card-game-view {
     margin: -12px -12px -12px;
     padding-inline: 4px;
+  }
+  .card-game-view.is-immersive {
+    margin: 0;
+    padding-inline: 0;
   }
 
   /* Lobby, not the table: an invite row has no width for a name and two buttons side by
@@ -1226,6 +1384,125 @@ onUnmounted(() => {
   }
   .table-area :deep(.seat-played) {
     display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------
+   Immersive height tiers. Wide enough for the desktop layout, but not necessarily tall
+   enough for all of it — a 1366x768 laptop is a desktop by width and shorter than a phone
+   held in landscape. The phone block above is keyed on width and owns everything under
+   769px; these are keyed on height and own everything over it.
+
+   Each tier gives up the next-cheapest thing and its breakpoint is set to its own measured
+   threshold, so a tier is never selected for a window it cannot fit. The thresholds, from
+   the band heights in this file and in PlayerSeat/CardHand/PlayingCard:
+
+     tier 1  everything on the table              827px of viewport
+     tier 2  no raise history, no hints           739px
+     tier 3  + played rows off the seats          595px
+
+   Below 595px the table scrolls, as it does on a very small phone.
+   --------------------------------------------------------------------------------------- */
+
+/* Tier 1, and the base for the two below it. Two compressions the phone block already makes
+   for its own reasons, both of which turn out to be free:
+
+   Your own seat loses its played row — those are the cards you just put down out of the hand
+   immediately below it, so the row is a duplicate of what is already on screen 92px further
+   down. And the hand actions share a line with the auto-play switch, which reads fine beside
+   the buttons it governs rather than under them.
+
+   The auto-play hint goes too, being a sentence about a switch whose state is visible in the
+   switch. The second-click hint stays: it is the one rule in the game you cannot see. */
+@media (min-width: 769px) {
+  /* The card gives its padding back to the table, as it already does on a phone. 24px of body
+     padding and a 56px head are 68px that the table can put under the cards instead, and the
+     border is what marks the edge of it, not the gap inside the border. */
+  .card-game-view.is-immersive :deep(.ant-card-body) {
+    padding: 10px;
+  }
+  .card-game-view.is-immersive :deep(.ant-card-head) {
+    padding-inline: 16px;
+    min-height: 44px;
+  }
+  .card-game-view.is-immersive .table-area :deep(.player-seat.is-self:not(.is-lobby)) {
+    height: 62px;
+  }
+  .card-game-view.is-immersive .table-area :deep(.player-seat.is-self .seat-played) {
+    display: none;
+  }
+  .card-game-view.is-immersive .control-rows {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+  .card-game-view.is-immersive .hand-actions {
+    margin-top: 0;
+  }
+  .card-game-view.is-immersive .play-hint:not(.is-reserved) {
+    display: none;
+  }
+}
+
+/* Tier 2. The history band is the dimmed trail of plays already superseded, so it is the
+   first real thing to go; the current play and who made it are still in the middle of the
+   table. The second-click hint follows it, which is the last of the explanatory text.
+
+   The breakpoint is where tier 1 would have to scale below about 0.9 to fit. Dropping the
+   band the player needs least reads better than shrinking the whole table including its
+   text, and the two mechanisms compose: the tiers decide how much is on the table, the
+   scale guarantees whatever is on it fits. */
+@media (min-width: 769px) and (max-height: 862px) {
+  .card-game-view.is-immersive .table-area {
+    --trick-height: 190px;
+    gap: 10px;
+  }
+  .card-game-view.is-immersive .trick-history,
+  .card-game-view.is-immersive .play-hint {
+    display: none;
+  }
+}
+
+/* Tier 3. The played row comes off the opponents' seats as well, the way the short-screen
+   phone block does it: the seats keep their names, card counts, scores and turn state, and
+   what is lost is which of the cards on the table came from which seat — recoverable from
+   the current play, which is still there. Everything else is squeezed by a few pixels. */
+@media (min-width: 769px) and (max-height: 678px) {
+  .card-game-view.is-immersive .table-area {
+    --trick-height: 144px;
+    gap: 8px;
+  }
+  .card-game-view.is-immersive .table-area .seat-list {
+    --seat-band-height: 68px;
+  }
+  .card-game-view.is-immersive .table-area :deep(.player-seat:not(.is-lobby)) {
+    height: 62px;
+  }
+  .card-game-view.is-immersive .table-area :deep(.seat-played) {
+    display: none;
+  }
+  .card-game-view.is-immersive :deep(.card-hand) {
+    padding: 8px 0 4px;
+    min-height: 80px;
+  }
+  .card-game-view.is-immersive .my-area {
+    gap: 8px;
+    padding-top: 6px;
+  }
+  .card-game-view.is-immersive .status-bar {
+    height: 22px;
+  }
+  .card-game-view.is-immersive .trick {
+    padding: 10px 16px;
+    gap: 8px;
+  }
+  .card-game-view.is-immersive .trick-head {
+    height: 24px;
+    flex: 0 0 24px;
+  }
+  .card-game-view.is-immersive .trick-play {
+    height: auto;
+    flex: 0 1 auto;
   }
 }
 </style>
