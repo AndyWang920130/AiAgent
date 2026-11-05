@@ -290,7 +290,7 @@ export default {
     or: '或',
     noAccount: '没有账户？',
     registerNow: '立即注册',
-    demoCredentials: '演示账号：admin / admin',
+    demoCredentials: '演示账号：user / password',
     lightMode: '浅色模式',
     darkMode: '深色模式',
     failedCaptcha: '验证码加载失败，请刷新',

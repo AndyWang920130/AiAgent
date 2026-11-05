@@ -290,7 +290,7 @@ export default {
     or: 'or',
     noAccount: "Don't have an account?",
     registerNow: 'Register now',
-    demoCredentials: 'Demo credentials: admin / admin',
+    demoCredentials: 'Demo credentials: user / password',
     lightMode: 'Light Mode',
     darkMode: 'Dark Mode',
     failedCaptcha: 'Failed to load captcha, please refresh',
