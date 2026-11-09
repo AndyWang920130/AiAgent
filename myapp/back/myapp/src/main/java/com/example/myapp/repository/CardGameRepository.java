@@ -3,7 +3,6 @@ package com.example.myapp.repository;
 import com.example.myapp.contants.enumeration.CardGameStatus;
 import com.example.myapp.domain.CardGame;
 import java.util.List;
-import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -43,8 +42,4 @@ public interface CardGameRepository extends JpaRepository<CardGame, Long> {
         @Param("username") String username,
         @Param("statuses") List<CardGameStatus> statuses
     );
-
-    default Optional<CardGame> findActiveForUser(String username) {
-        return findByParticipantAndStatus(username, CardGameStatus.ACTIVE).stream().findFirst();
-    }
 }

@@ -12,6 +12,8 @@ export type CardShape = 'SINGLE' | 'PAIR' | 'TRIPLE' | 'QUAD' | 'FULL_HOUSE' | '
 export type CardGameStatus =
   | 'PENDING'
   | 'ACTIVE'
+  /** Scored, seats still filled — the result stands while the players decide on another game. */
+  | 'REMATCH'
   | 'FINISHED'
   | 'CANCELLED'
   | 'EXPIRED'
@@ -40,6 +42,14 @@ export interface CardGamePlayer {
   score: number
   passed: boolean
   out: boolean
+  /**
+   * Wants the next game, while the status is `REMATCH`. Reported for every seat, not just your
+   * own, so the table can show who it is waiting on. True for CPU seats, which have nothing to
+   * decide and read as "waiting on nobody here"; every human seat reports its own answer, the
+   * host's included — the host agrees to another game the same way everyone else does. Always
+   * false in any other status, where the question is not being asked.
+   */
+  ready: boolean
 }
 
 /** One action in the current trick: a play, or a pass. These cards are all face up. */
@@ -93,6 +103,8 @@ export interface CardGameState {
   turnSecondsRemaining: number | null
   gameSecondsRemaining: number | null
   inviteSecondsRemaining: number | null
+  /** How long the room stays open for another game. Only set while the status is `REMATCH`. */
+  rematchSecondsRemaining: number | null
 }
 
 /** A follower the current user can invite (one-way follow is enough). */
@@ -139,6 +151,15 @@ export const cardGameApi = {
   setAutoPlay: (id: number, enabled: boolean): Promise<CardGameState> =>
     http.post(`/api/v1/card-games/games/${id}/auto-play`, { enabled }).then(r => r.data),
 
+  /**
+   * Say whether you want the next game, once this one has been scored. Always your own seat,
+   * the host's being no different. When this is the last seat the room was waiting on, the
+   * state that comes back is the next game already dealt — there is no separate call for it.
+   */
+  setReady: (id: number, ready: boolean): Promise<CardGameState> =>
+    http.post(`/api/v1/card-games/games/${id}/ready`, { ready }).then(r => r.data),
+
+  /** Leave the table. Ends the game, or closes the room, for everyone still in it. */
   leave: (id: number): Promise<CardGameState> =>
     http.post(`/api/v1/card-games/games/${id}/leave`).then(r => r.data),
 

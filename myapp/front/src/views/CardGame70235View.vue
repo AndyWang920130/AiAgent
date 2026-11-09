@@ -58,6 +58,15 @@ const gameOver = computed(
   () => !!game.value && game.value.status !== 'ACTIVE' && game.value.status !== 'PENDING'
 )
 
+/**
+ * The game is over but the room is not: the seats are still filled and the players are deciding
+ * on another game. A subset of `gameOver` — the result is still what the table shows, and
+ * everything that keys off `gameOver` (the placings, the winner badge, the immersive layout)
+ * applies here unchanged. What this adds is the rematch bar and a corner button that really
+ * leaves rather than just dismissing.
+ */
+const inRoom = computed(() => game.value?.status === 'REMATCH')
+
 /** The table the host set up, still waiting on invitees. */
 const waitingTable = computed(() => (game.value?.status === 'PENDING' ? game.value : null))
 
@@ -82,16 +91,26 @@ const { scale: fitScale } = useFitScale(fitBox, tableEl)
 
 /* transform-origin: top centre — the table shrinks towards the top of the space rather than
    away from its own middle, which keeps the seat row in the same place as the scale changes.
-   Width is divided back out so the board still fills the space sideways at any scale. */
+
+   Nothing but the transform. This used to also set `width: 100 / scale %` so the board filled
+   the space sideways however far it was scaled down, and that made the table's *layout* width
+   a function of the scale: a shorter window got a wider layout box, which re-wrapped the
+   button row and the seat row and so changed the natural height the scale was measured from.
+   Two players on the same table and the same screen size could therefore be looking at
+   differently-shaped tables, which is what it was reported as. One design width, drawn smaller
+   when it has to be. */
 const tableStyle = computed(() =>
   fitScale.value < 1
-    ? {
-        transform: `scale(${fitScale.value})`,
-        transformOrigin: 'top center',
-        width: `${100 / fitScale.value}%`,
-      }
+    ? { transform: `scale(${fitScale.value})`, transformOrigin: 'top center' }
     : undefined,
 )
+
+/**
+ * Whether the table is at its own size. The result is centred in its space, but only here:
+ * a scaled table is drawn from the top of its box (the transform-origin above), so centring
+ * the box would leave the gap above the board instead of below it.
+ */
+const fitsUnscaled = computed(() => fitScale.value === 1)
 
 const myHand = computed(() => game.value?.myHand ?? [])
 const selectedCards = computed(() => selectedIndices.value.map(i => myHand.value[i]).filter(Boolean))
@@ -116,18 +135,31 @@ const others = computed(() =>
   (game.value?.players ?? []).filter(p => p.username !== game.value?.myUsername)
 )
 
-/** The player the server declared the winner, or null if the game ended without one. */
+/** My own readiness, for the toggle. The server reports the CPU seats as always ready. */
+const iAmReady = computed(() => me.value?.ready ?? false)
+
+/**
+ * Who the room is still waiting on. CPU seats are reported ready by the server, so what is left
+ * here is the humans who have not clicked yet — including the host, who readies up like everyone
+ * else and is not waiting on themselves only once they have.
+ */
+const notReadyNames = computed(() =>
+  (game.value?.players ?? []).filter(p => !p.ready).map(p => p.name)
+)
+
+/**
+ * The player the server declared the winner, or null if the game ended without one.
+ *
+ * Only for a game that was actually played out. A room that was abandoned still carries the
+ * previous game's winner on the row — that result is what the table shows while the players
+ * decide, and leaving does not erase it — so without the status check the headline would
+ * announce a winner at a table somebody had just walked out of.
+ */
 const winner = computed(() => {
   const g = game.value
   if (!g?.winnerUsername) return null
+  if (g.status !== 'REMATCH' && g.status !== 'FINISHED') return null
   return g.players.find(p => p.username === g.winnerUsername) ?? null
-})
-
-/** The player who emptied their hand first, who collects the others' leftover points. */
-const firstOut = computed(() => {
-  const g = game.value
-  if (!g?.firstOutUsername) return null
-  return g.players.find(p => p.username === g.firstOutUsername) ?? null
 })
 
 /**
@@ -231,19 +263,45 @@ const trickHistoryLabel = computed(() => {
 const statusText = computed(() => {
   const g = game.value
   if (!g) return ''
-  if (g.status === 'FINISHED') {
+  // REMATCH alongside FINISHED: the game is scored either way, and the only difference is
+  // whether the room is still open — which the rematch bar says, not this line.
+  if (g.status === 'FINISHED' || g.status === 'REMATCH') {
     const winner = g.players.find(p => p.username === g.winnerUsername)
     return winner
       ? t('cardGame.winnerIs', { name: winner.name, score: winner.score })
       : t('cardGame.gameFinished')
   }
-  if (g.status === 'ABANDONED') return t('cardGame.gameAbandoned')
+  // A winner on an abandoned table means the game had already been played out and it was the
+  // room between games that somebody walked out of — nobody lost a game in progress, so saying
+  // so would be wrong. The server only names a winner when it scores a game, and a deal clears
+  // the name again, so this distinguishes the two without a field of its own.
+  if (g.status === 'ABANDONED') {
+    return g.winnerUsername ? t('cardGame.roomClosed') : t('cardGame.gameAbandoned')
+  }
   if (g.status === 'CANCELLED') return t('cardGame.gameCancelled')
   if (g.status === 'EXPIRED') return t('cardGame.gameExpired')
   if (g.status === 'TIMED_OUT') return t('cardGame.gameTimedOut')
   if (g.myTurn) return t('cardGame.yourTurn')
   const turn = g.players.find(p => p.username === g.currentTurnUsername)
   return turn ? t('cardGame.waitingFor', { name: turn.name }) : ''
+})
+
+/**
+ * The one line under the rematch button, saying what the room is waiting for. Each case names
+ * either the people or the host, because "waiting" on its own leaves the player wondering
+ * whether anything is going to happen at all.
+ */
+const rematchHint = computed(() => {
+  const g = game.value
+  if (!g) return ''
+  // Your own answer first: until you have given one, who else the room is waiting on is not
+  // what you need to be told. Afterwards it is the only thing left to say — and the host reads
+  // exactly the same two lines, having exactly the same say.
+  if (!iAmReady.value) return t('cardGame.rematchAsk')
+  const names = notReadyNames.value.join(', ')
+  // No third case. "Everybody ready" is not a state the table can be polled in: the last ready
+  // flag deals, so a client that sees every seat ticked is already looking at the next game.
+  return t('cardGame.rematchWaiting', { names })
 })
 
 function mmss(total: number | null): string {
@@ -428,10 +486,29 @@ async function leaveGame() {
   })
 }
 
+/**
+ * Dismiss a table that is finished with. Local only — there is nothing left on the server to
+ * tell. A room still open is a different thing and goes through `leaveGame`, which is what the
+ * corner button switches to while the status is REMATCH: walking out on players who are waiting
+ * to see whether you will play again has to actually reach them.
+ */
 function closeResult() {
   game.value = null
   pollLobby()
 }
+
+/**
+ * Say whether I want the next game. My own seat, whether or not I host the room.
+ *
+ * The response is the whole of the result: if mine was the last seat the room was waiting on,
+ * what comes back is the next game already dealt and `applyGame` switches the table to it. So
+ * there is no rematch call to make afterwards and no "everyone is ready" state to render.
+ */
+async function toggleReady(ready: boolean) {
+  if (!game.value) return
+  await run(() => cardGameApi.setReady(game.value!.id, ready))
+}
+
 
 /**
  * First click selects a card, a second click on an already-selected card plays the selection.
@@ -496,12 +573,17 @@ function stopGamePolling() {
   gameTimer = null
 }
 
-// Which poll runs depends on where the user is: at an active table only the game matters,
-// and a finished game stops both until the result panel is dismissed.
+// Which poll runs depends on where the user is: at an active table only the game matters, and a
+// table that is finished with stops both until the result panel is dismissed.
+//
+// REMATCH polls like a live game. It is the one status where the table changes without this
+// client doing anything — another player readying up, the host dealing, somebody leaving — and
+// all three of those have to arrive on their own or the room would look frozen to everyone but
+// whoever acted last.
 watch(
   () => game.value?.status ?? null,
   status => {
-    if (status === 'ACTIVE') {
+    if (status === 'ACTIVE' || status === 'REMATCH') {
       stopLobbyPolling()
       startGamePolling()
     } else if (status === 'PENDING') {
@@ -535,7 +617,14 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="card-game-view" :class="{ 'is-immersive': inGame || gameOver, 'is-over': gameOver }">
+  <div
+    class="card-game-view"
+    :class="{
+      'is-immersive': inGame || gameOver,
+      'is-over': gameOver,
+      'fits-unscaled': fitsUnscaled,
+    }"
+  >
     <a-card :bordered="false">
       <template #title>
         <a-button type="text" size="small" class="back-btn" @click="back">
@@ -544,19 +633,29 @@ onUnmounted(() => {
         {{ t('cardGame.title70235') }}
       </template>
 
-      <!-- The way out of the table, in the corner: Leave while it is being played, and once it
-           is over the same corner dismisses the finished table. -->
+      <!-- The way out of the table, in the corner. Three things in one place, because leaving is
+           one idea to the player wherever they are: it ends a game being played, it closes a room
+           between games for everybody in it, and once there is nothing left to end it just
+           dismisses the result. The first two reach the other players and so are the danger
+           colour; the third touches nothing but this screen. -->
       <template #extra>
         <a-button v-if="inGame" danger :loading="actionLoading" @click="leaveGame">
           {{ t('cardGame.leaveGame') }}
+        </a-button>
+        <a-button v-else-if="inRoom" danger :loading="actionLoading" @click="leaveGame">
+          {{ t('cardGame.leaveRoom') }}
         </a-button>
         <a-button v-else-if="gameOver" type="primary" @click="closeResult">
           {{ t('cardGame.backToLobby') }}
         </a-button>
       </template>
 
-      <!-- ===================== LOBBY ===================== -->
-      <div v-if="!game" class="lobby">
+      <!-- ===================== LOBBY =====================
+           This comment is above the div rather than inside it, and that is fine here: it
+           precedes the `v-if`, so it is an ordinary sibling and no branch absorbs it. The two
+           branches below have theirs inside, because a comment between branches has nowhere
+           to go. Every root in the chain is keyed so the branches are told apart by name. -->
+      <div v-if="!game" key="lobby" class="lobby">
         <a-alert :message="t('cardGame.rulesHint')" type="info" show-icon banner class="hint" />
 
         <a-card size="small" :title="t('cardGame.newTable')" class="lobby-card">
@@ -616,8 +715,15 @@ onUnmounted(() => {
         </a-card>
       </div>
 
-      <!-- ===================== WAITING TABLE ===================== -->
-      <div v-else-if="waitingTable" class="waiting">
+      <div v-else-if="waitingTable" key="waiting" class="waiting">
+        <!-- ===================== WAITING TABLE =====================
+             The comment is inside the div, not above it. A comment between `v-if` and
+             `v-else-if` has nowhere else to go: the compiler absorbs it into the branch that
+             follows, which makes that branch a two-child fragment instead of one element. Two
+             sibling branches that are both multi-root fragments are what let a switch between
+             them patch the new branch's children into the old branch's DOM node — the table
+             rendering inside this lobby wrapper, with `ref="fitBox"` left on the wrong element.
+             Same reason for the explicit key: it is what the branches are told apart by. -->
         <a-alert
           :message="waitingTable.host ? t('cardGame.waitingAsHost') : t('cardGame.waitingAsGuest', { name: waitingTable.hostName })"
           type="info"
@@ -648,14 +754,18 @@ onUnmounted(() => {
           {{ t('cardGame.startBlocked') }}
         </p>
       </div>
-      <!-- ===================== TABLE =====================
-           Two boxes, not one. .table-fit is the space the layout has given us, measured; the
-           .table-area inside it keeps its natural height and is scaled down by whatever it
-           takes to fit (utils/fitScale.ts). Adding the bands up and subtracting them from the
-           viewport was the previous approach and it left a scrollbar: the sum has to agree
-           with the card's title row, the header, two layers of padding, the font size and the
-           zoom level, and it did not. -->
-      <div v-else ref="fitBox" class="table-fit">
+      <div v-else ref="fitBox" key="table" class="table-fit">
+        <!-- ===================== TABLE =====================
+             Two boxes, not one. .table-fit is the space the layout has given us, measured; the
+             .table-area inside it keeps its natural height and is scaled down by whatever it
+             takes to fit (utils/fitScale.ts). Adding the bands up and subtracting them from the
+             viewport was the previous approach and it left a scrollbar: the sum has to agree
+             with the card's title row, the header, two layers of padding, the font size and the
+             zoom level, and it did not.
+
+             Inside the div, like the one above it, and for the same reason: above it, this
+             comment makes the branch a fragment rather than a single element. -->
+
       <div ref="tableEl" class="table-area" :style="tableStyle">
         <div class="seat-list">
           <PlayerSeat
@@ -663,11 +773,11 @@ onUnmounted(() => {
             :key="p.username"
             :player="p"
             :active="inGame && p.username === game.currentTurnUsername"
-            :leading="p.username === game.currentPlayUsername"
+            :leading="inGame && p.username === game.currentPlayUsername"
             :played="lastActionByUsername.get(p.username) ?? null"
             :place="placeByUsername.get(p.username) ?? null"
             :winner="gameOver && p.username === game.winnerUsername"
-            :first-out="gameOver && p.username === game.firstOutUsername"
+            :over="gameOver"
           />
         </div>
 
@@ -675,6 +785,9 @@ onUnmounted(() => {
              result in the same place once it is over. The outcome belongs where the game was
              happening, and this area is otherwise empty and captionless at that point. -->
         <div class="trick" :class="{ 'is-result': gameOver }">
+          <!-- The winner and their score, and nothing else. Who went out first, where the
+               scores can be found and what every other seat was doing all competed with the
+               one line anybody reads here. The per-seat numbers are on the seats. -->
           <template v-if="gameOver">
             <div class="result-headline">
               <TrophyOutlined class="result-trophy" />
@@ -683,15 +796,15 @@ onUnmounted(() => {
                   ? t('cardGame.youWinWith', { score: winner.score })
                   : t('cardGame.winnerIs', { name: winner.name, score: winner.score }) }}
               </span>
-              <!-- Abandoned and cancelled games have no winner: statusText says which. -->
-              <span v-else class="result-winner">{{ statusText }}</span>
+              <span v-else class="result-winner">
+                <!-- Abandoned and cancelled games have no winner: statusText says which.
+                     Inside the span for the reason the two branches above are: between the
+                     branches it makes this one a fragment, and these two are the same tag
+                     with the same class, which is the pair most easily patched into each
+                     other. -->
+                {{ statusText }}
+              </span>
             </div>
-
-            <p v-if="firstOut" class="result-firstout">
-              {{ t('cardGame.firstOutWas', { name: firstOut.name }) }}
-            </p>
-            <!-- The scores themselves are on the seats, which is where the placings are too. -->
-            <p class="result-hint">{{ t('cardGame.resultOnSeats') }}</p>
           </template>
 
           <template v-else>
@@ -736,7 +849,11 @@ onUnmounted(() => {
           </template>
         </div>
 
-        <div class="status-bar">
+        <!-- Whose turn it is and how long is left: live information, so it goes with the live
+             game. At game over statusText is the same "X wins with N" sentence the result
+             block above already carries, and the two tags are both gated on the game running,
+             which would leave the bar repeating the headline back at itself. -->
+        <div v-if="!gameOver" class="status-bar">
           <span class="status-text">{{ statusText }}</span>
           <a-tag
             v-if="inGame && game.myTurn && turnRemaining !== null"
@@ -755,11 +872,11 @@ onUnmounted(() => {
               v-if="me"
               :player="me"
               :active="inGame && game.myTurn"
-              :leading="me.username === game.currentPlayUsername"
+              :leading="inGame && me.username === game.currentPlayUsername"
               :played="lastActionByUsername.get(me.username) ?? null"
               :place="placeByUsername.get(me.username) ?? null"
               :winner="gameOver && me.username === game.winnerUsername"
-              :first-out="gameOver && me.username === game.firstOutUsername"
+              :over="gameOver"
               self
             />
             <span v-if="selectionLabel" class="selection-points">{{ selectionLabel }}</span>
@@ -826,6 +943,41 @@ onUnmounted(() => {
           <p v-if="inGame" class="play-hint">
             {{ autoPlayOn ? t('cardGame.autoPlayOnHint') : t('cardGame.autoPlayOffHint') }}
           </p>
+
+          <!-- Another game, in the space the hand controls had. The decision belongs under your
+               own hand, where you were just playing and where the scores on the seats above are
+               the reason you are making it — not in the corner with the way out.
+
+               One control, the same for everybody including the host. A flag rather than a
+               commitment, because a misclick on "ready" would otherwise cost you a game you did
+               not want; and the last seat to set it is what deals, so nobody is waiting on a
+               button they cannot see the state of. -->
+          <div v-if="inRoom" class="rematch-rows">
+            <a-space wrap>
+              <a-button
+                :type="iAmReady ? 'default' : 'primary'"
+                :loading="actionLoading"
+                @click="toggleReady(!iAmReady)"
+              >
+                {{ iAmReady ? t('cardGame.notReady') : t('cardGame.readyUp') }}
+              </a-button>
+              <!-- The room does not stay open for ever, and a room that closed on its own with
+                   nothing having said it would is indistinguishable from one that broke. Red
+                   under a minute, like the turn clock. -->
+              <a-tag
+                v-if="game.rematchSecondsRemaining !== null"
+                :color="game.rematchSecondsRemaining <= 60 ? 'red' : 'default'"
+              >
+                {{ t('cardGame.rematchTimeLeft', { time: mmss(game.rematchSecondsRemaining) }) }}
+              </a-tag>
+            </a-space>
+            <!-- Not a .play-hint, though it looks like one. Those are explanations of the
+                 controls and the short-screen tiers drop every one of them, which is right for
+                 a sentence about a switch whose state is visible in the switch. This line is
+                 table state — who the room is still waiting on — and it is the only place that
+                 is said. It keeps its own class so none of those rules reach it. -->
+            <p class="rematch-hint">{{ rematchHint }}</p>
+          </div>
         </div>
 
       </div>
@@ -978,39 +1130,44 @@ onUnmounted(() => {
 
 /* Game over. Every band on the table is a fixed height with its overflow clipped, which is
    right while the game runs — it is what stops a seat picking up a tag and moving the middle
-   of the table under the cursor. It is wrong once the game is over, because that is the
-   moment three of those bands get *more* in them: the seats gain a placing number and the
-   winner a trophy, the status line gains a full sentence about who won, and the trick area is
-   replaced by the result block. Clipped to the sizes that fitted during play, the ends of
-   those are cut off.
-   Nothing is moving any more, so the bands can size to their contents. The table as a whole
-   is still scaled to fit, so growing here cannot bring a scrollbar back. */
+   of the table under the cursor, and the sizes are what the live game needs: a played row
+   under every seat, three bands of cards in the middle, a status line.
+   None of those is what is in them once the game is over. The seats are down to one line, the
+   middle of the table is down to one sentence, and the status bar is not rendered at all. Held
+   at the play-time sizes, each band would be mostly empty table around the result; before the
+   display was trimmed, the same fixed heights clipped it instead.
+   Either way the answer is the same: nothing is moving any more, so every band sizes to what
+   it actually has in it, with no floor under it. The table as a whole is still scaled to fit,
+   so neither growing nor shrinking here can bring a scrollbar back. */
 .card-game-view.is-over .table-area .seat-list {
   height: auto;
-  min-height: var(--seat-band-height);
   overflow: visible;
   flex-wrap: wrap;
 }
-.card-game-view.is-over .status-bar {
-  height: auto;
-  min-height: 24px;
-  overflow: visible;
-  flex-wrap: wrap;
-  white-space: normal;
-}
-.card-game-view.is-over .status-bar .status-text {
-  overflow: visible;
-  text-overflow: clip;
-  white-space: normal;
-}
+/* One line in it now — the winner and their score. --trick-height is the height of three
+   stacked bands of cards, and holding it would put that line at the top of a tall empty box.
+   Sizes to the line, which is also what makes the table short enough to centre below. */
 .card-game-view.is-over .trick.is-result {
   height: auto;
-  min-height: var(--trick-height);
 }
+/* The table is well under the height of its box once the game is over, so the result sits in
+   the middle of the space rather than at the top with the slack beneath it.
+   Two conditions on it. Only at game over, because during play the table is near the height
+   of the box and centring one that is briefly a little too tall (a font swapping in before
+   the scale is measured) would clip its top as well as its bottom. And only when the table is
+   at its own size, because a scaled one is drawn from the top of its box — centring the box
+   would move the gap above the board rather than remove it. */
+.card-game-view.is-over.fits-unscaled .table-fit {
+  justify-content: center;
+}
+/* The seat's own fixed height includes the played row it no longer draws. Nothing is put back
+   in its place: a seat is as tall as the one line it has left, which on a phone is 36px. */
 .card-game-view.is-over .table-area :deep(.player-seat:not(.is-lobby)) {
   height: auto;
-  min-height: 62px;
 }
+/* The one height that keeps a minimum. Two lines fit here during play and the result uses
+   both of them — the name on the first, the cards and score on the second — so this is a
+   floor the content reaches rather than space reserved for content that is gone. */
 .card-game-view.is-over .table-area :deep(.seat-main) {
   height: auto;
   min-height: var(--seat-main-height);
@@ -1205,6 +1362,21 @@ onUnmounted(() => {
 .hand-actions {
   margin-top: 4px;
 }
+/* Stays a column at every width, unlike .control-rows: one button and one line of text have
+   nothing to gain from sharing a row, and the hint under the button is what explains it. */
+.rematch-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+/* Same size and colour as .play-hint, deliberately not the same class — see the comment on the
+   element. Wraps rather than truncating: on a five-seat table it is a list of names. */
+.rematch-hint {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
 .auto-play-row {
   display: flex;
   align-items: center;
@@ -1226,16 +1398,6 @@ onUnmounted(() => {
 .result-winner {
   font-size: 16px;
   font-weight: 600;
-}
-.result-firstout {
-  margin: 0;
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.55);
-}
-.result-hint {
-  margin: 0;
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
 }
 
 /* The same area as the trick, in the colour of a finished game rather than a live one, so it

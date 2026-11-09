@@ -48,6 +48,11 @@ public record CardGameDTO(
     boolean myTurn,
     /** True when the host may deal: every invitee has answered and the seat count is legal. */
     boolean canStart,
+    // There is deliberately no canRematch beside canStart. The first game needs a host to deal
+    // it, because invitations can still be outstanding and somebody has to decide the table is
+    // complete. The next game needs nobody: the room is already settled, so the last player to
+    // ready up deals it. No button, no enabled state to report — the per-seat `ready` flags are
+    // what the table draws instead.
     /** Emptied their hand first, collecting the point cards left in the other hands. */
     String firstOutUsername,
     String winnerUsername,
@@ -58,6 +63,13 @@ public record CardGameDTO(
     int turnTimeoutSeconds,
     Integer turnSecondsRemaining,
     Integer gameSecondsRemaining,
-    Integer inviteSecondsRemaining
+    Integer inviteSecondsRemaining,
+    /**
+     * How long the room stays open for another game. Its own field rather than a reuse of
+     * {@link #inviteSecondsRemaining}: that one is the clock on invitations nobody has answered,
+     * and a client showing "the invitation expires in" at a table that has already played a game
+     * would be saying something untrue. Null outside {@code REMATCH}.
+     */
+    Integer rematchSecondsRemaining
 ) implements Serializable {
 }

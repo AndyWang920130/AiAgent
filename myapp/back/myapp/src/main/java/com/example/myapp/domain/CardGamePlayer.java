@@ -63,6 +63,23 @@ public class CardGamePlayer extends AbstractAuditingEntity {
     @Column(name = "auto_play", nullable = false)
     private boolean autoPlay = false;
 
+    /**
+     * This player has said they want the next game, while the room sits in
+     * {@code CardGameStatus.REMATCH}. Reset by every deal, so it describes the game about to
+     * start rather than the one just played.
+     *
+     * <p>Deliberately not {@code invitationStatus}. Reusing that would make "has not readied up
+     * yet" and "has not answered an invitation yet" the same value, and a deal drops every
+     * DECLINED seat and counts the ACCEPTED ones — so a player who was merely slow to ready up
+     * would be at risk of being treated as one who had turned the table down. Readiness is its
+     * own question and gets its own column.
+     *
+     * <p>Only meaningful on a non-host human seat: a CPU has nothing to decide, and the host's
+     * readiness is them dealing.
+     */
+    @Column(name = "ready", nullable = false)
+    private boolean ready = false;
+
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "invitation_status", nullable = false, length = 20)
@@ -84,6 +101,8 @@ public class CardGamePlayer extends AbstractAuditingEntity {
     public void setCpu(boolean cpu) { this.cpu = cpu; }
     public boolean isAutoPlay() { return autoPlay; }
     public void setAutoPlay(boolean autoPlay) { this.autoPlay = autoPlay; }
+    public boolean isReady() { return ready; }
+    public void setReady(boolean ready) { this.ready = ready; }
     public CardGameInvitationStatus getInvitationStatus() { return invitationStatus; }
     public void setInvitationStatus(CardGameInvitationStatus invitationStatus) { this.invitationStatus = invitationStatus; }
 

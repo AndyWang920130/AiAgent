@@ -789,22 +789,34 @@ export default {
     autoPlayOffHint:
       'Switch on auto-play to have your turns played for you, including while this page is closed.',
     selectionPoints: '{points} points selected',
-    resultOnSeats: 'Final scores and placings are shown on each seat.',
     winnerIs: '{name} wins with {score} points',
     youWinWith: 'You win with {score} points',
-    firstOutWas: '{name} went out first and collected the leftover points.',
-    firstOut: 'Out first',
     gameFinished: 'Game over',
     gameAbandoned: 'A player left, so the game ended',
     gameCancelled: 'The table was cancelled',
     gameExpired: 'The invitation expired',
     gameTimedOut: 'The game timed out',
     backToLobby: 'Back to lobby',
+    // Another game with the same people. "Room" rather than "table" once a game has been
+    // played: a table is the thing being set up, a room is the people still sitting at it.
+    leaveRoom: 'Leave room',
+    readyUp: "I'm ready",
+    notReady: 'Not ready',
+    rematchWaiting: 'Waiting for {names}.',
+    // No mention of the host: there is nobody to deal. The last player to say they are ready is
+    // what starts the game, so what this asks for is the whole of what is needed.
+    rematchAsk: 'Want another game? The next one starts once everybody is ready.',
+    rematchTimeLeft: 'Room closes in {time}',
+    roomClosed: 'A player left, so the room closed',
     invitePending: 'Pending',
     inviteDeclined: 'Declined',
     inviteAccepted: 'Joined',
     outOfCards: 'Out',
     passed: 'Passed',
+    // On the seat, next to the name, where it answers "who are we waiting on" by elimination.
+    // Shorter than the button that sets it ("I'm ready"): that one is a thing you do, this one
+    // is a seat you are reading past.
+    readyTag: 'Ready',
     cpu: 'CPU',
     cardsHeld: '{count} cards',
     scoreValue: '{score} pts',

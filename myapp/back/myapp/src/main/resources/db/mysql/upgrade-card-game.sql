@@ -67,12 +67,79 @@ ALTER TABLE `twsny_card_game_player` AUTO_INCREMENT = 1000;
 -- trick_number by one just after a trick is scored, because a trick's winning play is the last
 -- entry in its own history). CREATE TABLE IF NOT EXISTS above skips an existing table, so a
 -- database created by the earlier version needs these columns added here. MySQL has no
--- ADD COLUMN IF NOT EXISTS, so each errors harmlessly (1060, duplicate column) once applied.
-ALTER TABLE `twsny_card_game` ADD COLUMN `trick_log` varchar(512) DEFAULT '' AFTER `passed_usernames`;
-ALTER TABLE `twsny_card_game` ADD COLUMN `trick_log_number` int NOT NULL DEFAULT 0 AFTER `trick_log`;
+-- ADD COLUMN IF NOT EXISTS, so each is guarded on information_schema the way
+-- upgrade-gomoku.sql guards its own late additions. A bare ALTER is not harmless here: it
+-- raises 1060 and the client stops, skipping every statement after it -- which is exactly the
+-- database that has these three columns already and is missing only `ready` below.
+SET @schema_name = DATABASE();
+
+SET @add_trick_log = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `twsny_card_game` ADD COLUMN `trick_log` varchar(512) DEFAULT '''' AFTER `passed_usernames`',
+    'SELECT ''twsny_card_game.trick_log already exists'' AS message'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @schema_name
+    AND TABLE_NAME = 'twsny_card_game'
+    AND COLUMN_NAME = 'trick_log'
+);
+PREPARE add_trick_log_stmt FROM @add_trick_log;
+EXECUTE add_trick_log_stmt;
+DEALLOCATE PREPARE add_trick_log_stmt;
+
+SET @add_trick_log_number = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `twsny_card_game` ADD COLUMN `trick_log_number` int NOT NULL DEFAULT 0 AFTER `trick_log`',
+    'SELECT ''twsny_card_game.trick_log_number already exists'' AS message'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @schema_name
+    AND TABLE_NAME = 'twsny_card_game'
+    AND COLUMN_NAME = 'trick_log_number'
+);
+PREPARE add_trick_log_number_stmt FROM @add_trick_log_number;
+EXECUTE add_trick_log_number_stmt;
+DEALLOCATE PREPARE add_trick_log_number_stmt;
 
 -- Also added after the first release: auto-play. A player can hand their turns to the server,
 -- which then plays that seat with the same brain the CPU seats use. Per seat and per game, so
 -- it lapses with the table; defaults off, which is how every existing row should read.
--- Same caveat as the two statements above — errors harmlessly (1060) once applied.
-ALTER TABLE `twsny_card_game_player` ADD COLUMN `auto_play` bit(1) NOT NULL DEFAULT b'0' AFTER `cpu`;
+-- Guarded like the two statements above.
+SET @add_auto_play = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `twsny_card_game_player` ADD COLUMN `auto_play` bit(1) NOT NULL DEFAULT b''0'' AFTER `cpu`',
+    'SELECT ''twsny_card_game_player.auto_play already exists'' AS message'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @schema_name
+    AND TABLE_NAME = 'twsny_card_game_player'
+    AND COLUMN_NAME = 'auto_play'
+);
+PREPARE add_auto_play_stmt FROM @add_auto_play;
+EXECUTE add_auto_play_stmt;
+DEALLOCATE PREPARE add_auto_play_stmt;
+
+-- And after that: playing again without rebuilding the table. A game that ends now leaves the
+-- row in the new REMATCH status — seats still filled, last result standing — and `ready` is how
+-- each player says they want the next one. Both are per game and reset by every deal, so
+-- defaults off is right for existing rows (all of which are in a terminal status already, where
+-- the column is never read). `status` is a varchar(20) and already holds the new value.
+-- Guarded like the statements above. `auto_play` is added before this runs, so the AFTER
+-- clause has its anchor on a database that had neither column.
+SET @add_ready = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `twsny_card_game_player` ADD COLUMN `ready` bit(1) NOT NULL DEFAULT b''0'' AFTER `auto_play`',
+    'SELECT ''twsny_card_game_player.ready already exists'' AS message'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @schema_name
+    AND TABLE_NAME = 'twsny_card_game_player'
+    AND COLUMN_NAME = 'ready'
+);
+PREPARE add_ready_stmt FROM @add_ready;
+EXECUTE add_ready_stmt;
+DEALLOCATE PREPARE add_ready_stmt;

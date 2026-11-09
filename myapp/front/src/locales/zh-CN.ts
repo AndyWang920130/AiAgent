@@ -785,22 +785,33 @@ export default {
     autoPlayOnHint: '正在自动为你出牌。关闭后，下一轮由你自己出。',
     autoPlayOffHint: '开启后将自动为你出牌，关闭本页面也会继续。',
     selectionPoints: '已选 {points} 分',
-    resultOnSeats: '最终得分与名次显示在各自座位上。',
     winnerIs: '{name} 获胜，{score} 分',
     youWinWith: '你获胜，{score} 分',
-    firstOutWas: '{name} 先出完手牌，收走了其余玩家手上的分数。',
-    firstOut: '先出完',
     gameFinished: '本局结束',
     gameAbandoned: '有玩家退出，本局结束',
     gameCancelled: '牌桌已解散',
     gameExpired: '邀请已失效',
     gameTimedOut: '本局超时结束',
     backToLobby: '返回大厅',
+    // 牌局结束后原班人马再来一局。此时称“房间”而非“牌桌”：牌桌是建局时的那张桌子，
+    // 房间是牌局结束后还坐在桌边的这些人。
+    leaveRoom: '离开房间',
+    readyUp: '我准备好了',
+    notReady: '取消准备',
+    rematchWaiting: '等待 {names} 准备。',
+    // 不提房主：没有人需要“开局”。最后一个点准备的人就是开局的人，
+    // 所以这句话里要的就是全部所需。
+    rematchAsk: '想再来一局吗？所有人都准备好后自动开始下一局。',
+    rematchTimeLeft: '房间 {time} 后解散',
+    roomClosed: '有玩家离开，房间已解散',
     invitePending: '待接受',
     inviteDeclined: '已拒绝',
     inviteAccepted: '已接受',
     outOfCards: '已出完',
     passed: '不要',
+    // 显示在座位上，紧跟名字：谁还没准备好，看一眼就知道。比按钮上的「我准备好了」短，
+    // 按钮是要去点的，这里是扫一眼就过的状态。
+    readyTag: '已准备',
     cpu: '电脑',
     cardsHeld: '{count} 张',
     scoreValue: '{score} 分',

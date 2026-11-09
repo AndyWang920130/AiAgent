@@ -213,3 +213,96 @@ Worth a real look:
 
 The tier boundaries only re-evaluate on resize, which is correct — but a window dragged across
 862px mid-game will show the history band appear or vanish.
+
+## Round 3: the game-over display is the result, not the game
+
+> At the end of the game, we only need to display each player's score and remaining cards,
+> right? There is no need to show other information, such as whether a player was in auto-play
+> mode. On the game table, we only need to display the winner and their score.
+
+The finished table was still dressed as a running one. Every seat carried the state it had
+while the game was live — who had passed, who had handed their turns to the server, the cards
+they played in the last trick — and the middle of the table carried three lines where one was
+being read. None of it is an outcome.
+
+### What each seat shows now
+
+A seat keeps its placing, avatar, name, remaining cards and score. Everything that described
+how the game was being played is gated on a new `over` prop:
+
+| Dropped at game over | Why |
+| --- | --- |
+| the auto-play tag | named in the request: how a seat was played, not how it finished |
+| the passed / out-of-cards tag | both are read off the card count once the game is over |
+| the played-cards row | the last trick's cards: a step in a finished game |
+
+`passed` was really showing: the server clears it at the start of a trick, so whoever passed
+in the last one still carried the tag. `out` was already gated on the game being active
+server-side, so that half was moot.
+
+One more piece of live state was on the seats and is not a tag: the green `is-leading`
+background, which marks whoever holds the play on the table. It comes from
+`currentPlayUsername`, and the normal end of a game clears the trick before scoring it — but a
+game closed by the round cap is scored mid-trick (`finish` is reached from the timeout sweep,
+not from `scoreTrick`), so that field survives into `FINISHED` and the highlight outlived the
+game it described. Both seats now gate `leading` on `inGame`, matching `active`.
+
+The placing number and the winner's trophy stay. They are the result — the standings the
+scores are in — rather than state from the running game, and with the first-out tag gone the
+placing is the only thing that reports the finishing order. Say so if they should go too.
+
+### What the middle of the table shows now
+
+The winner and their score. `firstOutWas` ("X went out first and collected the leftover
+points") and `resultOnSeats` ("final scores and placings are shown on each seat") are gone,
+along with the `firstOut` computed in the view, the `firstOut` tag, and all three locale keys
+in both languages. `statusText` still renders in the no-winner branch, which is the only thing
+that reports an abandoned or cancelled table.
+
+The status bar is no longer rendered at game over at all. At `FINISHED` its text is the same
+`winnerIs` sentence the result block above it carries, and both of its tags are gated on the
+game running — so it was the headline repeated back into an otherwise empty bar.
+
+### The heights had to go the other way
+
+The `.is-over` rules were written for a display that *grew* when the result arrived: they
+released each fixed height but kept a floor under it. The trimmed display shrinks instead, so
+every floor was reserving space for content that no longer exists — `--seat-band-height` holds
+a played row the seats do not draw, and `--trick-height` is three bands of cards where there
+is now one line. All three floors are gone; `.seat-main` keeps its minimum, which the two
+remaining lines actually reach.
+
+That leaves the finished table well short of its box, so it is centred in the space rather
+than sitting at the top with the slack beneath it. Gated on two things: `.is-over`, because
+during play the table is near the height of the box and centring one that is briefly a little
+too tall would clip its top as well as its bottom; and a new `.fits-unscaled` class, because
+`transform-origin: top center` draws a scaled table from the top of its box — centring the box
+would move the gap above the board instead of removing it.
+
+Per tier, playing vs finished natural height:
+
+| tier | playing | finished | shorter by |
+| --- | --- | --- | --- |
+| 1 everything shown | 803 | 417 | 386px |
+| 2 no history, no hints | 599 | 375 | 224px |
+| 3 seats collapsed, tighter | 455 | 349 | 106px |
+| phone | 481 | 327 | 154px |
+
+So the trim cannot bring a scrollbar back, and on a window where play was scaled to 0.946 the
+result arrives at 1.0 — the board gets slightly larger as the game ends.
+
+### Verified
+
+- `npx vue-tsc -b` and `npm run build`: exit 0.
+- `check_immersive_css.py`: the previous structural checks, plus the game-over trim. It now
+  reads the raw sources as well as the style block, since most of the trim is `v-if` gates.
+- `prove_checks.py` (new): reverts each piece of the trim in a copy of the source and runs the
+  checker against it. 8/8 mutations caught, sources restored and re-verified. A check that
+  cannot fail is not a check, and the previous round's checker passed while the bug was live.
+- `compile_scoped.mjs`: all five `.is-over` rules compile with the scope attribute somewhere
+  it can match, including the new `.is-over.fits-unscaled .table-fit`.
+- The backend: hands are not cleared at `FINISHED`, so `handCount` is a real remaining-card
+  count at game over and the seats can lean on it.
+
+Still not verified by a browser, same as the previous rounds. The case worth a look is game
+over on a 5-seat table with long names.

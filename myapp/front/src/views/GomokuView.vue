@@ -640,7 +640,7 @@ onUnmounted(stopAllPolling)
       <!-- ===================== ONLINE MODE ===================== -->
       <template v-else>
         <!-- Lobby: no active game -->
-        <div v-if="!game" class="lobby">
+        <div v-if="!game" key="lobby" class="lobby">
           <a-card size="small" :title="t('gomoku.inviteFan')" class="lobby-card">
             <div class="invite-row">
               <a-select
@@ -696,8 +696,13 @@ onUnmounted(stopAllPolling)
           </a-card>
         </div>
 
-        <!-- In-game -->
-        <div v-else class="online-game">
+        <div v-else key="online-game" class="online-game">
+          <!-- In-game. The comment is inside the div: above it, between the branches, the
+               compiler absorbs it into this branch and the branch becomes a two-child
+               fragment rather than one element. Both roots of this pair are plain divs, so
+               that is the pair a branch switch can patch into each other -- the new branch's
+               children mounted into the old branch's node. It did exactly that on the 70235
+               table, which was mirrored from this view. The key is what tells them apart. -->
           <div class="players">
             <span class="player" :class="{ active: !onlineOver && game.currentPlayer === 1 }">
               <span class="turn-dot black" />

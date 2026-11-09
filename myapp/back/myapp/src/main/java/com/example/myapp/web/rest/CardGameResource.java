@@ -86,6 +86,18 @@ public class CardGameResource {
         return ResponseEntity.ok(cardGameService.setAutoPlay(id, request.enabled()));
     }
 
+    /**
+     * Say whether the caller wants the next game, once this one has been scored. Caller's own
+     * seat only, like auto-play — the host's included, which is why there is no separate
+     * endpoint for dealing again: the response to the last player readying up is the next game
+     * already dealt.
+     */
+    @PostMapping("/games/{id}/ready")
+    public ResponseEntity<CardGameDTO> ready(@PathVariable Long id, @Valid @RequestBody ReadyRequest request) {
+        return ResponseEntity.ok(cardGameService.setReady(id, request.ready()));
+    }
+
+    /** Leave the table, ending the game or closing the room for everyone still in it. */
     @PostMapping("/games/{id}/leave")
     public ResponseEntity<CardGameDTO> leave(@PathVariable Long id) {
         return ResponseEntity.ok(cardGameService.leave(id));
@@ -108,4 +120,6 @@ public class CardGameResource {
     public record PlayRequest(@NotEmpty List<String> cards) {}
 
     public record AutoPlayRequest(@NotNull Boolean enabled) {}
+
+    public record ReadyRequest(@NotNull Boolean ready) {}
 }

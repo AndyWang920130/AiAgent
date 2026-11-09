@@ -129,15 +129,19 @@ function formatTime(timeStr: string): string {
         </a-tab-pane>
       </a-tabs>
 
-      <!-- Empty state -->
+      <!-- The empty state, or the list. Both comments sit above the `v-if`: a comment placed
+           between the branches has nowhere to go, so the compiler absorbs it into the branch
+           that follows and makes that branch a two-child fragment instead of one root. Above
+           the `v-if` it is an ordinary sibling and no branch absorbs it. Keyed by name so the
+           two are told apart rather than patched into each other. -->
       <a-empty
         v-if="displayList.length === 0"
+        key="empty"
         :description="activeTab === 'unread' ? t('notification.noUnread') : t('notification.noMessages')"
         style="padding: 48px 0"
       />
 
-      <!-- Notification list -->
-      <a-list v-else :data-source="displayList" item-layout="horizontal" :pagination="{ pageSize: 10, size: 'small', showTotal: (total: number) => t('notification.total', { total }) }">
+      <a-list v-else key="list" :data-source="displayList" item-layout="horizontal" :pagination="{ pageSize: 10, size: 'small', showTotal: (total: number) => t('notification.total', { total }) }">
         <template #renderItem="{ item }">
           <a-list-item class="notif-item" :class="{ 'is-unread': !item.read }">
             <a-list-item-meta>

@@ -417,8 +417,13 @@ function logout() {
           </a-tabs>
         </a-card>
 
-        <!-- Edit Profile Form -->
-        <a-card v-if="editMode" :title="t('personal.editProfileTitle')" :bordered="false">
+        <!-- The edit form, or the blog list. Both comments sit above the `v-if` rather than
+             one above each branch: a comment between branches has nowhere to go, so the
+             compiler absorbs it into the branch that follows and that branch becomes a
+             two-child fragment instead of one root. These two are the same component with
+             the same prop shape, which is the pair most easily reused and patched into each
+             other instead of replaced, so they are keyed by name. -->
+        <a-card v-if="editMode" key="edit-profile" :title="t('personal.editProfileTitle')" :bordered="false">
           <a-form layout="vertical">
             <a-row :gutter="16">
               <a-col :span="12">
@@ -447,8 +452,7 @@ function logout() {
           </a-form>
         </a-card>
 
-        <!-- My Blogs -->
-        <a-card v-else :title="t('personal.myBlogs')" :bordered="false">
+        <a-card v-else key="my-blogs" :title="t('personal.myBlogs')" :bordered="false">
           <a-table
             :columns="blogColumns"
             :data-source="myPosts"

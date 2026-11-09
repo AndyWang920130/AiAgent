@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RobotOutlined, TrophyOutlined, UserOutlined } from '@ant-design/icons-vue'
+import { CheckOutlined, RobotOutlined, TrophyOutlined, UserOutlined } from '@ant-design/icons-vue'
 import type { CardGamePlayer, CardGameTrickEntry } from '../../api/cardGame'
 import PlayingCard from './PlayingCard.vue'
 
@@ -10,7 +10,11 @@ const props = withDefaults(
     player: CardGamePlayer
     /** Highlights the seat whose turn it is. */
     active?: boolean
-    /** Marks the seat holding the play currently on the table. */
+    /**
+     * Marks the seat holding the play currently on the table. The view passes this only while
+     * the game is running: a game closed by the round cap is scored mid-trick, so the last
+     * play's owner is still recorded and the highlight would outlive the game it belonged to.
+     */
     leading?: boolean
     /** Shown while the table is still filling, where card counts are meaningless. */
     lobby?: boolean
@@ -26,8 +30,14 @@ const props = withDefaults(
     place?: number | null
     /** The player the server named the winner. Not always the top score — a tie goes to whoever went out first. */
     winner?: boolean
-    /** Emptied their hand first, collecting the point cards left in the other hands. */
-    firstOut?: boolean
+    /**
+     * The game has finished. The seat then shows the result only — placing, name, cards left
+     * and score — and drops everything that described how the game was being played: whose
+     * turn it was, who had passed, who had handed their turns to the server, and the cards
+     * from the last trick. None of that is an outcome, and five seats' worth of it buries the
+     * two numbers a player actually wants to read at that point.
+     */
+    over?: boolean
     /**
      * The viewer's own seat. Only affects phone layout, where it collapses to a single line:
      * the cards it would show beneath it are already in the hand directly below, so on a
@@ -42,7 +52,7 @@ const props = withDefaults(
     played: null,
     place: null,
     winner: false,
-    firstOut: false,
+    over: false,
     self: false,
   }
 )
@@ -55,6 +65,9 @@ const statusTag = computed(() => {
     if (props.player.invitationStatus === 'DECLINED') return { color: 'red', text: t('cardGame.inviteDeclined') }
     return { color: 'green', text: t('cardGame.inviteAccepted') }
   }
+  // Both of these describe a seat's state in the running game, and both are read off the card
+  // count once it is over: empty hand, nothing left to pass on.
+  if (props.over) return null
   if (props.player.out) return { color: 'blue', text: t('cardGame.outOfCards') }
   if (props.player.passed) return { color: 'default', text: t('cardGame.passed') }
   return null
@@ -91,9 +104,33 @@ const statusTag = computed(() => {
           <span v-if="!lobby">{{ t('cardGame.cardsHeld', { count: player.handCount }) }}</span>
           <span v-if="!lobby" class="score">{{ t('cardGame.scoreValue', { score: player.score }) }}</span>
           <a-tag v-if="statusTag" :color="statusTag.color">{{ statusTag.text }}</a-tag>
-          <!-- Not a CPU seat, which plays itself anyway: a human who handed over their turns. -->
-          <a-tag v-if="player.autoPlay && !player.cpu" color="cyan">{{ t('cardGame.autoPlayTag') }}</a-tag>
-          <a-tag v-if="firstOut" color="green">{{ t('cardGame.firstOut') }}</a-tag>
+          <!-- Not a CPU seat, which plays itself anyway: a human who handed over their turns.
+               Gone once the game is over, where how a seat was played is no longer news. -->
+          <a-tag v-if="player.autoPlay && !player.cpu && !over" color="cyan">
+            {{ t('cardGame.autoPlayTag') }}
+          </a-tag>
+          <!-- This seat wants the next game. Needs no guard of its own: the server reports it
+               only inside the rematch window, and false everywhere else, so the tick appears
+               with the question and goes with it.
+
+               Here rather than only in the hint sentence under the hand, which names who is
+               still being waited on and leaves you to match names to seats. On five seats that
+               is a lookup; on the seat it is a glance. The sentence stays, because this row
+               scrolls sideways on a phone and a tick can be off-screen.
+
+               A tick, not a hand going up. This is a state the seat is in, not a moment: the
+               table polls at 1500ms, so several seats answering inside one window would all
+               animate at once and read as a glitch. It also has no resolution to play towards
+               — the last ready flag deals, so no client ever draws a table of ticks.
+
+               CPU seats get one too. They have nothing to decide, and a seat left blank would
+               read as a seat being waited on. -->
+          <Transition name="seat-ready">
+            <a-tag v-if="player.ready" color="green">
+              <CheckOutlined />
+              {{ t('cardGame.readyTag') }}
+            </a-tag>
+          </Transition>
         </div>
       </div>
     </div>
@@ -103,8 +140,12 @@ const statusTag = computed(() => {
 
          Rendered for the whole game, empty or not: the cards arrive and are cleared every
          trick, and a row that came and went with them would resize every seat at the table
-         several times a trick. The space is held from the start instead. -->
-    <div v-if="!lobby" class="seat-played">
+         several times a trick. The space is held from the start instead.
+
+         Dropped at game over. It is the last trick's cards, which is a step in a game that
+         has finished rather than part of its result, and the row the seat gives up is the
+         largest part of it. -->
+    <div v-if="!lobby && !over" class="seat-played">
       <template v-if="played">
         <span v-if="played.passed" class="played-pass">{{ t('cardGame.passed') }}</span>
         <template v-else>
@@ -174,8 +215,8 @@ const statusTag = computed(() => {
   background: #f6ffed;
 }
 
-/* The winner's seat once the game is over. Last rule of the three, so it wins over
-   .is-leading when the winner also happens to hold the final play. */
+/* The winner's seat once the game is over. Last rule of the three so it wins the cascade,
+   though .is-leading is no longer passed at game over for the seat to contend with. */
 .player-seat.is-winner {
   background: #fffbe6;
   border-color: #ffe58f;
@@ -223,6 +264,20 @@ const statusTag = computed(() => {
 
 .score {
   font-variant-numeric: tabular-nums;
+}
+
+/* The ready tick fades in rather than appearing between two frames, which at a 1500ms poll is
+   the difference between a seat answering and a seat glitching. Opacity only: the tag takes its
+   space immediately, so the other tags in the row do not shift as it arrives. Short enough not
+   to still be running when the next poll lands. */
+.seat-ready-enter-active,
+.seat-ready-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.seat-ready-enter-from,
+.seat-ready-leave-to {
+  opacity: 0;
 }
 
 /* Cards overlap a little so a five-card play still fits a narrow seat. The row keeps its

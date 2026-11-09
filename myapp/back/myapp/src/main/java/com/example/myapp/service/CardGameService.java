@@ -62,7 +62,24 @@ public class CardGameService {
      * landing there leaves the reader one more click from the thing they were told about.
      */
     private static final String CARD_GAME_LINK = "/mini-game/card-games/70235";
+    /** A game in progress: there are turns to take. */
     private static final List<CardGameStatus> LIVE = List.of(CardGameStatus.PENDING, CardGameStatus.ACTIVE);
+
+    /**
+     * A room the player is still in. Wider than {@link #LIVE} by REMATCH, where the last game
+     * is scored but the seats are still filled — the player is at a table, so they cannot be
+     * offered a second one, and their seat still holds a reservation on them for any host
+     * trying to invite them elsewhere.
+     */
+    private static final List<CardGameStatus> SEATED =
+        List.of(CardGameStatus.PENDING, CardGameStatus.ACTIVE, CardGameStatus.REMATCH);
+
+    /**
+     * What a client is put back into on a reload. PENDING is absent on purpose: a table still
+     * filling up arrives through {@code /invites} instead, which is also where the invitations
+     * still to answer come from.
+     */
+    private static final List<CardGameStatus> RESUMABLE = List.of(CardGameStatus.ACTIVE, CardGameStatus.REMATCH);
 
     /** Prefix for synthetic CPU seat usernames: {@code cpu-1}..{@code cpu-4}. */
     private static final String CPU_PREFIX = "cpu-";
@@ -173,7 +190,7 @@ public class CardGameService {
                 "badseatcount"
             );
         }
-        if (currentLiveGame(me).isPresent()) {
+        if (currentSeatedGame(me).isPresent()) {
             throw new BadRequestAlertException("You already have a game in progress", ENTITY_NAME, "alreadyplaying");
         }
         for (String invitee : humans) {
@@ -183,7 +200,7 @@ public class CardGameService {
             if (!followsMe(invitee, me)) {
                 throw new BadRequestAlertException("You can only invite users who follow you", ENTITY_NAME, "notfollower");
             }
-            if (currentLiveGame(invitee).isPresent()) {
+            if (currentSeatedGame(invitee).isPresent()) {
                 throw new BadRequestAlertException(nameOf(invitee) + " is already in a game", ENTITY_NAME, "opponentbusy");
             }
         }
@@ -277,7 +294,10 @@ public class CardGameService {
         String me = SecurityUtil.getCurrentUsername();
         CardGame game = requirePending(id);
         CardGamePlayer seat = requireInvitee(game, me, true);
-        if (currentActiveGame(me).isPresent()) {
+        // Not currentSeatedGame: that includes PENDING, which is the status of the very table
+        // being accepted. What disqualifies a player here is being committed somewhere else —
+        // mid-game, or in a room between games.
+        if (currentResumableGame(me).isPresent()) {
             throw new BadRequestAlertException("You already have a game in progress", ENTITY_NAME, "alreadyplaying");
         }
         seat.setInvitationStatus(CardGameInvitationStatus.ACCEPTED);
@@ -362,6 +382,11 @@ public class CardGameService {
      * 54-card pack for two players, two packs for three to five.
      *
      * <p>The host leads the first trick and is dealt the extra card for it.
+     *
+     * <p>Also the second and later deal of a room, from {@link #setReady}. Everything a game
+     * leaves behind is cleared here rather than at the end of the game that produced it, which
+     * is what lets the previous result stay readable on the table until the moment the next
+     * game starts.
      */
     private void deal(CardGame game, String actor) {
         List<CardGamePlayer> seats = seatsOf(game);
@@ -393,6 +418,15 @@ public class CardGameService {
             deck.subList(0, size).clear();
             player.setHand(CardDeck.join(hand));
             player.setScore(0);
+            // Readiness was about getting to this deal. Cleared here so that when this game
+            // ends, the room starts from nobody ready rather than from the answers to the last
+            // question — and the host's Start stays gated on a fresh round of them.
+            player.setReady(false);
+            // Likewise auto-play, which belongs to one game: whoever sits down to this deal
+            // plays it themselves until they say otherwise. finish() already cleared it, so this
+            // is the no-op belt to that braces — except for a seat that joined since, which has
+            // never been through a finish() on this row at all.
+            player.setAutoPlay(false);
             player.setLastModifiedBy(actor);
             playerRepository.save(player);
         }
@@ -404,6 +438,11 @@ public class CardGameService {
         game.setTrickNumber(1);
         game.setStartedDate(now);
         game.setLastActionDate(now);
+        // The previous game's result. Kept on the row through REMATCH, where it is what the
+        // table shows, and dropped only now: a game in progress with a winner already named
+        // would read as over, and the round cap's first-out fallback reads this field.
+        game.setWinnerUsername(null);
+        game.setFirstOutUsername(null);
         clearTrick(game);
         // clearTrick keeps the log (it has to outlive the trick it describes), so a fresh deal
         // clears it here instead — nothing has been played yet.
@@ -467,10 +506,14 @@ public class CardGameService {
         return toDto(game, me);
     }
 
-    /** The caller's live table, if any — used to resume on page load. */
+    /**
+     * The caller's table, if any — used to resume on page load. A room between games counts:
+     * the seats are still filled and there is a decision waiting there, so a reload should land
+     * back in it rather than in the lobby offering to build another table.
+     */
     public Optional<CardGameDTO> getActiveGame() {
         String me = SecurityUtil.getCurrentUsername();
-        return currentActiveGame(me).map(g -> toDto(advance(g), me));
+        return currentResumableGame(me).map(g -> toDto(advance(g), me));
     }
 
     /**
@@ -549,9 +592,61 @@ public class CardGameService {
         return toDto(advance(game), me);
     }
 
+    // ----- Another game, same room ----------------------------------------------------------
+
+    /**
+     * Say whether this player wants the next game, while the room sits between games.
+     *
+     * <p>Only the caller's own seat, like auto-play — there is no parameter for whose. Outside
+     * REMATCH it is a no-op rather than an error: a click that lands just after the host dealt,
+     * or just after somebody left, is about a state the caller can no longer affect, and the
+     * response they get back shows them what happened instead.
+     */
+    public CardGameDTO setReady(Long id, boolean ready) {
+        String me = SecurityUtil.getCurrentUsername();
+        CardGame game = advance(requireParticipant(id, me));
+        if (game.getStatus() != CardGameStatus.REMATCH) {
+            return toDto(game, me);
+        }
+        CardGamePlayer seat = seatOf(game, me);
+        if (seat.isReady() != ready) {
+            seat.setReady(ready);
+            seat.setLastModifiedBy(me);
+            playerRepository.save(seat);
+            LOG.debug("70235 game {}: {} is {} for another game", game.getId(), me, ready ? "ready" : "not ready");
+        }
+        // The last player to say yes is what starts the game, whoever they are. The host has no
+        // separate button for it: a host who had to deal as well as agree would be answering a
+        // question nobody asked them, and everyone else would be waiting on a click they cannot
+        // see the state of. Readying up is the whole decision, and the deal is what it adds up
+        // to — which also means the room cannot sit on "everybody ready" doing nothing.
+        if (ready && allReady(seatsOf(game))) {
+            deal(game, me);
+            LOG.debug("70235 game {}: everybody ready, dealing another game", game.getId());
+            return toDto(advance(gameRepository.save(game)), me);
+        }
+        return toDto(game, me);
+    }
+
+    /**
+     * Whether every seat that has a say has readied up. CPU seats have nothing to decide, so
+     * what is left is the humans — the host among them, with the same toggle and the same
+     * visible state as everybody else. A room of host-plus-CPUs therefore needs exactly one
+     * click, from the only player in it.
+     *
+     * <p>The seat count is not re-checked here. A room that loses a seat is disbanded by
+     * {@link #leave}, so a room still in REMATCH has the seats it dealt with, and {@link #deal}
+     * would reject an illegal count anyway.
+     */
+    private boolean allReady(List<CardGamePlayer> seats) {
+        return seats.stream().filter(seat -> !seat.isCpu()).allMatch(CardGamePlayer::isReady);
+    }
+
     /**
      * Leave the table. An active game ends for everyone: hands are hidden, so there is no way
-     * to carry on fairly once a seat empties mid-trick.
+     * to carry on fairly once a seat empties mid-trick. A room between games goes the same way
+     * — it is the seats that make it a room, so one of them emptying disbands it rather than
+     * leaving the rest waiting on a player who has gone.
      */
     public CardGameDTO leave(Long id) {
         String me = SecurityUtil.getCurrentUsername();
@@ -559,8 +654,12 @@ public class CardGameService {
         if (game.getLeftByUsername() != null) {
             return toDto(game, me);
         }
-        boolean wasLive = LIVE.contains(game.getStatus());
-        if (game.getStatus() == CardGameStatus.ACTIVE) {
+        // Mid-game and between games both end as ABANDONED: somebody walked out of a room that
+        // had people in it. The difference is only what the others lose by it, which is what
+        // the notification says. A table still filling up was never a room, so it is CANCELLED.
+        boolean duringGame = game.getStatus() == CardGameStatus.ACTIVE;
+        boolean wasSeated = SEATED.contains(game.getStatus());
+        if (duringGame || game.getStatus() == CardGameStatus.REMATCH) {
             game.setStatus(CardGameStatus.ABANDONED);
         } else if (game.getStatus() == CardGameStatus.PENDING) {
             game.setStatus(CardGameStatus.CANCELLED);
@@ -568,7 +667,7 @@ public class CardGameService {
         game.setLeftByUsername(me);
         game.setLastModifiedBy(me);
         CardGame saved = gameRepository.save(game);
-        if (wasLive) {
+        if (wasSeated) {
             for (CardGamePlayer player : seatsOf(saved)) {
                 if (player.isCpu() || me.equals(player.getUsername())) {
                     continue;
@@ -576,8 +675,10 @@ public class CardGameService {
                 notificationService.notify(
                     player.getUsername(),
                     NotificationType.WARNING,
-                    "70235 game ended",
-                    nameOf(me) + " left the table. The game was ended.",
+                    duringGame ? "70235 game ended" : "70235 room closed",
+                    duringGame
+                        ? nameOf(me) + " left the table. The game was ended."
+                        : nameOf(me) + " left the room. There is no next game.",
                     CARD_GAME_LINK
                 );
             }
@@ -740,12 +841,19 @@ public class CardGameService {
     }
 
     /**
-     * Score and close the game. Every point card still held by the other players is awarded to
-     * whoever emptied their hand first, then the highest total wins.
+     * Score the game and open the room for another. Every point card still held by the other
+     * players is awarded to whoever emptied their hand first, then the highest total wins.
      *
      * <p>Emptying first is therefore a large scoring bonus rather than an outright win. A tie
      * on points goes to the player who went out first, which is the advantage the rules
      * already privilege.
+     *
+     * <p>The row lands on REMATCH rather than FINISHED. Nobody has left — a player who quits
+     * takes the ABANDONED path and never arrives here — so the seats are all still filled and
+     * the obvious next thing is another game with the same people. The result stays on the row
+     * (winner, first out, the scores on the seats) and is what the table displays while the
+     * players decide; {@link #setReady} re-deals once they all agree, and the window lapsing or
+     * the room being disbanded is what reaches FINISHED.
      */
     private void finish(CardGame game) {
         List<CardGamePlayer> seats = seatsOf(game);
@@ -781,8 +889,35 @@ public class CardGameService {
                 .map(CardGamePlayer::getUsername)
                 .orElse(null)
         );
-        game.setStatus(CardGameStatus.FINISHED);
+        game.setStatus(CardGameStatus.REMATCH);
         game.setCurrentTurnUsername(null);
+        // Two flags, cleared for the same reason: both described the game that just ended.
+        //
+        // Nobody is ready for a game that has not been offered yet. Belt and braces with the
+        // reset in deal(), which is what actually guarantees a flag describes the game about to
+        // start: a seat added to a room later would otherwise inherit one from two games ago.
+        //
+        // Auto-play is handing *this* game to the server, and a player who did that to get
+        // through a game they had lost interest in has not thereby asked to sit out every game
+        // the room plays after it. Left on, the next deal would be played without them ever
+        // touching it, and the switch they would have to find is on a table whose cards are
+        // already gone. Turning it off between games makes the choice per game, which is how it
+        // reads on the table: the switch is rendered only while a game is running.
+        // CPU seats are untouched by this — isAutomatic() reads isCpu() for them, not this flag.
+        for (CardGamePlayer seat : seats) {
+            if (seat.isReady() || seat.isAutoPlay()) {
+                seat.setReady(false);
+                seat.setAutoPlay(false);
+                playerRepository.save(seat);
+            }
+        }
+        // The round cap reaches here from resolveTimeouts mid-trick, with a play still on the
+        // table and its owner recorded — state belonging to a game that is now over, which the
+        // table would otherwise go on highlighting. resolveTrick has already cleared it on the
+        // ordinary path, so this is a no-op there.
+        clearTrick(game);
+        // Starts the clock on the rematch window: resolveTimeouts closes an idle room from here.
+        game.setLastActionDate(Instant.now());
     }
 
     /**
@@ -897,6 +1032,17 @@ public class CardGameService {
         if (game.getStatus() == CardGameStatus.PENDING) {
             if (game.getCreatedDate() != null && elapsedSeconds(game.getCreatedDate(), now) >= inviteTimeoutSeconds) {
                 game.setStatus(CardGameStatus.EXPIRED);
+                return gameRepository.save(game);
+            }
+            return game;
+        }
+        if (game.getStatus() == CardGameStatus.REMATCH) {
+            // A room nobody came back to. The window runs from the moment the game was scored
+            // and is not restamped by readying up, so it is a bound on the whole decision rather
+            // than on the gap between clicks — a room cannot be held open indefinitely by one
+            // player toggling their flag. Closing it frees every seat to be invited elsewhere.
+            if (game.getLastActionDate() != null && elapsedSeconds(game.getLastActionDate(), now) >= inviteTimeoutSeconds) {
+                game.setStatus(CardGameStatus.FINISHED);
                 return gameRepository.save(game);
             }
             return game;
@@ -1021,18 +1167,23 @@ public class CardGameService {
         return seat;
     }
 
-    /** The caller's live table (pending or active), resolving timeouts so a lapsed one is ignored. */
-    private Optional<CardGame> currentLiveGame(String username) {
-        return gameRepository.findByParticipantAndStatuses(username, LIVE).stream()
+    /**
+     * The table the caller is sitting at, if any — including a room between games. Resolves
+     * timeouts first, so a table that lapsed while nobody was looking does not count as one.
+     */
+    private Optional<CardGame> currentSeatedGame(String username) {
+        return gameRepository.findByParticipantAndStatuses(username, SEATED).stream()
             .map(this::resolveTimeouts)
-            .filter(g -> LIVE.contains(g.getStatus()))
+            .filter(g -> SEATED.contains(g.getStatus()))
             .findFirst();
     }
 
-    private Optional<CardGame> currentActiveGame(String username) {
-        return gameRepository.findActiveForUser(username)
+    /** The caller's table to resume: one being played, or one between games. */
+    private Optional<CardGame> currentResumableGame(String username) {
+        return gameRepository.findByParticipantAndStatuses(username, RESUMABLE).stream()
             .map(this::resolveTimeouts)
-            .filter(g -> g.getStatus() == CardGameStatus.ACTIVE);
+            .filter(g -> RESUMABLE.contains(g.getStatus()))
+            .findFirst();
     }
 
     private long elapsedSeconds(Instant from, Instant to) {
@@ -1092,6 +1243,7 @@ public class CardGameService {
         Instant now = Instant.now();
         boolean active = game.getStatus() == CardGameStatus.ACTIVE;
         boolean pending = game.getStatus() == CardGameStatus.PENDING;
+        boolean rematch = game.getStatus() == CardGameStatus.REMATCH;
 
         List<CardGamePlayerDTO> players = seats.stream()
             .map(seat -> {
@@ -1111,7 +1263,14 @@ public class CardGameService {
                     handCount,
                     seat.getScore(),
                     passed.contains(seat.getUsername()),
-                    handCount == 0 && active
+                    handCount == 0 && active,
+                    // Readiness as the table should draw it, not as the column holds it. A CPU
+                    // has nothing to decide, so it reads as ready and the ticks on screen mean
+                    // "waiting on nobody here". Every human seat reports its own flag, the
+                    // host's included — the host agrees to another game the same way everyone
+                    // else does, and the others can see that they have. Outside the rematch
+                    // window the question is not being asked, so nobody is ready.
+                    rematch && (seat.isCpu() || seat.isReady())
                 );
             })
             .toList();
@@ -1129,6 +1288,10 @@ public class CardGameService {
             seats.stream().noneMatch(p -> p.getInvitationStatus() == CardGameInvitationStatus.PENDING) &&
             acceptedCount(seats) >= CardGame.MIN_PLAYERS &&
             acceptedCount(seats) <= CardGame.MAX_PLAYERS;
+        // There is no canRematch counterpart to canStart. Dealing again is not an action anyone
+        // takes: the last ready flag does it (see setReady), so there is no button whose enabled
+        // state the client needs to be told. What the table shows instead is who is still being
+        // waited on, which is the `ready` flag on each seat above.
 
         User host = byLogin.get(game.getHostUsername());
         return new CardGameDTO(
@@ -1159,7 +1322,12 @@ public class CardGameService {
             (int) turnTimeoutSeconds,
             active ? secondsRemaining(game.getLastActionDate(), turnTimeoutSeconds, now) : null,
             active ? secondsRemaining(game.getStartedDate(), gameTimeoutSeconds, now) : null,
-            pending ? secondsRemaining(game.getCreatedDate(), inviteTimeoutSeconds, now) : null
+            pending ? secondsRemaining(game.getCreatedDate(), inviteTimeoutSeconds, now) : null,
+            // From the moment the game was scored, not from the last click: readying up does not
+            // restamp lastActionDate, so this counts down the whole decision and a room cannot
+            // be held open by one player toggling their flag. Same budget as an invitation —
+            // both are "how long we wait for someone to answer".
+            rematch ? secondsRemaining(game.getLastActionDate(), inviteTimeoutSeconds, now) : null
         );
     }
 

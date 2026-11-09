@@ -32,6 +32,15 @@ public record CardGamePlayerDTO(
      */
     boolean passed,
     /** Hand empty. Only reachable once the deck has run out. */
-    boolean out
+    boolean out,
+    /**
+     * Wants the next game, while the room is between games. Every human seat reports its own
+     * answer, the host's included — the host has no privileged way to start another game, so
+     * their readiness is a real answer that the other players can see, and the last one in
+     * deals. CPU seats are always true: a CPU plays whatever it is dealt, so the flag reads as
+     * "waiting on nobody at this seat", which is what a table showing ticks wants to say.
+     * Always false outside {@code REMATCH}, where nobody has been asked.
+     */
+    boolean ready
 ) implements Serializable {
 }
