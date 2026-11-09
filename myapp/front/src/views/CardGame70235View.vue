@@ -24,7 +24,6 @@ const router = useRouter()
 
 const opponents = ref<CardGameOpponent[]>([])
 const selectedInvitees = ref<string[]>([])
-const cpuCount = ref(1)
 const incoming = ref<CardGameState[]>([])
 const outgoing = ref<CardGameState[]>([])
 const creating = ref(false)
@@ -46,12 +45,13 @@ let tickTimer: ReturnType<typeof setInterval> | null = null
 
 /* ----- Derived ------------------------------------------------------------- */
 
-/** Total seats the host is about to fill: themselves, their invitees and the CPUs. */
-const plannedSeats = computed(() => 1 + selectedInvitees.value.length + cpuCount.value)
+/**
+ * Total seats the host is about to fill: themselves and their invitees. CPU seats used to make
+ * up the difference, so a table of one was a playable game; now the invite list is the whole of
+ * it and at least one person has to be picked.
+ */
+const plannedSeats = computed(() => 1 + selectedInvitees.value.length)
 const seatsValid = computed(() => plannedSeats.value >= 2 && plannedSeats.value <= 5)
-
-/** The most CPUs that still leave the table within the five-seat limit. */
-const maxCpu = computed(() => Math.max(0, 5 - 1 - selectedInvitees.value.length))
 
 const inGame = computed(() => !!game.value && game.value.status === 'ACTIVE')
 const gameOver = computed(
@@ -135,13 +135,14 @@ const others = computed(() =>
   (game.value?.players ?? []).filter(p => p.username !== game.value?.myUsername)
 )
 
-/** My own readiness, for the toggle. The server reports the CPU seats as always ready. */
+/** My own readiness, for the toggle. */
 const iAmReady = computed(() => me.value?.ready ?? false)
 
 /**
- * Who the room is still waiting on. CPU seats are reported ready by the server, so what is left
- * here is the humans who have not clicked yet — including the host, who readies up like everyone
- * else and is not waiting on themselves only once they have.
+ * Who the room is still waiting on: the players who have not clicked yet — including the host,
+ * who readies up like everyone else and is not waiting on themselves only once they have. A
+ * table from before CPU seats were withdrawn can still have one, and the server reports those
+ * as ready, so they do not appear here either.
  */
 const notReadyNames = computed(() =>
   (game.value?.players ?? []).filter(p => !p.ready).map(p => p.name)
@@ -215,9 +216,10 @@ const selectionLabel = computed(() => {
 const HISTORY_LIMIT = 3
 
 /**
- * The trick so far. Worth showing because the server resolves every CPU seat between two of
- * our turns inside one response: without this, a lead that went 8 → 9 → 10 would look like the
- * 8 was simply replaced by a 10, as though the seats in between never acted.
+ * The trick so far. Worth showing because the server can resolve several seats between two of
+ * our turns inside one response — anyone on auto-play, anyone whose clock lapsed, and a CPU
+ * seat at an older table: without this, a lead that went 8 → 9 → 10 would look like the 8 was
+ * simply replaced by a 10, as though the seats in between never acted.
  *
  * While a trick is live its last entry is the play on the table, so it is dropped here and
  * left to the card display above. Once a trick has been scored there is no play on the table,
@@ -317,7 +319,10 @@ async function loadOpponents() {
   try {
     opponents.value = await cardGameApi.listOpponents()
   } catch {
-    // The invite list is optional — a table of CPUs still works without it.
+    // Swallowed deliberately, but this is no longer a cosmetic failure: with CPU seats gone
+    // the invite list is the only way to fill a table, so an empty one means no game can be
+    // created. The select says as much on its own (`noOpponents`), which is a better place to
+    // read it than an error over the lobby.
   }
 }
 
@@ -388,7 +393,7 @@ async function createTable() {
   if (!seatsValid.value) return
   creating.value = true
   try {
-    applyGame(await cardGameApi.createTable(cpuCount.value, selectedInvitees.value))
+    applyGame(await cardGameApi.createTable(selectedInvitees.value))
     selectedInvitees.value = []
   } catch (e: any) {
     message.error(e?.response?.data?.title ?? t('cardGame.createFailed'))
@@ -462,8 +467,8 @@ async function passTurn() {
 
 /**
  * Hand my turns to the server, or take them back. The server plays the seat with the same
- * strategy the CPU opponents use, so this keeps working while the tab is closed — which is
- * most of the point of it.
+ * strategy it uses for a lapsed turn clock, and used to use for the CPU opponents, so this
+ * keeps working while the tab is closed — which is most of the point of it.
  */
 async function toggleAutoPlay(enabled: boolean) {
   if (!game.value || autoPlaySaving.value) return
@@ -540,9 +545,10 @@ function back() {
 
 /* ----- Polling ------------------------------------------------------------- */
 
-// There is no push channel, so the client polls: slowly in the lobby, faster at the table
-// where a CPU turn can land at any moment. The server advances CPUs on read, so polling is
-// also what makes them move.
+// There is no push channel, so the client polls: slowly in the lobby, faster at the table where
+// somebody else's turn can land at any moment. The server resolves the turns it takes on read —
+// auto-play seats, lapsed clocks, and CPU seats at tables that still have them — so polling is
+// also what makes those move.
 const LOBBY_INTERVAL = 2000
 const GAME_INTERVAL = 1500
 
@@ -659,11 +665,6 @@ onUnmounted(() => {
         <a-alert :message="t('cardGame.rulesHint')" type="info" show-icon banner class="hint" />
 
         <a-card size="small" :title="t('cardGame.newTable')" class="lobby-card">
-          <div class="form-row">
-            <span class="form-label">{{ t('cardGame.cpuCount') }}</span>
-            <a-input-number v-model:value="cpuCount" :min="0" :max="maxCpu" />
-          </div>
-
           <div class="form-row">
             <span class="form-label">{{ t('cardGame.inviteFollowers') }}</span>
             <a-select

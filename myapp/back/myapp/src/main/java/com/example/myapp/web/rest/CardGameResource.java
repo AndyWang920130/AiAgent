@@ -33,10 +33,10 @@ public class CardGameResource {
         return ResponseEntity.ok(cardGameService.listOpponents());
     }
 
-    /** Create a table with CPU seats and/or invited followers. */
+    /** Create a table seating the host and the invited followers. */
     @PostMapping("/tables")
     public ResponseEntity<CardGameDTO> createTable(@Valid @RequestBody TableRequest request) {
-        return ResponseEntity.ok(cardGameService.createTable(request.cpuCount(), request.invitees()));
+        return ResponseEntity.ok(cardGameService.createTable(request.invitees()));
     }
 
     /** The caller's pending tables (incoming invitations + tables they host) — polled by the lobby. */
@@ -115,7 +115,12 @@ public class CardGameResource {
         return cardGameService.getActiveGame().map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
     }
 
-    public record TableRequest(@NotNull Integer cpuCount, List<String> invitees) {}
+    /**
+     * Invitees only. This carried a {@code cpuCount} until CPU seats were withdrawn; an old
+     * client still sending one is ignored rather than rejected, since a 400 on table creation
+     * is a worse answer than a table of the humans they picked.
+     */
+    public record TableRequest(List<String> invitees) {}
 
     public record PlayRequest(@NotEmpty List<String> cards) {}
 

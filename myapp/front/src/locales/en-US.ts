@@ -75,14 +75,14 @@ export default {
     cardGameTitle: 'How to invite players to 70235 and play',
     cardGameDesc: 'Set up a table, answer an invitation, and take your turns.',
     cardGameIntro:
-      '70235 is played online against other people, computer players, or a mix of the two. A table seats 2 to 5 players including you.',
+      '70235 is played online against other people. A table seats 2 to 5 players including you.',
     cardGamePrereq:
       'You can invite your followers — the people who follow you — not everyone you follow. If the invite list is empty, nobody has followed you yet. See the tutorial on following users; once someone follows you, they appear in the list.',
     cardGameStep1Title: 'Open the table',
     cardGameStep1Body: 'From the menu, choose Mini Game, then Card Games, then 70235.',
     cardGameStep2Title: 'Set up a new table',
     cardGameStep2Body:
-      'Under "New table", choose how many CPU players you want and pick people under "Invite followers". The seat count shown underneath must be between 2 and 5 — you are one of those seats.',
+      'Under "New table", pick the people you want to play with under "Invite followers". The seat count shown underneath must be between 2 and 5 — you are one of those seats, so invite at least one person.',
     cardGameStep3Title: 'Create it',
     cardGameStep3Body:
       'Click "Create table". Everyone you invited gets a notification that links straight back to the table. A table nobody answers expires after five minutes.',
@@ -102,7 +102,7 @@ export default {
     cardGameStep8Body:
       'When the game ends, the final score and placing appear on each player\'s seat. Use "Leave game" in the top-right corner to go back to the lobby.',
     cardGameTip:
-      'A table with only computer players needs no invitations — it deals as soon as you create it, which makes it the quickest way to learn the game. The full rules are on the table page itself.',
+      'Invite two people rather than one if you can: a seat that goes quiet stalls a game of two, while a game of three carries on. The full rules are on the table page itself.',
   },
   sha: {
     title: 'SHA Signature',
@@ -747,7 +747,6 @@ export default {
     rulesHint:
       'Beat the previous play with the same shape: single, pair, three of a kind, four of a kind, three-plus-two (the two must be a pair) or four-plus-one (any fifth card). Play goes round the table and the play on the table can be raised again and again, so a lead of 4 can be met with an 8, then a 9. Passing only declines the play in front of you — if someone behind you raises it, your turn comes round again and you can answer the new play or pass again. The trick ends when it comes back to whoever holds the top play, and they win it. The winner then draws first and everyone refills to 5. 5s, 10s and kings carry points, and whoever empties their hand first takes the points left in everybody else\'s.',
     newTable: 'New table',
-    cpuCount: 'CPU players',
     inviteFollowers: 'Invite followers',
     selectFollowers: 'Pick followers to invite',
     noOpponents: 'No followers to invite yet',

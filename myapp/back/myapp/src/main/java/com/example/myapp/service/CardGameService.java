@@ -39,16 +39,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Server-authoritative logic for the online 70235 card game: table setup, invitations, the
- * match itself, CPU opponents and timeouts. The rules live in {@link CardDeck}; this class
- * owns lifecycle and storage.
+ * match itself, auto-play and timeouts. The rules live in {@link CardDeck}; this class owns
+ * lifecycle and storage.
  *
  * <p>The server holds the deck and every hand, and {@link #toDto} is built per recipient, so
  * a client only ever learns its own cards and everyone else's card count. The client is never
  * trusted to decide turns, legality or scores.
  *
- * <p>There is no scheduler in this application, so both CPU turns and timeouts are resolved
- * lazily: {@link #advance} runs on every read and every action, bringing the table up to date
- * before any response is built.
+ * <p>There is no scheduler in this application, so server-taken turns and timeouts are
+ * resolved lazily: {@link #advance} runs on every read and every action, bringing the table up
+ * to date before any response is built.
+ *
+ * <p>CPU opponents have been withdrawn and no new table can seat one, but the handling stays
+ * for the seats that already exist: {@code isCpu()} still decides turn-taking and display for
+ * a game that was dealt while the feature was live.
  */
 @Service
 @Transactional
@@ -81,7 +85,11 @@ public class CardGameService {
      */
     private static final List<CardGameStatus> RESUMABLE = List.of(CardGameStatus.ACTIVE, CardGameStatus.REMATCH);
 
-    /** Prefix for synthetic CPU seat usernames: {@code cpu-1}..{@code cpu-4}. */
+    /**
+     * Prefix for synthetic CPU seat usernames: {@code cpu-1}..{@code cpu-4}. Nothing creates
+     * these any more; it is kept to name the ones already sitting at tables, which would
+     * otherwise render as the raw login.
+     */
     private static final String CPU_PREFIX = "cpu-";
 
     /**
@@ -172,17 +180,17 @@ public class CardGameService {
     // ----- Table setup --------------------------------------------------------------------
 
     /**
-     * Create a table seating the host, the invited followers and {@code cpuCount} CPU
-     * opponents. A table with no human invitees deals immediately — there is nobody to wait
-     * for. Otherwise it stays PENDING until the invitees answer and the host starts it.
+     * Create a table seating the host and the invited followers. It stays PENDING until the
+     * invitees answer and the host starts it.
+     *
+     * <p>CPU seats were withdrawn, which removed the one case that dealt on creation: a table
+     * of host-plus-CPUs had nobody to wait for. Every table now waits for at least one human,
+     * since {@link CardGame#MIN_PLAYERS} is two and the host is one of them.
      */
-    public CardGameDTO createTable(int cpuCount, List<String> invitees) {
+    public CardGameDTO createTable(List<String> invitees) {
         String me = SecurityUtil.getCurrentUsername();
         List<String> humans = normalizeInvitees(invitees, me);
-        int seats = 1 + humans.size() + cpuCount;
-        if (cpuCount < 0) {
-            throw new BadRequestAlertException("CPU count cannot be negative", ENTITY_NAME, "negativecpu");
-        }
+        int seats = 1 + humans.size();
         if (seats < CardGame.MIN_PLAYERS || seats > CardGame.MAX_PLAYERS) {
             throw new BadRequestAlertException(
                 "A table seats " + CardGame.MIN_PLAYERS + " to " + CardGame.MAX_PLAYERS + " players",
@@ -214,27 +222,20 @@ public class CardGameService {
 
         int seat = 0;
         // The host takes seat 0: seat order drives turn order, and the host leads trick one.
-        addPlayer(saved, me, seat++, false, CardGameInvitationStatus.ACCEPTED);
+        addPlayer(saved, me, seat++, CardGameInvitationStatus.ACCEPTED);
         for (String invitee : humans) {
-            addPlayer(saved, invitee, seat++, false, CardGameInvitationStatus.PENDING);
+            addPlayer(saved, invitee, seat++, CardGameInvitationStatus.PENDING);
         }
-        for (int i = 0; i < cpuCount; i++) {
-            addPlayer(saved, CPU_PREFIX + (i + 1), seat++, true, CardGameInvitationStatus.ACCEPTED);
-        }
-
-        if (humans.isEmpty()) {
-            // CPUs only: nothing to wait for, so deal straight away.
-            deal(saved, me);
-        } else {
-            for (String invitee : humans) {
-                notificationService.notify(
-                    invitee,
-                    NotificationType.INFO,
-                    "70235 invitation",
-                    nameOf(me) + " invited you to a game of 70235",
-                    CARD_GAME_LINK
-                );
-            }
+        // No empty-humans case to handle: the seat-count check above rejects a table of one,
+        // so there is always somebody to invite and always somebody to wait for.
+        for (String invitee : humans) {
+            notificationService.notify(
+                invitee,
+                NotificationType.INFO,
+                "70235 invitation",
+                nameOf(me) + " invited you to a game of 70235",
+                CARD_GAME_LINK
+            );
         }
         CardGame result = gameRepository.save(saved);
         return toDto(advance(result), me);
@@ -261,12 +262,18 @@ public class CardGameService {
         return new ArrayList<>(unique);
     }
 
-    private CardGamePlayer addPlayer(CardGame game, String username, int seat, boolean cpu, CardGameInvitationStatus status) {
+    /**
+     * Seat a human. There is no CPU parameter any more: this took one until CPU seats were
+     * withdrawn, and dropping it is what makes "no new CPU seat can be created" a property of
+     * the code rather than of its two call sites. The column stays for the seats that already
+     * have it — {@code isCpu()} still has to answer truthfully for a game in flight.
+     */
+    private CardGamePlayer addPlayer(CardGame game, String username, int seat, CardGameInvitationStatus status) {
         CardGamePlayer player = new CardGamePlayer();
         player.setGame(game);
         player.setUsername(username);
         player.setSeat(seat);
-        player.setCpu(cpu);
+        player.setCpu(false);
         player.setInvitationStatus(status);
         player.setCreatedBy(game.getHostUsername());
         player.setLastModifiedBy(game.getHostUsername());

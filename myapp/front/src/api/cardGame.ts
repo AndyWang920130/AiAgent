@@ -123,8 +123,8 @@ export const cardGameApi = {
   listOpponents: (): Promise<CardGameOpponent[]> =>
     http.get('/api/v1/card-games/opponents').then(r => r.data),
 
-  createTable: (cpuCount: number, invitees: string[]): Promise<CardGameState> =>
-    http.post('/api/v1/card-games/tables', { cpuCount, invitees }).then(r => r.data),
+  createTable: (invitees: string[]): Promise<CardGameState> =>
+    http.post('/api/v1/card-games/tables', { invitees }).then(r => r.data),
 
   getInvites: (): Promise<CardGameInvites> =>
     http.get('/api/v1/card-games/invites').then(r => r.data),
