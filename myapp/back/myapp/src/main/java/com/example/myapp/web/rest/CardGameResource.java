@@ -1,5 +1,6 @@
 package com.example.myapp.web.rest;
 
+import com.example.myapp.contants.enumeration.CardGamePhrase;
 import com.example.myapp.service.CardGameService;
 import com.example.myapp.service.dto.CardGameDTO;
 import com.example.myapp.service.dto.CardGameInvitesDTO;
@@ -97,6 +98,15 @@ public class CardGameResource {
         return ResponseEntity.ok(cardGameService.setReady(id, request.ready()));
     }
 
+    /**
+     * Say one of the predefined phrases to the table, e.g. {@code {"phrase": "NICE_PLAY"}}.
+     * Caller's own seat only, like auto-play and readiness.
+     */
+    @PostMapping("/games/{id}/phrases")
+    public ResponseEntity<CardGameDTO> phrase(@PathVariable Long id, @Valid @RequestBody PhraseRequest request) {
+        return ResponseEntity.ok(cardGameService.sendPhrase(id, request.phrase()));
+    }
+
     /** Leave the table, ending the game or closing the room for everyone still in it. */
     @PostMapping("/games/{id}/leave")
     public ResponseEntity<CardGameDTO> leave(@PathVariable Long id) {
@@ -127,4 +137,13 @@ public class CardGameResource {
     public record AutoPlayRequest(@NotNull Boolean enabled) {}
 
     public record ReadyRequest(@NotNull Boolean ready) {}
+
+    /**
+     * Binds straight to the enum rather than taking a {@code String} the service then looks up.
+     * That is what rejects a code nobody put in the picker, at the edge, before it can be stored
+     * and become a problem for whoever has to render it — and it is the whole of what makes
+     * these phrases predefined, since the picker itself constrains nothing a crafted POST has to
+     * respect. An unparseable value is a 400 from the message converter.
+     */
+    public record PhraseRequest(@NotNull CardGamePhrase phrase) {}
 }

@@ -135,8 +135,9 @@ const statusTag = computed(() => {
       </div>
     </div>
 
-    <!-- What this seat last did in the trick. Kept under the seat rather than only in the
-         middle of the table, so a play reads as belonging to the player who made it.
+    <!-- What this seat last did in the trick, and what it is saying. Both under the seat rather
+         than only in the middle of the table, so a play — and a phrase — reads as belonging to
+         the player it came from.
 
          Rendered for the whole game, empty or not: the cards arrive and are cleared every
          trick, and a row that came and went with them would resize every seat at the table
@@ -146,13 +147,50 @@ const statusTag = computed(() => {
          has finished rather than part of its result, and the row the seat gives up is the
          largest part of it. -->
     <div v-if="!lobby && !over" class="seat-played">
-      <template v-if="played">
+      <!-- The phrase takes this row while it is showing, rather than getting a row of its own.
+
+           Not a preference. During play the seat is a fixed box that clips (see the height
+           rules below) and the seat band above it scrolls sideways, and an overflow that is
+           not `visible` on one axis forces the other to `auto` — so a bubble floating above
+           the seat is clipped twice over and there is no CSS that lets it out. Reserving
+           another row instead would mean a seventh pixel height that has to agree with the
+           six already spread across this file and the view's three short-screen tiers, and
+           that arithmetic is what put a scrollbar on this table twice.
+
+           This row is already the one part of the seat whose content is interchangeable: a
+           play, a pass marker, or nothing, at one height throughout. A phrase is a fourth
+           thing it can hold. The cost is that the seat's last play is hidden for the few
+           seconds the phrase shows — affordable because those cards are not the only copy of
+           themselves: the play on the table is in the trick area and the raise history names
+           the seat behind each play. The phrase is also the one thing here a player asked to
+           see.
+
+           No status guard. The server reports `phrase` only while a phrase is live and null
+           otherwise, so a second condition here would be a copy of that rule able to disagree
+           with it. -->
+      <Transition name="seat-phrase">
+        <div v-if="player.phrase" class="seat-phrase">
+          {{ t(`cardGame.phrases.${player.phrase}`) }}
+        </div>
+      </Transition>
+      <template v-if="played && !player.phrase">
         <span v-if="played.passed" class="played-pass">{{ t('cardGame.passed') }}</span>
         <template v-else>
           <PlayingCard v-for="(c, i) in played.cards" :key="`${c}-${i}`" :card="c" small />
         </template>
       </template>
     </div>
+
+    <!-- Between games the seat has no played row to lend, so the phrase gets one of its own.
+         Free here, unlike during play: at game over the seat is `height: auto` and the band
+         around it is `overflow: visible`, so the seat simply grows by the bubble and no fixed
+         height has to be revised. This is also where phrases matter most — "good game" belongs
+         to the moment a game ends. -->
+    <Transition name="seat-phrase">
+      <div v-if="over && player.phrase" class="seat-phrase is-standalone">
+        {{ t(`cardGame.phrases.${player.phrase}`) }}
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -277,6 +315,46 @@ const statusTag = computed(() => {
 
 .seat-ready-enter-from,
 .seat-ready-leave-to {
+  opacity: 0;
+}
+
+/* The phrase bubble. Sized by its text and clipped by the row it sits in, so it cannot change
+   the seat's height whatever is in it — the longest phrase in either language is well inside a
+   seat's width, and a clip is the backstop rather than the plan.
+
+   Looks like speech without being positioned like it: the tail-less rounded box reads as a
+   bubble beside the player's name, and nothing about it has to escape the seat to say so. */
+.seat-phrase {
+  max-width: 100%;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: #e6f4ff;
+  border: 1px solid #91caff;
+  color: #0958d9;
+  font-size: 12px;
+  line-height: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Between games, where the bubble is its own row rather than a borrower of the played row. */
+.seat-phrase.is-standalone {
+  align-self: flex-start;
+}
+
+/* Fades both ways, like the ready tick, and opacity only for the same reason: the row the
+   bubble shares is a fixed height during play, and animating anything that takes space would
+   move the cards it is covering on the way in and on the way out. Slightly longer than the
+   tick's 0.15s — this one replaces what was in the row rather than joining a row of tags, so
+   the swap reads better a touch slower. Still well inside the 1500ms poll. */
+.seat-phrase-enter-active,
+.seat-phrase-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.seat-phrase-enter-from,
+.seat-phrase-leave-to {
   opacity: 0;
 }
 

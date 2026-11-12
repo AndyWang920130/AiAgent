@@ -2,6 +2,7 @@ package com.example.myapp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.example.myapp.contants.enumeration.CardGameInvitationStatus;
 import com.example.myapp.contants.enumeration.CardGameStatus;
 import com.example.myapp.domain.CardGame;
 import com.example.myapp.domain.CardGamePlayer;
@@ -53,6 +54,48 @@ class CardGameAutoPlayVerificationIT {
     }
 
     /**
+     * Seat a host and one or more CPU opponents straight through the repositories.
+     *
+     * <p>Built by hand rather than through {@code createTable} because no service path seats a
+     * CPU any more — that feature was withdrawn, and dropping the parameter is what makes "no new
+     * CPU seat" a property of the code rather than of its callers. The seats themselves are still
+     * supported on purpose: {@code isCpu()} has to keep answering truthfully for a game that was
+     * dealt while the feature was live, and these tests are the only thing that exercises that
+     * path. They lose nothing by not going through the service: every field it would have set —
+     * hands, deck, status, whose turn it is — is overwritten by the caller anyway.
+     *
+     * <p>{@code cpu-1} upward matches the prefix the service reads to label a CPU seat, so these
+     * tables look to it exactly like the legacy ones it still has to serve.
+     */
+    private CardGame riggedSeats(String host, String hostHand, String... cpuHands) {
+        CardGame game = new CardGame();
+        game.setStatus(CardGameStatus.ACTIVE);
+        game.setHostUsername(host);
+        game.setCreatedBy(host);
+        game.setLastModifiedBy(host);
+        CardGame saved = gameRepository.save(game);
+
+        addSeat(saved, host, 0, false, hostHand);
+        for (int i = 0; i < cpuHands.length; i++) {
+            addSeat(saved, "cpu-" + (i + 1), i + 1, true, cpuHands[i]);
+        }
+        return saved;
+    }
+
+    private void addSeat(CardGame game, String username, int index, boolean cpu, String hand) {
+        CardGamePlayer player = new CardGamePlayer();
+        player.setGame(game);
+        player.setUsername(username);
+        player.setSeat(index);
+        player.setCpu(cpu);
+        player.setHand(hand);
+        player.setInvitationStatus(CardGameInvitationStatus.ACCEPTED);
+        player.setCreatedBy(game.getHostUsername());
+        player.setLastModifiedBy(game.getHostUsername());
+        playerRepository.save(player);
+    }
+
+    /**
      * A two-seat table against one CPU, with the human due to act and a deck long enough that
      * refills cannot drain it — so the game stays off its end condition while turns are taken.
      *
@@ -62,13 +105,7 @@ class CardGameAutoPlayVerificationIT {
      */
     private CardGame riggedTable(String host, String hostHand, String cpuHand) {
         loginAs(host);
-        CardGameDTO created = cardGameService.createTable(1, List.of());
-        CardGame game = reload(created.id());
-
-        List<CardGamePlayer> seats = seats(game);
-        seats.get(0).setHand(hostHand);
-        seats.get(1).setHand(cpuHand);
-        seats.forEach(playerRepository::save);
+        CardGame game = riggedSeats(host, hostHand, cpuHand);
 
         game.setDeck("4H4D6H6D6C8H8D8C9H9D9C9S");
         game.setStatus(CardGameStatus.ACTIVE);

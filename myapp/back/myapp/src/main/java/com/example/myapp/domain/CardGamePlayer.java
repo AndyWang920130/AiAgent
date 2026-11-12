@@ -1,9 +1,11 @@
 package com.example.myapp.domain;
 
 import com.example.myapp.contants.enumeration.CardGameInvitationStatus;
+import com.example.myapp.contants.enumeration.CardGamePhrase;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.time.Instant;
 
 /**
  * One seat at a {@link CardGame} table — a human player or a CPU opponent.
@@ -64,6 +66,25 @@ public class CardGamePlayer extends AbstractAuditingEntity {
     private boolean autoPlay = false;
 
     /**
+     * Consecutive turns the server has taken for this seat because its clock ran out. Reset by
+     * any turn the player takes themselves, and by either direction of the auto-play switch —
+     * resetting is what makes the count consecutive rather than a lifetime total.
+     *
+     * <p>At the threshold the service switches {@code autoPlay} on, on the grounds that somebody
+     * who has let two turns in a row be played for them is away from the table, and a seat the
+     * rest of the table waits out one full clock per turn for is a table nobody can finish.
+     *
+     * <p>A count rather than a "has missed one" flag: the threshold is a number with a reason,
+     * and a boolean would need renaming the first time that number is not two. Per seat and per
+     * game, like {@code autoPlay} above.
+     *
+     * <p>Only meaningful on a human seat playing its own turns: a CPU seat, and a seat already
+     * on auto-play, are played by design rather than by default, so neither is counted.
+     */
+    @Column(name = "timeout_streak", nullable = false)
+    private int timeoutStreak = 0;
+
+    /**
      * This player has said they want the next game, while the room sits in
      * {@code CardGameStatus.REMATCH}. Reset by every deal, so it describes the game about to
      * start rather than the one just played.
@@ -79,6 +100,28 @@ public class CardGamePlayer extends AbstractAuditingEntity {
      */
     @Column(name = "ready", nullable = false)
     private boolean ready = false;
+
+    /**
+     * The last phrase this seat sent, or null for a seat that has not said anything.
+     *
+     * <p>Nullable with no default, unlike the flags above: "has said nothing" is the absence of a
+     * phrase rather than a value one of them holds.
+     *
+     * <p>Only the most recent one is kept. The table draws a phrase as a bubble on its sender's
+     * seat, so the latest is the whole of what anyone ever reads — there is no log to trim and no
+     * encoded list to decode, which is what this would need if the phrases were shown as a
+     * conversation instead.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "phrase", length = 20)
+    private CardGamePhrase phrase;
+
+    /**
+     * When {@link #phrase} was sent. Drives two things, both of them the server's to decide: how
+     * long the phrase is reported for, and how soon this seat may send another.
+     */
+    @Column(name = "phrase_date")
+    private Instant phraseDate;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -101,8 +144,15 @@ public class CardGamePlayer extends AbstractAuditingEntity {
     public void setCpu(boolean cpu) { this.cpu = cpu; }
     public boolean isAutoPlay() { return autoPlay; }
     public void setAutoPlay(boolean autoPlay) { this.autoPlay = autoPlay; }
+
+    public int getTimeoutStreak() { return timeoutStreak; }
+    public void setTimeoutStreak(int timeoutStreak) { this.timeoutStreak = timeoutStreak; }
     public boolean isReady() { return ready; }
     public void setReady(boolean ready) { this.ready = ready; }
+    public CardGamePhrase getPhrase() { return phrase; }
+    public void setPhrase(CardGamePhrase phrase) { this.phrase = phrase; }
+    public Instant getPhraseDate() { return phraseDate; }
+    public void setPhraseDate(Instant phraseDate) { this.phraseDate = phraseDate; }
     public CardGameInvitationStatus getInvitationStatus() { return invitationStatus; }
     public void setInvitationStatus(CardGameInvitationStatus invitationStatus) { this.invitationStatus = invitationStatus; }
 

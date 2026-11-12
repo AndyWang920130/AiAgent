@@ -23,6 +23,36 @@ export type CardGameStatus =
 export type InvitationStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED'
 
 /**
+ * The phrases a player can say to the table, in the order the picker offers them.
+ *
+ * Codes, not sentences: the app is bilingual, so each client renders these through its own
+ * locale file (`cardGame.phrases.*`) and the same tap reads in the reader's language rather than
+ * the sender's. The server holds the same list as an enum and rejects anything outside it, so
+ * this union is the client's copy of that list rather than the authority for it.
+ */
+export type CardGamePhrase =
+  | 'HELLO'
+  | 'GOOD_LUCK'
+  | 'NICE_PLAY'
+  | 'WOW'
+  | 'UNLUCKY'
+  | 'OOPS'
+  | 'THANKS'
+  | 'GOOD_GAME'
+
+/** The picker's order, and the only list the UI iterates. */
+export const CARD_GAME_PHRASES: CardGamePhrase[] = [
+  'HELLO',
+  'GOOD_LUCK',
+  'NICE_PLAY',
+  'WOW',
+  'UNLUCKY',
+  'OOPS',
+  'THANKS',
+  'GOOD_GAME',
+]
+
+/**
  * One seat at the table. There is no hand here by design — the server sends card counts for
  * everyone else and only the current user's own cards, on `CardGameState.myHand`.
  */
@@ -50,6 +80,16 @@ export interface CardGamePlayer {
    * false in any other status, where the question is not being asked.
    */
   ready: boolean
+  /**
+   * A phrase this seat is saying right now, or null.
+   *
+   * Null covers both "has said nothing" and "said something that has stopped showing", and that
+   * is the whole of the contract: a code means draw the bubble, null means do not. How long a
+   * phrase lasts is the server's decision and is not reported — a client timing it against its
+   * own clock would be wrong by whatever the two clocks differ by, which is a bubble that will
+   * not go away on one screen and never arrives on another.
+   */
+  phrase: CardGamePhrase | null
 }
 
 /** One action in the current trick: a play, or a pass. These cards are all face up. */
@@ -158,6 +198,17 @@ export const cardGameApi = {
    */
   setReady: (id: number, ready: boolean): Promise<CardGameState> =>
     http.post(`/api/v1/card-games/games/${id}/ready`, { ready }).then(r => r.data),
+
+  /**
+   * Say one of the predefined phrases to the table. Always your own seat.
+   *
+   * Allowed while a game is running and while the room sits between games; anywhere else the
+   * server returns current state without storing anything. It also ignores a phrase sent inside
+   * the cooldown, so a double-tap costs nothing — the button disables itself for those seconds,
+   * and this is what backs that up.
+   */
+  sendPhrase: (id: number, phrase: CardGamePhrase): Promise<CardGameState> =>
+    http.post(`/api/v1/card-games/games/${id}/phrases`, { phrase }).then(r => r.data),
 
   /** Leave the table. Ends the game, or closes the room, for everyone still in it. */
   leave: (id: number): Promise<CardGameState> =>

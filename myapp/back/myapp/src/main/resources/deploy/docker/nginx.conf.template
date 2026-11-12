@@ -39,6 +39,26 @@ server {
         proxy_set_header X-Forwarded-Proto ${DOLLAR}scheme;
     }
 
+    # Vite puts a content hash in every filename here, so a given URL's bytes never change:
+    # cache for a year and skip the revalidation entirely.
+    #
+    # The =404 matters as much as the caching. Without it a request for a chunk a later deploy
+    # deleted falls through to the SPA rule below and is answered with index.html, 200, as
+    # text/html -- so the browser reports a MIME type error for a file that is simply gone, and
+    # the real problem (a client running against assets that no longer exist) reads as a server
+    # misconfiguration instead.
+    location /assets/ {
+        try_files ${DOLLAR}uri =404;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    # Never cached. This is the one file whose name is not hashed, and it is the index of every
+    # hashed name, so a stale copy asks for chunks that have already been replaced. It is 460
+    # bytes; there is nothing to save by caching it.
+    location = /index.html {
+        add_header Cache-Control "no-store, must-revalidate";
+    }
+
     location / {
         try_files ${DOLLAR}uri ${DOLLAR}uri/ /index.html;
     }
@@ -88,6 +108,19 @@ server {
         proxy_set_header X-Real-IP ${DOLLAR}remote_addr;
         proxy_set_header X-Forwarded-For ${DOLLAR}proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto ${DOLLAR}scheme;
+    }
+
+    # Same three rules as the HTTP block above, and for the same reasons. Duplicated because
+    # these are two separate server blocks and nginx does not inherit locations between them;
+    # a copy that drifts is the risk here, and an include file would be the answer if a third
+    # block ever appears.
+    location /assets/ {
+        try_files ${DOLLAR}uri =404;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    location = /index.html {
+        add_header Cache-Control "no-store, must-revalidate";
     }
 
     location / {

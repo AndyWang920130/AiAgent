@@ -41,6 +41,18 @@ public record CardGamePlayerDTO(
      * "waiting on nobody at this seat", which is what a table showing ticks wants to say.
      * Always false outside {@code REMATCH}, where nobody has been asked.
      */
-    boolean ready
+    boolean ready,
+    /**
+     * A phrase this seat is currently saying, as a code from {@code CardGamePhrase} — or null,
+     * which covers both "has said nothing" and "said something long enough ago that it has
+     * stopped showing".
+     *
+     * <p>Those two are deliberately the same answer. Whether a phrase is still current is
+     * decided here, against the server's clock, and the recipient is told the result: a code
+     * means draw it, null means do not. A client comparing a sent-at timestamp against its own
+     * clock would be wrong by whatever the two differ by, which is a bubble that outstays its
+     * welcome on one screen and never appears on another.
+     */
+    String phrase
 ) implements Serializable {
 }

@@ -1,6 +1,7 @@
 package com.example.myapp.service;
 
 import com.example.myapp.contants.enumeration.CardGameInvitationStatus;
+import com.example.myapp.contants.enumeration.CardGamePhrase;
 import com.example.myapp.contants.enumeration.CardGameStatus;
 import com.example.myapp.contants.enumeration.NotificationType;
 import com.example.myapp.domain.CardGame;
@@ -110,6 +111,34 @@ public class CardGameService {
     /** Matches the {@code trick_log} column. The log is trimmed from the front to stay inside it. */
     private static final int TRICK_LOG_MAX = 512;
 
+    /**
+     * How long a phrase is reported for. The table polls at 1500ms, so a bubble is carried by
+     * about three consecutive polls — long enough to be seen by someone who was looking at their
+     * hand when it arrived, short enough that the seat it covers is not covered for long.
+     */
+    private static final long PHRASE_WINDOW_SECONDS = 5;
+
+    /**
+     * Minimum gap between one seat's phrases. Shorter than the window on purpose: a seat can
+     * replace its own bubble before it has faded, so answering somebody never means waiting for
+     * a gap, while eight taps in two seconds is still eight taps that produce one bubble.
+     */
+    private static final long PHRASE_COOLDOWN_SECONDS = 3;
+
+    /**
+     * Consecutive timed-out turns after which a seat is put on auto-play.
+     *
+     * <p>Two rather than one: one missed turn is a player who was reading their hand, answering
+     * the door, or on a train that went into a tunnel, and taking the table away from them for
+     * that is worse than the turn it cost. Two in a row is somebody who is not there, and the
+     * rest of the table should not spend a full clock per turn establishing it again each time
+     * the turn comes round.
+     *
+     * <p>They keep the switch: nothing here stops them turning it off, and doing so clears the
+     * count, so coming back costs one click and buys a fresh pair of chances.
+     */
+    private static final int TIMEOUT_STREAK_FOR_AUTO_PLAY = 2;
+
     private final CardGameRepository gameRepository;
     private final CardGamePlayerRepository playerRepository;
     private final UserFollowRepository userFollowRepository;
@@ -119,7 +148,11 @@ public class CardGameService {
     @Value("${app.card-game.invite-timeout-seconds:300}")
     private long inviteTimeoutSeconds;
 
-    @Value("${app.card-game.turn-timeout-seconds:120}")
+    /**
+     * Per-turn budget. The fallback must match the value in application.yaml, or a deployment
+     * whose config omits the key plays by a different clock from one that sets it.
+     */
+    @Value("${app.card-game.turn-timeout-seconds:30}")
     private long turnTimeoutSeconds;
 
     @Value("${app.card-game.game-timeout-seconds:3600}")
@@ -434,6 +467,17 @@ public class CardGameService {
             // is the no-op belt to that braces — except for a seat that joined since, which has
             // never been through a finish() on this row at all.
             player.setAutoPlay(false);
+            // The count behind the automatic version of that flag, cleared for the same reason:
+            // a turn missed in the last game is not one missed in this one, and carried over it
+            // would leave a player one timeout away from being automated in a game they have
+            // only just sat down to.
+            player.setTimeoutStreak(0);
+            // And anything said at the end of the last game. "Good game" is about the game that
+            // finished; carried over, it would greet the next deal as though somebody had opened
+            // with it. The date goes too, or the cleared phrase would still be holding this
+            // seat's cooldown against its first word of the new game.
+            player.setPhrase(null);
+            player.setPhraseDate(null);
             player.setLastModifiedBy(actor);
             playerRepository.save(player);
         }
@@ -552,6 +596,7 @@ public class CardGameService {
         if (!CardDeck.beats(detected, game.getCurrentShape(), game.getCurrentRank())) {
             throw new BadRequestAlertException("That does not beat the current play", ENTITY_NAME, "cannotbeat");
         }
+        clearTimeoutStreak(seat);
         applyPlay(game, seat, hand, detected, me);
         return toDto(advance(gameRepository.save(game)), me);
     }
@@ -569,7 +614,11 @@ public class CardGameService {
         if (game.getCurrentPlay() == null) {
             throw new BadRequestAlertException("You are leading — you must play", ENTITY_NAME, "mustlead");
         }
-        applyPass(game, seatOf(game, me));
+        CardGamePlayer seat = seatOf(game, me);
+        // A pass is a turn taken, so it clears the count the same way a play does. Declining the
+        // play in front of you is an answer; what the count is about is not answering at all.
+        clearTimeoutStreak(seat);
+        applyPass(game, seat);
         return toDto(advance(gameRepository.save(game)), me);
     }
 
@@ -592,6 +641,12 @@ public class CardGameService {
         // about a state the caller cannot affect. Same treatment as a late play or pass.
         if (LIVE.contains(game.getStatus()) && seat.isAutoPlay() != enabled) {
             seat.setAutoPlay(enabled);
+            // Either direction clears the count, and for two different reasons. Switching off is
+            // somebody back at the table, who should get a fresh pair of chances rather than be
+            // re-automated by the next single timeout — otherwise taking back control would last
+            // one turn. Switching on is a deliberate choice, which spends the count: if they turn
+            // it off again later, that is the same fresh start as anyone else's.
+            seat.setTimeoutStreak(0);
             seat.setLastModifiedBy(me);
             playerRepository.save(seat);
             LOG.debug("70235 game {}: {} turned auto-play {}", game.getId(), me, enabled ? "on" : "off");
@@ -647,6 +702,72 @@ public class CardGameService {
      */
     private boolean allReady(List<CardGamePlayer> seats) {
         return seats.stream().filter(seat -> !seat.isCpu()).allMatch(CardGamePlayer::isReady);
+    }
+
+    // ----- Saying something ------------------------------------------------------------------
+
+    /**
+     * Say one of the predefined phrases to the table. The caller's own seat, like auto-play and
+     * readiness — there is no parameter for whose seat says it.
+     *
+     * <p>The phrase is a {@link CardGamePhrase}, so an unknown code has already been rejected by
+     * the time it reaches here: the request binds to the enum. That is what makes the list a
+     * property of the server rather than of the picker drawn in front of it.
+     *
+     * <p>Allowed while a game is being played and while the room sits between games. Anywhere
+     * else it is a no-op returning current state rather than an error, the way a late readiness
+     * click is: the caller is acting on a table that has moved on, and the state they get back
+     * shows them that better than a message would.
+     *
+     * <p>Inside the cooldown it is also a no-op. The client disables its own button for those
+     * seconds, so a request that arrives anyway is a double-tap or a poll race — and an error
+     * over the table for a twice-tapped "thanks" is worse than the second tap doing nothing.
+     *
+     * <p>Two things this deliberately does not do:
+     *
+     * <ul>
+     *   <li><strong>It does not touch {@code lastActionDate}.</strong> That field is the turn
+     *       clock while a game runs and the room clock between games, so writing it here would
+     *       let a player hold their turn open — or hold the whole room open — by saying hello.
+     *       Saying something must not buy time.
+     *   <li><strong>It does not notify.</strong> A phrase is for the people looking at the
+     *       table, which is everyone it can reach; eight taps would otherwise be eight
+     *       notification rows apiece. It travels on the poll the table is already making.
+     * </ul>
+     */
+    public CardGameDTO sendPhrase(Long id, CardGamePhrase phrase) {
+        String me = SecurityUtil.getCurrentUsername();
+        CardGame game = advance(requireParticipant(id, me));
+        if (game.getStatus() != CardGameStatus.ACTIVE && game.getStatus() != CardGameStatus.REMATCH) {
+            return toDto(game, me);
+        }
+        CardGamePlayer seat = seatOf(game, me);
+        Instant now = Instant.now();
+        Instant last = seat.getPhraseDate();
+        if (last != null && elapsedSeconds(last, now) < PHRASE_COOLDOWN_SECONDS) {
+            return toDto(game, me);
+        }
+        seat.setPhrase(phrase);
+        seat.setPhraseDate(now);
+        seat.setLastModifiedBy(me);
+        playerRepository.save(seat);
+        LOG.debug("70235 game {}: {} said {}", game.getId(), me, phrase);
+        return toDto(game, me);
+    }
+
+    /**
+     * The phrase a seat is currently saying, or null once it has stopped showing.
+     *
+     * <p>"Said nothing" and "said something that has expired" come out the same, which is the
+     * point: the recipient is told what to draw, not what to work out. The alternative — sending
+     * the phrase with the time it was sent — makes every client's clock part of the feature, and
+     * a client a few seconds off shows a bubble that will not go away.
+     */
+    private String livePhrase(CardGamePlayer seat, Instant now) {
+        if (seat.getPhrase() == null || seat.getPhraseDate() == null) {
+            return null;
+        }
+        return elapsedSeconds(seat.getPhraseDate(), now) > PHRASE_WINDOW_SECONDS ? null : seat.getPhrase().name();
     }
 
     /**
@@ -911,10 +1032,16 @@ public class CardGameService {
         // already gone. Turning it off between games makes the choice per game, which is how it
         // reads on the table: the switch is rendered only while a game is running.
         // CPU seats are untouched by this — isAutomatic() reads isCpu() for them, not this flag.
+        //
+        // The timeout count goes with auto-play, because it is the thing that would turn auto-play
+        // back on. Left standing, a player who missed one turn in this game would start the next
+        // one a single timeout from being played for — which is the per-game decision above not
+        // holding for the case it matters most in.
         for (CardGamePlayer seat : seats) {
-            if (seat.isReady() || seat.isAutoPlay()) {
+            if (seat.isReady() || seat.isAutoPlay() || seat.getTimeoutStreak() > 0) {
                 seat.setReady(false);
                 seat.setAutoPlay(false);
+                seat.setTimeoutStreak(0);
                 playerRepository.save(seat);
             }
         }
@@ -1082,8 +1209,59 @@ public class CardGameService {
             return game;
         }
         LOG.debug("70235 game {}: {} timed out; auto-playing", game.getId(), turn);
+        countTimeout(game, seat);
         act(game, seat, turn);
         return gameRepository.save(game);
+    }
+
+    /**
+     * Record that this seat let its clock run out, and put it on auto-play once that has
+     * happened {@link #TIMEOUT_STREAK_FOR_AUTO_PLAY} turns in a row.
+     *
+     * <p>Automatic seats are not counted. A CPU, or a human who has already asked for this, is
+     * being played by arrangement rather than by default — counting them would climb a number
+     * nothing reads and describe a player who missed nothing.
+     *
+     * <p>Called <em>before</em> the turn is taken, so the flag is already on when
+     * {@link #runAutomaticTurns} reaches this table later in the same request: the seat's
+     * following turns in this response are played too, rather than one per poll until the
+     * client happens to read the flag. That is how the manual switch behaves as well.
+     *
+     * <p>The seat is saved here because this path otherwise writes only the game, and
+     * {@link #applyPass} — the branch a timed-out player most often takes — does not save the
+     * seat either.
+     */
+    private void countTimeout(CardGame game, CardGamePlayer seat) {
+        if (isAutomatic(seat)) {
+            return;
+        }
+        seat.setTimeoutStreak(seat.getTimeoutStreak() + 1);
+        if (seat.getTimeoutStreak() >= TIMEOUT_STREAK_FOR_AUTO_PLAY) {
+            seat.setAutoPlay(true);
+            LOG.debug(
+                "70235 game {}: {} missed {} turns in a row; auto-play on",
+                game.getId(),
+                seat.getUsername(),
+                seat.getTimeoutStreak()
+            );
+        }
+        seat.setLastModifiedBy(seat.getUsername());
+        playerRepository.save(seat);
+    }
+
+    /**
+     * Forget any timed-out turns this seat has run up, because it has just taken one itself.
+     *
+     * <p>This is what makes the count consecutive. Without it the threshold would describe a
+     * whole game — two timeouts half an hour apart, with twenty turns played in between, would
+     * read the same as two in a row and automate somebody who is plainly at the table.
+     */
+    private void clearTimeoutStreak(CardGamePlayer seat) {
+        if (seat.getTimeoutStreak() == 0) {
+            return;
+        }
+        seat.setTimeoutStreak(0);
+        playerRepository.save(seat);
     }
 
     // ----- Helpers --------------------------------------------------------------------------
@@ -1277,7 +1455,10 @@ public class CardGameService {
                     // host's included — the host agrees to another game the same way everyone
                     // else does, and the others can see that they have. Outside the rematch
                     // window the question is not being asked, so nobody is ready.
-                    rematch && (seat.isCpu() || seat.isReady())
+                    rematch && (seat.isCpu() || seat.isReady()),
+                    // Whether this seat is still saying something, decided here against one
+                    // clock rather than on each client against its own.
+                    livePhrase(seat, now)
                 );
             })
             .toList();

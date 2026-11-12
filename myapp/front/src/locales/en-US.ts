@@ -94,7 +94,7 @@ export default {
       'As host, Start becomes available once every invitee has answered and at least two players are seated. The page tells you what it is still waiting for.',
     cardGameStep6Title: 'Taking your turn',
     cardGameStep6Body:
-      'Click a card to select it and click it again to play it, or select several cards and press "Play". "Pass" only declines the play in front of you — if someone after you raises it, your turn comes round again. Leave a turn for two minutes and it is played for you.',
+      'Click a card to select it and click it again to play it, or select several cards and press "Play". You can also hold the left mouse button and drag across your hand to select several at once. "Pass" only declines the play in front of you — if someone after you raises it, your turn comes round again. Leave a turn for 30 seconds and it is played for you; miss two in a row and auto-play switches itself on until you switch it off.',
     cardGameStep7Title: 'Auto-play',
     cardGameStep7Body:
       'Switching auto-play on hands your turns to the server, which is handy if you need to step away. Switch it off to take control back — doing so does not cost you the turn you are on.',
@@ -777,7 +777,8 @@ export default {
     waitingFor: 'Waiting for {name}',
     roundTimeLeft: '{time} left this round',
     playCards: 'Play',
-    clickAgainToPlay: 'Click a card to select it, then click it again to play your selection.',
+    clickAgainToPlay:
+      'Click a card to select it, then click it again to play your selection. Drag across the hand to select several at once. Your turn is played for you after {seconds}s.',
     pass: 'Pass',
     clearSelection: 'Clear',
     leaveGame: 'Leave game',
@@ -786,7 +787,7 @@ export default {
     autoPlayOnHint:
       'Your turns are being played for you. Switch this off to take the next one yourself.',
     autoPlayOffHint:
-      'Switch on auto-play to have your turns played for you, including while this page is closed.',
+      'Switch on auto-play to have your turns played for you, including while this page is closed. It also comes on by itself if you miss two turns in a row — switch it off to take control back.',
     selectionPoints: '{points} points selected',
     winnerIs: '{name} wins with {score} points',
     youWinWith: 'You win with {score} points',
@@ -824,6 +825,25 @@ export default {
     jokerBig: 'B',
     jokerLittle: 'L',
     trickHistory: 'Trick {n} so far',
+    // The phrase picker. One button, because the eight phrases behind it are a popover rather
+    // than a row of their own — the table has no spare band and this is not the main thing
+    // happening on it.
+    say: 'Say',
+    /**
+     * The phrases themselves, keyed by the code the server stores. Nothing here can be aimed at
+     * a person: that is what lets a fixed list stand in for moderation instead of just being a
+     * shortcut past typing. A phrase with a target would spend that.
+     */
+    phrases: {
+      HELLO: 'Hello!',
+      GOOD_LUCK: 'Good luck!',
+      NICE_PLAY: 'Nice play!',
+      WOW: 'Wow!',
+      UNLUCKY: 'Unlucky',
+      OOPS: 'Oops',
+      THANKS: 'Thanks',
+      GOOD_GAME: 'Good game',
+    },
     shapes: {
       SINGLE: 'single',
       PAIR: 'pair',

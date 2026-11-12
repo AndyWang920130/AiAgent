@@ -93,7 +93,7 @@ export default {
       '作为房主，当所有被邀请的人都已答复、且至少有两人就座时，「开始」按钮就可以点击了。在此之前页面会说明还在等待什么。',
     cardGameStep6Title: '轮到你出牌',
     cardGameStep6Body:
-      '点击一张牌选中它，再点一次即可打出；也可以先选中多张牌，然后点击「出牌」。「不要」只表示不接你上家的这一手——如果你后面有人加大，轮次还会回到你。某一手超过两分钟未操作，系统会代你出牌。',
+      '点击一张牌选中它，再点一次即可打出；也可以先选中多张牌，然后点击「出牌」，或按住鼠标左键在手牌上拖动一次选中多张。「不要」只表示不接你上家的这一手——如果你后面有人加大，轮次还会回到你。某一手超过 30 秒未操作，系统会代你出牌；连续两次超时后会自动开启托管，直到你手动关闭。',
     cardGameStep7Title: '自动出牌',
     cardGameStep7Body:
       '打开「自动出牌」后由服务器代你出牌，需要临时离开时很方便。关掉它即可收回控制权，而且不会浪费当前这一手。',
@@ -775,14 +775,14 @@ export default {
     waitingFor: '等待 {name} 出牌',
     roundTimeLeft: '本局剩余 {time}',
     playCards: '出牌',
-    clickAgainToPlay: '点击选牌，再次点击已选的牌即可出牌。',
+    clickAgainToPlay: '点击选牌，再次点击已选的牌即可出牌。按住左键在手牌上拖动可一次选中多张。{seconds} 秒未操作，系统会代你出牌。',
     pass: '不要',
     clearSelection: '清空选择',
     leaveGame: '退出游戏',
     autoPlay: '自动出牌',
     autoPlayTag: '托管',
     autoPlayOnHint: '正在自动为你出牌。关闭后，下一轮由你自己出。',
-    autoPlayOffHint: '开启后将自动为你出牌，关闭本页面也会继续。',
+    autoPlayOffHint: '开启后将自动为你出牌，关闭本页面也会继续。连续两次超时未出牌也会自动开启——关闭即可收回控制权。',
     selectionPoints: '已选 {points} 分',
     winnerIs: '{name} 获胜，{score} 分',
     youWinWith: '你获胜，{score} 分',
@@ -819,6 +819,23 @@ export default {
     jokerBig: '大',
     jokerLittle: '小',
     trickHistory: '第 {n} 轮出牌',
+    // 快捷短语的入口。八句话放在气泡弹层里，而不是单独占一行——牌桌没有多余的高度，
+    // 说话也不是这张桌子上最要紧的事。
+    say: '说话',
+    /**
+     * 短语本身，键名就是服务端存的那个代码。这里没有一句能指向某个人：固定清单之所以能
+     * 代替审核，而不只是省去打字，靠的正是这一点。
+     */
+    phrases: {
+      HELLO: '你好！',
+      GOOD_LUCK: '手气好运！',
+      NICE_PLAY: '好牌！',
+      WOW: '厉害！',
+      UNLUCKY: '可惜了',
+      OOPS: '失误了',
+      THANKS: '谢谢',
+      GOOD_GAME: '打得好',
+    },
     shapes: {
       SINGLE: '单张',
       PAIR: '对子',

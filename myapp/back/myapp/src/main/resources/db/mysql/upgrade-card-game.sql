@@ -143,3 +143,66 @@ SET @add_ready = (
 PREPARE add_ready_stmt FROM @add_ready;
 EXECUTE add_ready_stmt;
 DEALLOCATE PREPARE add_ready_stmt;
+
+-- And after that: the predefined phrases players send each other during a game. `phrase` holds
+-- the code (HELLO, NICE_PLAY, ...), never a sentence -- the app is bilingual, so each client
+-- renders the code through its own locale file. `phrase_date` is when it was sent, which the
+-- server reads for two things: how long the phrase is still reported for, and how soon that seat
+-- may send another.
+--
+-- Both nullable with no default, unlike the bit(1) flags above: a seat that has said nothing has
+-- no phrase, which is an absence rather than a value. Guarded like the statements above, and
+-- anchored AFTER `ready`, which the block above has already added by the time these run.
+SET @add_phrase = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `twsny_card_game_player` ADD COLUMN `phrase` varchar(20) DEFAULT NULL AFTER `ready`',
+    'SELECT ''twsny_card_game_player.phrase already exists'' AS message'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @schema_name
+    AND TABLE_NAME = 'twsny_card_game_player'
+    AND COLUMN_NAME = 'phrase'
+);
+PREPARE add_phrase_stmt FROM @add_phrase;
+EXECUTE add_phrase_stmt;
+DEALLOCATE PREPARE add_phrase_stmt;
+
+SET @add_phrase_date = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `twsny_card_game_player` ADD COLUMN `phrase_date` datetime(6) DEFAULT NULL AFTER `phrase`',
+    'SELECT ''twsny_card_game_player.phrase_date already exists'' AS message'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @schema_name
+    AND TABLE_NAME = 'twsny_card_game_player'
+    AND COLUMN_NAME = 'phrase_date'
+);
+PREPARE add_phrase_date_stmt FROM @add_phrase_date;
+EXECUTE add_phrase_date_stmt;
+DEALLOCATE PREPARE add_phrase_date_stmt;
+
+-- And after that: consecutive turns the server has taken for a seat because its clock ran out.
+-- At two in a row the service switches that seat's `auto_play` on, on the grounds that a player
+-- who has let two turns go is away from the table; they keep the switch, and turning it off
+-- clears this back to 0. Reset by any turn the player takes themselves and by every deal, so it
+-- is per seat and per game like the two flags above it.
+--
+-- NOT NULL DEFAULT 0 rather than nullable: a seat has always missed some countable number of
+-- turns in a row, and for every existing row that number is none. Guarded like the statements
+-- above, and anchored AFTER `phrase_date`, which the block above has already added.
+SET @add_timeout_streak = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `twsny_card_game_player` ADD COLUMN `timeout_streak` int NOT NULL DEFAULT 0 AFTER `phrase_date`',
+    'SELECT ''twsny_card_game_player.timeout_streak already exists'' AS message'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = @schema_name
+    AND TABLE_NAME = 'twsny_card_game_player'
+    AND COLUMN_NAME = 'timeout_streak'
+);
+PREPARE add_timeout_streak_stmt FROM @add_timeout_streak;
+EXECUTE add_timeout_streak_stmt;
+DEALLOCATE PREPARE add_timeout_streak_stmt;

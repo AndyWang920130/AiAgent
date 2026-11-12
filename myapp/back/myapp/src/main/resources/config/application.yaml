@@ -20,7 +20,7 @@ app:
     move-timeout-seconds: 120     # a player who does not move within 120s forfeits
   card-game:
     invite-timeout-seconds: 300   # an unanswered 70235 table expires after 5 minutes
-    turn-timeout-seconds: 120     # an idle player's turn is auto-played after 120s
+    turn-timeout-seconds: 30      # an idle player's turn is auto-played after 30s
     game-timeout-seconds: 3600    # a game running longer than an hour is scored as it stands
   stock:
     # Quote source for the Stock Center: tencent (default, reachable from mainland China,

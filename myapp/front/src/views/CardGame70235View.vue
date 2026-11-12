@@ -5,8 +5,10 @@ import { message } from 'ant-design-vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeftOutlined, TrophyOutlined } from '@ant-design/icons-vue'
 import {
+  CARD_GAME_PHRASES,
   cardGameApi,
   type CardGameOpponent,
+  type CardGamePhrase,
   type CardGameState,
   type CardGameTrickEntry,
 } from '../api/cardGame'
@@ -38,6 +40,30 @@ const autoPlaySaving = ref(false)
 
 /** Countdown shown between polls, ticked locally once a second. */
 const turnRemaining = ref<number | null>(null)
+
+/**
+ * When the countdown turns red: the point where the turn is about to be taken for you.
+ *
+ * An absolute number of seconds, not a fraction of the budget. It answers "is there still time to
+ * decide", and how long deciding takes depends on the hand in front of you rather than on how
+ * generous the clock is — a fraction would warn at 40s of a 120s budget, with over half a minute
+ * still to go, and would turn half of a 30s budget red, which makes the warning colour the normal
+ * colour.
+ */
+const TURN_WARNING_SECONDS = 10
+
+/* The phrase picker. Open state is local to the popover; `phraseCooldown` counts down the
+   seconds the server will ignore a second phrase for, so the button can disable itself rather
+   than let a tap be silently dropped. The server stays the authority — it ignores anything
+   inside its own cooldown whatever this says — but a control that does nothing is worse than a
+   control that is visibly unavailable. Same relationship as the Play button's client-side
+   legality check to the server's. */
+const phraseOpen = ref(false)
+const phraseSending = ref(false)
+const phraseCooldown = ref(0)
+
+/** Matches PHRASE_COOLDOWN_SECONDS in CardGameService. */
+const PHRASE_COOLDOWN = 3
 
 let lobbyTimer: ReturnType<typeof setInterval> | null = null
 let gameTimer: ReturnType<typeof setInterval> | null = null
@@ -514,6 +540,35 @@ async function toggleReady(ready: boolean) {
   await run(() => cardGameApi.setReady(game.value!.id, ready))
 }
 
+/**
+ * Say one of the predefined phrases. My own seat; the server allows it while a game is running
+ * and while the room sits between games, and ignores it anywhere else.
+ *
+ * The response is applied like any other, which is what puts my own bubble on my own seat
+ * straight away instead of on my next poll — the phrase is already in the state that comes back.
+ * On a phone that is invisible for your own seat, which hides its played row, so the cooldown on
+ * the button is the only confirmation there.
+ *
+ * Errors are deliberately quiet. A phrase that does not arrive is worth less than the toast
+ * explaining it would cost in attention mid-game, and nothing downstream depends on it — unlike
+ * a play, there is no state to get back in step with.
+ */
+async function sendPhrase(phrase: CardGamePhrase) {
+  if (!game.value || phraseSending.value || phraseCooldown.value > 0) return
+  phraseOpen.value = false
+  phraseSending.value = true
+  // Started before the request, not after it: the cooldown is about how often a phrase may be
+  // sent, and timing it from the response would let a slow network buy extra sends.
+  phraseCooldown.value = PHRASE_COOLDOWN
+  try {
+    applyGame(await cardGameApi.sendPhrase(game.value.id, phrase))
+  } catch {
+    // Quiet on purpose — see above.
+  } finally {
+    phraseSending.value = false
+  }
+}
+
 
 /**
  * First click selects a card, a second click on an already-selected card plays the selection.
@@ -610,8 +665,11 @@ onMounted(() => {
   loadOpponents()
   pollLobby()
   // Counts down between polls so the turn clock does not sit still for a second and a half.
+  // The phrase cooldown rides the same timer: it is the same once-a-second job, and a second
+  // interval for it would be a second thing to clear on unmount.
   tickTimer = setInterval(() => {
     if (turnRemaining.value !== null && turnRemaining.value > 0) turnRemaining.value -= 1
+    if (phraseCooldown.value > 0) phraseCooldown.value -= 1
   }, 1000)
 })
 
@@ -858,7 +916,7 @@ onUnmounted(() => {
           <span class="status-text">{{ statusText }}</span>
           <a-tag
             v-if="inGame && game.myTurn && turnRemaining !== null"
-            :color="turnRemaining <= 15 ? 'red' : 'default'"
+            :color="turnRemaining <= TURN_WARNING_SECONDS ? 'red' : 'default'"
           >
             ⏱ {{ turnRemaining }}s
           </a-tag>
@@ -885,11 +943,16 @@ onUnmounted(() => {
 
           <!-- Still shown while auto-play is on, so the hand can be watched being played; the
                cards just stop responding to clicks. -->
+          <!-- A sweep only ever changes the selection: it never plays, however legal the shape
+               it lands on. Committing stays the second click's job, because a drag has no
+               second anything — if the release played, there would be no way to sweep up a
+               pair and then look at it before sending it. -->
           <CardHand
             :cards="myHand"
             :selected="selectedIndices"
             :disabled="!inGame || !game.myTurn || playing || autoPlayOn"
             @toggle="toggleCard"
+            @sweep="selectedIndices = $event"
           />
 
           <!-- The second click is not visible in the cards themselves, so it is spelled out
@@ -897,7 +960,11 @@ onUnmounted(() => {
                your turn, and a line appearing and vanishing each turn would shift the buttons
                below it under the cursor that is reaching for them. -->
           <p v-if="inGame" class="play-hint is-reserved">
-            {{ game.myTurn && !autoPlayOn ? t('cardGame.clickAgainToPlay') : '' }}
+            {{
+              game.myTurn && !autoPlayOn
+                ? t('cardGame.clickAgainToPlay', { seconds: game.turnTimeoutSeconds })
+                : ''
+            }}
           </p>
 
           <!-- The buttons and the auto-play switch, wrapped together so a phone can put them
@@ -926,6 +993,32 @@ onUnmounted(() => {
               >
                 {{ t('cardGame.clearSelection') }}
               </a-button>
+              <!-- In this row rather than a row of its own: it already wraps, so the picker
+                   costs the table no height and needs no band of its own in the fit arithmetic.
+                   Not disabled by auto-play, unlike the three buttons beside it — handing your
+                   turns to the server is about playing cards, and a player watching their seat
+                   be played can still have something to say about it. -->
+              <a-popover v-model:open="phraseOpen" trigger="click" placement="top">
+                <template #content>
+                  <!-- All eight at once, not a menu. Either way it is two taps, but a grid is
+                       one glance and a menu is a read — and what is being spent here is time
+                       with the player's attention off the table. -->
+                  <div class="phrase-grid">
+                    <a-button
+                      v-for="p in CARD_GAME_PHRASES"
+                      :key="p"
+                      size="small"
+                      :disabled="phraseCooldown > 0"
+                      @click="sendPhrase(p)"
+                    >
+                      {{ t(`cardGame.phrases.${p}`) }}
+                    </a-button>
+                  </div>
+                </template>
+                <a-button :loading="phraseSending" :disabled="phraseCooldown > 0">
+                  {{ t('cardGame.say') }}
+                </a-button>
+              </a-popover>
             </a-space>
 
             <!-- A mode rather than an action, so it sits with the hand it governs instead of in
@@ -962,6 +1055,29 @@ onUnmounted(() => {
               >
                 {{ iAmReady ? t('cardGame.notReady') : t('cardGame.readyUp') }}
               </a-button>
+              <!-- The same picker as during play; only one of the two is ever rendered, since
+                   this row is REMATCH and that one is ACTIVE. This is where the phrases earn
+                   their keep — "good game" belongs to the game that has just been scored — and
+                   the seats here are content-sized, so a bubble gets a row of its own rather
+                   than covering the last trick's cards. -->
+              <a-popover v-model:open="phraseOpen" trigger="click" placement="top">
+                <template #content>
+                  <div class="phrase-grid">
+                    <a-button
+                      v-for="p in CARD_GAME_PHRASES"
+                      :key="p"
+                      size="small"
+                      :disabled="phraseCooldown > 0"
+                      @click="sendPhrase(p)"
+                    >
+                      {{ t(`cardGame.phrases.${p}`) }}
+                    </a-button>
+                  </div>
+                </template>
+                <a-button :loading="phraseSending" :disabled="phraseCooldown > 0">
+                  {{ t('cardGame.say') }}
+                </a-button>
+              </a-popover>
               <!-- The room does not stay open for ever, and a room that closed on its own with
                    nothing having said it would is indistinguishable from one that broke. Red
                    under a minute, like the turn clock. -->
@@ -1362,6 +1478,17 @@ onUnmounted(() => {
 }
 .hand-actions {
   margin-top: 4px;
+}
+/* Two columns rather than a wrapped flex row, so the eight phrases make the same rectangle in
+   both languages: the English and Chinese labels differ in width, and a wrap would reflow the
+   grid between them and move a tap target from under the thumb that learned where it was.
+   Equal columns for the same reason — the buttons stay the size they were, not the size their
+   text is. Scoped CSS still applies here even though a-popover teleports this to the body. */
+.phrase-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  width: 220px;
 }
 /* Stays a column at every width, unlike .control-rows: one button and one line of text have
    nothing to gain from sharing a row, and the hint under the button is what explains it. */

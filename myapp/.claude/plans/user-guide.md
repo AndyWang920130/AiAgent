@@ -141,10 +141,13 @@ invite itself, so someone has to follow you before you can seat them. Links to t
 5. As host: **Start** unlocks once every invitee has answered and at least two players are
    seated. Until then the page says so.
 6. Playing a turn: click a card to select it, click it again to play, or select several and
-   press **Play cards**. **Pass** declines only the play in front of you — if someone behind
-   you raises it, the turn comes back round. A turn left idle for 120 seconds is played for
-   you (`turn-timeout-seconds: 120`).
-7. **Auto-play** hands your turns to the server; switch it off to take them back.
+   press **Play cards**. Holding the left mouse button and dragging across the hand selects a
+   run of cards in one gesture. **Pass** declines only the play in front of you — if someone
+   behind you raises it, the turn comes back round. A turn left idle for 30 seconds is played
+   for you (`turn-timeout-seconds: 30`).
+7. **Auto-play** hands your turns to the server; switch it off to take them back. Two timed-out
+   turns in a row switch it on by themselves, and it stays on until switched off — per game,
+   so the next deal starts with it off again.
 8. When the game ends, final scores and placings appear on each seat, and **Leave** in the
    top-right corner returns you to the lobby.
 
