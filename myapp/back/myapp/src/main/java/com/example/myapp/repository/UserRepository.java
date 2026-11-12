@@ -74,6 +74,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countActiveByRole(@Param("role") String role);
 
     /**
+     * Logins of the active accounts holding a role, used to notify every administrator when
+     * feedback arrives. Disabled accounts are left out: they cannot sign in, so a
+     * notification for them would never be read.
+     */
+    @Query("select u.login from User u where u.role = :role and coalesce(u.deleted, false) = false order by u.login asc")
+    List<String> findActiveLoginsByRole(@Param("role") String role);
+
+    /**
      * Accounts per role across the whole table, used by the Role Config page for its usage
      * column and to refuse deleting a role someone still holds. Disabled accounts are
      * counted too: they keep their role, so dropping it would strand them on re-enable.

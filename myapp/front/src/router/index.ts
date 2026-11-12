@@ -41,6 +41,8 @@ const router = createRouter({
         { path: 'stock/list', name: 'stock-list', component: () => import('../views/StockListView.vue') },
         { path: 'admin/users', name: 'user-list', component: () => import('../views/UserListView.vue'), meta: { requiresAdmin: true } },
         { path: 'notifications', name: 'notifications', component: () => import('../views/NotificationView.vue') },
+        { path: 'feedback', name: 'feedback', component: () => import('../views/FeedbackView.vue') },
+        { path: 'admin/feedbacks', name: 'feedback-admin', component: () => import('../views/FeedbackAdminView.vue'), meta: { requiresAdmin: true } },
       ],
     },
   ],

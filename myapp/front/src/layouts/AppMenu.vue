@@ -26,6 +26,7 @@ import {
   LineChartOutlined,
   ReadOutlined,
   UserAddOutlined,
+  MessageOutlined,
 } from '@ant-design/icons-vue'
 
 defineProps<{
@@ -148,6 +149,10 @@ const { t } = useI18n()
         <UnorderedListOutlined />
         <span>{{ t('menu.userList') }}</span>
       </a-menu-item>
+      <a-menu-item key="feedback-admin" @click="emit('navigate', 'feedback-admin')">
+        <MessageOutlined />
+        <span>{{ t('menu.feedbackAdmin') }}</span>
+      </a-menu-item>
     </a-sub-menu>
     <a-sub-menu key="tools-sub">
       <template #title>
@@ -185,6 +190,10 @@ const { t } = useI18n()
         <span>{{ t('menu.guideCardGame') }}</span>
       </a-menu-item>
     </a-sub-menu>
+    <a-menu-item key="feedback" @click="emit('navigate', 'feedback')">
+      <MessageOutlined />
+      <span>{{ t('menu.feedback') }}</span>
+    </a-menu-item>
     <a-menu-item key="personal" @click="emit('navigate', 'personal')">
       <UserOutlined />
       <span>{{ t('menu.personal') }}</span>
