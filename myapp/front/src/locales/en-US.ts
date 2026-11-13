@@ -61,7 +61,8 @@ export default {
       'Pick Personal from the menu. The card holding your followers also has a search box labelled "Find users to follow…".',
     followStep2Title: 'Search for the person',
     followStep2Body:
-      'Type part of their name or login and pause for a moment — results appear just after you stop typing. Each result shows the display name and the @login so you can tell two similar names apart. Click one to open their profile.',
+      // `@` opens linked-message syntax in vue-i18n, so a literal one is written {'@'}.
+      "Type part of their name or login and pause for a moment — results appear just after you stop typing. Each result shows the display name and the {'@'}login so you can tell two similar names apart. Click one to open their profile.",
     followStep3Title: 'Or click a name you come across',
     followStep3Body:
       'Author names in the blog list, on a post, and on comments all link to that person\'s profile, which is often quicker than searching.',
@@ -73,7 +74,7 @@ export default {
       'Open Home and switch the feed from "🔥 Recommended" to "👥 Following". Posts by everyone you follow appear there. If the tab is empty, the people you follow have not published anything yet rather than the follow having failed.',
     followStep6Title: 'Browse your followers and the people you follow',
     followStep6Body:
-      'Your Personal page carries two numbers, "Followers" and "Following". Clicking either one switches the list card on the right of the page to that tab, and on a narrow screen the card sits below the numbers. Each row shows an avatar, the display name and the @login, and clicking the name opens that person\'s profile. Empty lists read "No followers yet" and "Not following anyone yet". Someone else\'s profile shows their two counts but not the lists behind them.',
+      'Your Personal page carries two numbers, "Followers" and "Following". Clicking either one switches the list card on the right of the page to that tab, and on a narrow screen the card sits below the numbers. Each row shows an avatar, the display name and the {\'@\'}login, and clicking the name opens that person\'s profile. Empty lists read "No followers yet" and "Not following anyone yet". Someone else\'s profile shows their two counts but not the lists behind them.',
     followStep7Title: 'What the other person sees',
     followStep7Body:
       'Following somebody does not notify them: their follower count goes up and your name appears in their Followers list, quietly. Nothing asks them to approve it, and nothing stops you following someone who does not follow you back. Once they follow you back, each of you can invite the other to a game.',
@@ -899,7 +900,8 @@ export default {
     contactHint: 'An email or phone number, if you would like a reply outside the app',
     titlePlaceholder: 'A one-line summary',
     contentPlaceholder: 'What happened, what you expected, and how to reproduce it',
-    contactPlaceholder: 'you@example.com',
+    // `@` opens linked-message syntax in vue-i18n, so a literal one is written {'@'}.
+    contactPlaceholder: "you{'@'}example.com",
     submit: 'Send',
     submitted: 'Thanks — your feedback was sent to the administrators',
     submitFailed: 'Could not send your feedback',
