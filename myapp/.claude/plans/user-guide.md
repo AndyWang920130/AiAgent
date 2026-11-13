@@ -215,3 +215,51 @@ sub-menus behave the same way, so this was left alone.
 No backend change — nothing here is persisted and no new endpoint is needed. No screenshots:
 images would need hosting and would go stale against the UI; the step text names the actual
 button labels instead. No "mark as read" or progress tracking on tutorials.
+
+## Deepened 2026-11-13
+
+The follow tutorial went from five steps to eight. Old step 5 bundled the Home feed and the
+Personal page follow lists into one sentence; it now covers the feed alone, and the lists,
+the other person's view and unfollowing each get a step. `followDesc` on the index card was
+widened to match. Only `guides.ts` (`steps: 5` → `8`) and the two locale files changed.
+
+Three things were read out of the code before the copy was written, because each contradicts
+what a reader would reasonably assume:
+
+- **Following nobody notifies.** `UserProfileService` injects no `NotificationService`
+  (its fields are the two repositories, `BlogLockRepository`, `BlogMapper` and
+  `AchievementService`), and `AchievementType` holds only `REGISTRATION`,
+  `PUBLISH_ARTICLE` and `RECEIVE_LIKE`. So a follow is silent: no notification, no
+  achievement. Step 7 says so rather than leaving someone waiting for a reply.
+- **Unfollow lives in exactly one place.** `userApi.unfollow` is called only from
+  `UserProfileView.vue:64`, through the same button that follows. The Personal page lists
+  render an avatar, name and `@login` per row and nothing else, so there is no unfollow
+  there. Step 8 names the button as the only route and warns that it fires with no
+  confirmation — `toggleFollow` calls the API straight away, no `a-popconfirm`.
+- **Only your own follow counts are clickable, and the lists are yours alone.**
+  `PersonalView.vue:282-288` wires `@click` on each count to `activeFollowTab`;
+  `UserProfileView.vue:110-119` renders the same two counts as plain divs. The backend does
+  expose `/{login}/followers` and `/{login}/following` for any login, but no view calls them
+  for another user, so step 6 says another profile shows the counts without the lists.
+
+One layout detail worth keeping: the counts are in the left `a-col` and the list card they
+drive is in the right one, so on `lg` and up the click moves a card beside the numbers, and
+below that breakpoint the columns stack and it moves a card underneath. Step 6 mentions both.
+
+Labels were taken from the locale files, not from memory — the first build got five wrong.
+Quoted this time: `userProfile.followers` 'Followers'/「粉丝」,
+`userProfile.followingCount` 'Following'/「关注」 (the count label and the button label are
+different keys that both read "Following" in English), `userProfile.following` 'Following'
+/「已关注」, `userProfile.noFollowers`, `userProfile.noFollowing`, `home.recommended`
+'🔥 Recommended'/「🔥 推荐」 and `home.following` '👥 Following'/「👥 关注」, emoji included
+since that is what the tab shows.
+
+Verification: `check_guide_keys.py` reports 50 required keys present in both locales, no
+en/zh drift, no orphans — it already covered this change, so it ran unmodified.
+`npx vue-tsc -b` exit 0. `npm run build` exit 0, emitting `UserGuideView`,
+`GuideTutorialView` and the `guides` chunk. `git status` shows the three intended files and
+nothing else. The 1,649 kB `index` chunk warning predates this change and is untouched by it;
+these edits add only locale strings.
+
+Not verified: rendered appearance, as before. Eight vertical `a-step`s with bodies this long
+make a taller page than five did, and that has not been looked at in a browser.

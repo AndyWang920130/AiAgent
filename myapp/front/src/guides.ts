@@ -36,7 +36,7 @@ export const guides: GuideEntry[] = [
     slug: 'follow-users',
     key: 'follow',
     icon: UserAddOutlined,
-    steps: 5,
+    steps: 8,
     tip: true,
     links: [
       { labelKey: 'guide.openPersonal', path: '/personal' },

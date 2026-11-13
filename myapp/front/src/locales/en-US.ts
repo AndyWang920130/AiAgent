@@ -53,7 +53,7 @@ export default {
     openNotifications: 'Open Notifications',
 
     followTitle: 'How to follow other users',
-    followDesc: 'Find someone, follow them, and see their posts in your feed.',
+    followDesc: 'Find someone, follow them, browse your follow lists, and unfollow.',
     followIntro:
       'Following someone adds their posts to your Home feed. It also lets them invite you to games, and lets you invite them once they follow you back.',
     followStep1Title: 'Open your Personal page',
@@ -68,9 +68,18 @@ export default {
     followStep4Title: 'Click Follow',
     followStep4Body:
       'The button on their profile turns into "Following", their follower count goes up, and a short confirmation appears. Clicking it again unfollows them.',
-    followStep5Title: 'Check that it worked',
+    followStep5Title: 'See their posts in your feed',
     followStep5Body:
-      'Your Personal page lists them under the Following tab, and their posts now show up on Home under the Following tab instead of Recommended.',
+      'Open Home and switch the feed from "🔥 Recommended" to "👥 Following". Posts by everyone you follow appear there. If the tab is empty, the people you follow have not published anything yet rather than the follow having failed.',
+    followStep6Title: 'Browse your followers and the people you follow',
+    followStep6Body:
+      'Your Personal page carries two numbers, "Followers" and "Following". Clicking either one switches the list card on the right of the page to that tab, and on a narrow screen the card sits below the numbers. Each row shows an avatar, the display name and the @login, and clicking the name opens that person\'s profile. Empty lists read "No followers yet" and "Not following anyone yet". Someone else\'s profile shows their two counts but not the lists behind them.',
+    followStep7Title: 'What the other person sees',
+    followStep7Body:
+      'Following somebody does not notify them: their follower count goes up and your name appears in their Followers list, quietly. Nothing asks them to approve it, and nothing stops you following someone who does not follow you back. Once they follow you back, each of you can invite the other to a game.',
+    followStep8Title: 'Unfollowing',
+    followStep8Body:
+      'Open their profile again and click the button now reading "Following". It takes effect immediately with no confirmation step, so take care not to click it by accident; clicking once more follows them again. This button is the only way to unfollow — the lists on your Personal page are for browsing, not for removing people. Their posts leave your Following feed straight away.',
     followTip:
       'Following is also the key to playing together: you can invite anyone who follows you to a game of 70235.',
 
