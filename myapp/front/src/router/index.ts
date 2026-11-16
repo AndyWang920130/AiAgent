@@ -43,6 +43,7 @@ const router = createRouter({
         { path: 'notifications', name: 'notifications', component: () => import('../views/NotificationView.vue') },
         { path: 'feedback', name: 'feedback', component: () => import('../views/FeedbackView.vue') },
         { path: 'admin/feedbacks', name: 'feedback-admin', component: () => import('../views/FeedbackAdminView.vue'), meta: { requiresAdmin: true } },
+        { path: 'admin/card-game-records', name: 'card-game-records', component: () => import('../views/CardGameRecordView.vue'), meta: { requiresAdmin: true } },
       ],
     },
   ],

@@ -27,6 +27,7 @@ import {
   ReadOutlined,
   UserAddOutlined,
   MessageOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons-vue'
 
 defineProps<{
@@ -96,6 +97,12 @@ const { t } = useI18n()
       <a-menu-item key="card-games" @click="emit('navigate', 'card-games')">
         <CreditCardOutlined />
         <span>{{ t('menu.cardGames') }}</span>
+      </a-menu-item>
+      <!-- Admin-only, but it sits here rather than in an admin submenu: it is the history of
+           the game directly above it, which is where somebody would look for it. -->
+      <a-menu-item v-if="isAdmin" key="card-game-records" @click="emit('navigate', 'card-game-records')">
+        <HistoryOutlined />
+        <span>{{ t('menu.cardGameRecords') }}</span>
       </a-menu-item>
     </a-sub-menu>
     <a-sub-menu v-if="isAdmin" key="settings-sub">

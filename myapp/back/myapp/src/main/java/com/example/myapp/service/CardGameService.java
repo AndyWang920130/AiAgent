@@ -2,6 +2,7 @@ package com.example.myapp.service;
 
 import com.example.myapp.contants.enumeration.CardGameInvitationStatus;
 import com.example.myapp.contants.enumeration.CardGamePhrase;
+import com.example.myapp.contants.enumeration.CardGameRecordOutcome;
 import com.example.myapp.contants.enumeration.CardGameStatus;
 import com.example.myapp.contants.enumeration.NotificationType;
 import com.example.myapp.domain.CardGame;
@@ -144,6 +145,11 @@ public class CardGameService {
     private final UserFollowRepository userFollowRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    /**
+     * Writes the match history. Needed here because this row does not keep one: a rematch
+     * re-deals it in place, so the end of a match is the only moment its result exists.
+     */
+    private final CardGameRecordService recordService;
 
     @Value("${app.card-game.invite-timeout-seconds:300}")
     private long inviteTimeoutSeconds;
@@ -163,13 +169,15 @@ public class CardGameService {
         CardGamePlayerRepository playerRepository,
         UserFollowRepository userFollowRepository,
         UserRepository userRepository,
-        NotificationService notificationService
+        NotificationService notificationService,
+        CardGameRecordService recordService
     ) {
         this.gameRepository = gameRepository;
         this.playerRepository = playerRepository;
         this.userFollowRepository = userFollowRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
+        this.recordService = recordService;
     }
 
     // ----- Invitable users (one-way follow) -----------------------------------------------
@@ -795,6 +803,14 @@ public class CardGameService {
         game.setLeftByUsername(me);
         game.setLastModifiedBy(me);
         CardGame saved = gameRepository.save(game);
+        // A game was being played and nobody will finish it, so record it as abandoned with the
+        // scores as they stood. Gated on duringGame, which was read before the status changed
+        // above: leaving a REMATCH room also lands on ABANDONED, but that match was already
+        // recorded by finish(), and this is the only thing distinguishing the two cases
+        // afterwards. The idempotency check in record() is the second line of defence, not this.
+        if (duringGame) {
+            recordService.record(saved, CardGameRecordOutcome.ABANDONED, me, Instant.now(), seatsOf(saved));
+        }
         if (wasSeated) {
             for (CardGamePlayer player : seatsOf(saved)) {
                 if (player.isCpu() || me.equals(player.getUsername())) {
@@ -940,7 +956,8 @@ public class CardGameService {
         game.setLastActionDate(Instant.now());
 
         if (isOver(game) || game.getTrickNumber() > MAX_TRICKS) {
-            finish(game);
+            // The final play has just been made, so now is when the game ended.
+            finish(game, Instant.now());
         }
     }
 
@@ -982,8 +999,14 @@ public class CardGameService {
      * (winner, first out, the scores on the seats) and is what the table displays while the
      * players decide; {@link #setReady} re-deals once they all agree, and the window lapsing or
      * the room being disbanded is what reaches FINISHED.
+     *
+     * <p>Because the result does not survive the next deal, this is also where it is written to
+     * the match history. {@code endedAt} is a parameter rather than {@code Instant.now()}: the
+     * round cap reaches here from a read path, which can be long after the cap was actually
+     * reached, and the recorded end time should be the end of the game rather than the moment
+     * something noticed.
      */
-    private void finish(CardGame game) {
+    private void finish(CardGame game, Instant endedAt) {
         List<CardGamePlayer> seats = seatsOf(game);
         final String outUser = resolveFirstOut(game, seats);
         game.setFirstOutUsername(outUser);
@@ -1052,6 +1075,10 @@ public class CardGameService {
         clearTrick(game);
         // Starts the clock on the rematch window: resolveTimeouts closes an idle room from here.
         game.setLastActionDate(Instant.now());
+        // Last, so the snapshot is taken with the final scores and winner on the seats. The
+        // seats are the ones scored above, not a re-read, so this holds whether or not the
+        // transaction has flushed yet.
+        recordService.record(game, CardGameRecordOutcome.SCORED, null, endedAt, seats);
     }
 
     /**
@@ -1187,7 +1214,12 @@ public class CardGameService {
         if (game.getStartedDate() != null && elapsedSeconds(game.getStartedDate(), now) >= gameTimeoutSeconds) {
             // Round cap. There are real scores on the table, so score it as it stands rather
             // than discarding the game as a draw.
-            finish(game);
+            //
+            // The game ended when the cap was reached, which is startedDate + the budget — not
+            // now. Nothing runs on a schedule here, so a table that everyone walked away from
+            // is only resolved when something next reads it, and that gap would otherwise be
+            // counted as time the game was still being played.
+            finish(game, game.getStartedDate().plusSeconds(gameTimeoutSeconds));
             return gameRepository.save(game);
         }
         // An idle player does not get to freeze the table: take their turn with the same brain
