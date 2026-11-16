@@ -11,6 +11,7 @@ import {
   TranslationOutlined,
   BellOutlined,
   InfoCircleOutlined,
+  FileTextOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   CloseCircleOutlined,
@@ -91,6 +92,8 @@ const keyToPath: Record<string, string> = {
   'feedback': '/feedback',
   'feedback-admin': '/admin/feedbacks',
   'card-game-records': '/admin/card-game-records',
+  'about': '/about',
+  'release-notes': '/about/release-notes',
 }
 
 const pathToKey: Record<string, string> = Object.fromEntries(
@@ -327,6 +330,27 @@ function formatPopoverTime(timeStr: string): string {
                 </a-button>
               </a-badge>
             </a-popover>
+
+            <!-- About dropdown. Here rather than in the sidebar because neither page is a
+                 feature area, and both are wanted from wherever the user happens to be. Routes
+                 are unchanged; navigate() keeps keyToPath the only place the paths are written
+                 and closes the mobile drawer. Not admin-gated — everybody reads these. -->
+            <a-dropdown>
+              <a-button type="text">
+                <InfoCircleOutlined />
+                <span v-if="!isMobile">{{ t('menu.about') }}</span>
+              </a-button>
+              <template #overlay>
+                <a-menu>
+                  <a-menu-item key="about" @click="navigate('about')">
+                    <InfoCircleOutlined /> {{ t('menu.aboutApp') }}
+                  </a-menu-item>
+                  <a-menu-item key="release-notes" @click="navigate('release-notes')">
+                    <FileTextOutlined /> {{ t('menu.releaseNotes') }}
+                  </a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
 
             <!-- User dropdown -->
             <a-dropdown>

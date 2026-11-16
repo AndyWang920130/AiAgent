@@ -205,6 +205,10 @@ const { t } = useI18n()
       <UserOutlined />
       <span>{{ t('menu.personal') }}</span>
     </a-menu-item>
+    <!-- About and Release Notes are deliberately not here: they are not feature areas, so they
+         live in the header dropdown next to the theme and language controls (MainLayout.vue).
+         Their keyToPath entries stay, which is what keeps the sidebar from highlighting Home
+         while one of those pages is open. -->
   </a-menu>
 </template>
 

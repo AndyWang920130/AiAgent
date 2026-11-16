@@ -44,6 +44,11 @@ const router = createRouter({
         { path: 'feedback', name: 'feedback', component: () => import('../views/FeedbackView.vue') },
         { path: 'admin/feedbacks', name: 'feedback-admin', component: () => import('../views/FeedbackAdminView.vue'), meta: { requiresAdmin: true } },
         { path: 'admin/card-game-records', name: 'card-game-records', component: () => import('../views/CardGameRecordView.vue'), meta: { requiresAdmin: true } },
+        // No requiresAdmin on either: both are read by everybody. Release Notes shows its
+        // editing controls only to an administrator, and the write endpoints it calls sit
+        // under /api/v1/admin, which the server restricts.
+        { path: 'about', name: 'about', component: () => import('../views/AboutView.vue') },
+        { path: 'about/release-notes', name: 'release-notes', component: () => import('../views/ReleaseNotesView.vue') },
       ],
     },
   ],
