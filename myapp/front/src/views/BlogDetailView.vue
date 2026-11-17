@@ -10,6 +10,7 @@ import {
   LikeOutlined,
   MessageOutlined,
   UserOutlined,
+  ShareAltOutlined,
 } from '@ant-design/icons-vue'
 import { getPost, deletePost, type Post } from '../stores/blog'
 import { blogApi } from '../api/blog'
@@ -27,6 +28,19 @@ const liked = ref(false)
 
 const currentUsername = getUser<{ username: string }>()?.username
 const canManage = computed(() => !!post.value && post.value.author === currentUsername)
+
+/**
+ * Only a public post can be shared. GET /api/v1/blogs/{id} does not filter on visibility, so
+ * a private post's link would in fact open for any signed-in recipient — handing that link
+ * out is not something to build a button for.
+ */
+const canShare = computed(() => !!post.value && post.value.visibility === 'PUBLIC')
+
+const shareLink = computed(() =>
+  post.value ? new URL(router.resolve('/blog/' + post.value.id).href, window.location.origin).href : '',
+)
+
+const shareOpen = ref(false)
 
 onMounted(async () => {
   loading.value = true
@@ -67,6 +81,53 @@ async function handleLike() {
   }
 }
 
+/**
+ * Share the post, by whichever route the browser actually supports.
+ *
+ * The OS share sheet first, where there is one: on a phone that is what sharing means, and it
+ * reaches WeChat and the rest, which a copied link does not. Then the clipboard. Both of those
+ * APIs exist only in a secure context, so over plain HTTP on a LAN address neither is defined —
+ * there the dialog shows the link to copy by hand, which is why the fallback is a selectable
+ * field and not an error message.
+ */
+async function handleShare() {
+  if (!post.value) return
+  const url = shareLink.value
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: post.value.title, url })
+      return
+    } catch (error: any) {
+      // Dismissing the sheet rejects with AbortError. That is not a failure to report.
+      if (error?.name === 'AbortError') return
+      // Anything else: fall through to the clipboard.
+    }
+  }
+
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(url)
+      message.success(t('blog.shareCopied'))
+      return
+    } catch {
+      // Permission refused, or no clipboard write in this context. Show the link instead.
+    }
+  }
+
+  shareOpen.value = true
+}
+
+async function copyFromDialog() {
+  try {
+    await navigator.clipboard.writeText(shareLink.value)
+    message.success(t('blog.shareCopied'))
+    shareOpen.value = false
+  } catch {
+    message.error(t('blog.shareCopyFailed'))
+  }
+}
+
 function handleDelete() {
   if (!post.value) return
   Modal.confirm({
@@ -93,6 +154,10 @@ function handleDelete() {
       <template v-if="post">
         <a-page-header :title="post.title" @back="router.push('/blog')">
           <template #extra>
+            <a-button v-if="canShare" @click="handleShare">
+              <template #icon><ShareAltOutlined /></template>
+              {{ t('blog.share') }}
+            </a-button>
             <a-button v-if="canManage" @click="router.push('/blog/' + post.id + '/edit')">
               <template #icon><EditOutlined /></template>
               {{ t('blog.edit') }}
@@ -135,6 +200,15 @@ function handleDelete() {
           :blog-id="post.id"
           @update:count="(count: number) => post!.comments = count"
         />
+
+        <a-modal v-model:open="shareOpen" :title="t('blog.shareTitle')" :footer="null">
+          <p class="share-hint">{{ t('blog.shareHint') }}</p>
+          <a-input :value="shareLink" readonly @focus="(e: FocusEvent) => (e.target as HTMLInputElement).select()">
+            <template #addonAfter>
+              <a @click="copyFromDialog">{{ t('blog.shareCopy') }}</a>
+            </template>
+          </a-input>
+        </a-modal>
       </template>
 
       <a-result v-else-if="!loading" status="404" :title="t('blog.notFound')" :sub-title="t('blog.notFoundDesc')">
@@ -171,6 +245,7 @@ function handleDelete() {
   border: none;
 }
 .meta-row { color: #888; }
+.share-hint { color: #888; margin: 0 0 12px; }
 .user-link { color: #1890ff; cursor: pointer; }
 .user-link:hover { text-decoration: underline; }
 .like-button { padding: 0 4px; color: inherit; }

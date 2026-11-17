@@ -54,8 +54,30 @@ const router = createRouter({
   ],
 })
 
+/**
+ * The destination to send a user to after they sign in, from the `redirect` query the guard
+ * below writes. Returns null for anything that is not a plain in-app path.
+ *
+ * This value arrives in the URL, so it is attacker-controlled: a link to
+ * `/login?redirect=https://elsewhere.example` would otherwise hand the app a one-click
+ * open redirect off the back of a real login. Only a path rooted at a single `/` is
+ * accepted — `//host` is protocol-relative and `/\host` is read as one by some browsers,
+ * so both are refused.
+ */
+export function resolveLoginRedirect(raw: unknown): string | null {
+  if (typeof raw !== 'string' || !raw.startsWith('/')) return null
+  if (raw.startsWith('//') || raw.startsWith('/\\')) return null
+  // Bouncing back to the login page would just show it again.
+  if (raw === '/login' || raw.startsWith('/login?')) return null
+  return raw
+}
+
 router.beforeEach(to => {
-  if (to.meta.requiresAuth && !isLoggedIn()) return '/login'
+  // fullPath, not path: a shared link keeps its query and hash, and they are part of where
+  // the recipient was trying to go.
+  if (to.meta.requiresAuth && !isLoggedIn()) {
+    return { path: '/login', query: { redirect: to.fullPath } }
+  }
   if (to.meta.requiresAdmin && getUser<{ role?: string }>()?.role !== 'ADMIN') return '/home'
 })
 

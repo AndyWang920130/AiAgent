@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { reactive, ref, computed, onMounted, nextTick, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { UserOutlined, LockOutlined, BulbOutlined, ReloadOutlined, SafetyOutlined, TranslationOutlined } from '@ant-design/icons-vue'
 import { message, theme as antTheme } from 'ant-design-vue'
@@ -8,11 +8,13 @@ import { saveAuth } from '../utils/auth'
 import { theme as appTheme, toggleTheme } from '../utils/theme'
 import axiosInstance from '../utils/axios'
 import { setLocale, getLocale } from '../i18n'
+import { resolveLoginRedirect } from '../router'
 import antZhCN from 'ant-design-vue/es/locale/zh_CN'
 import antEnUS from 'ant-design-vue/es/locale/en_US'
 
 const { t, locale } = useI18n()
 const router = useRouter()
+const route = useRoute()
 const loading = ref(false)
 const captchaLoading = ref(false)
 const captchaCanvas = ref<HTMLCanvasElement | null>(null)
@@ -111,7 +113,9 @@ async function handleLogin() {
     const { token, user } = res.data
     saveAuth(token, user)
     message.success(t('login.welcome', { name: user.name }))
-    router.push('/home')
+    // Where the router guard was taking them before it sent them here — so a shared link
+    // survives the sign-in instead of dropping the recipient on the home page.
+    router.push(resolveLoginRedirect(route.query.redirect) ?? '/home')
   } catch (err: any) {
     const msg = err.response?.data?.message || t('login.invalidCredentials')
     message.error(msg)
