@@ -68,6 +68,11 @@ class CardGameTurnOrderVerificationIT {
      *
      * <p>{@code cpu-1} upward matches the prefix the service reads to label a CPU seat, so these
      * tables look to it exactly like the legacy ones it still has to serve.
+     *
+     * <p>The trick number is set to 1 because that is where a real deal starts it
+     * ({@code CardGameService.deal}). The entity's own default is 0, which no dealt game is ever
+     * on, so a table left at the default is a table in a state the service cannot produce — and
+     * every assertion here about an absolute trick number would be off by one against it.
      */
     private CardGame riggedSeats(String host, String hostHand, String... cpuHands) {
         CardGame game = new CardGame();
@@ -75,6 +80,7 @@ class CardGameTurnOrderVerificationIT {
         game.setHostUsername(host);
         game.setCreatedBy(host);
         game.setLastModifiedBy(host);
+        game.setTrickNumber(1);
         CardGame saved = gameRepository.save(game);
 
         addSeat(saved, host, 0, false, hostHand);

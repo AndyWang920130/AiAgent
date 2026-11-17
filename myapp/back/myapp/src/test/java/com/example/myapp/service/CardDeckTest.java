@@ -286,6 +286,89 @@ class CardDeckTest {
             Play pair = CardDeck.detectShape(List.of("4S", "4H")).orElseThrow();
             assertThat(CardDeck.beats(pair, null, null)).isTrue();
         }
+
+        @Test
+        void theTopRankIsTheSeven() {
+            assertThat(CardDeck.MAX_RANK).isEqualTo(CardDeck.rankOf("7S"));
+            // Derived from the order string rather than written down, so this is also a check
+            // that nothing has been appended past the 7.
+            assertThat(CardDeck.RANK_ORDER.charAt(CardDeck.MAX_RANK)).isEqualTo('7');
+        }
+
+        /**
+         * The property the auto-pass relies on: nothing answers a 7-ranked play, in any shape.
+         * Established by exhaustion rather than by asserting the rule back at itself.
+         */
+        @Test
+        void noRankInAnyShapeBeatsASeven() {
+            List<String> shapes = List.of(
+                CardDeck.SHAPE_SINGLE, CardDeck.SHAPE_PAIR, CardDeck.SHAPE_TRIPLE,
+                CardDeck.SHAPE_QUAD, CardDeck.SHAPE_FULL_HOUSE, CardDeck.SHAPE_QUAD_PLUS_ONE);
+            for (String onTable : shapes) {
+                for (String answer : shapes) {
+                    for (int rank = 0; rank <= CardDeck.MAX_RANK; rank++) {
+                        assertThat(CardDeck.beats(answer, rank, onTable, CardDeck.MAX_RANK))
+                            .as("%s at rank %d against a %s of 7s", answer, rank, onTable)
+                            .isFalse();
+                    }
+                }
+            }
+            assertThat(CardDeck.isUnbeatableRank(CardDeck.MAX_RANK)).isTrue();
+        }
+
+        /** One, two, three and four 7s — the user's four cases — all rank at the top. */
+        @Test
+        void oneTwoThreeAndFourSevensAreAllUnbeatable() {
+            for (List<String> cards : List.of(
+                List.of("7S"),
+                List.of("7S", "7H"),
+                List.of("7S", "7H", "7D"),
+                List.of("7S", "7H", "7D", "7C"))) {
+                Play play = CardDeck.detectShape(cards).orElseThrow();
+                assertThat(CardDeck.isUnbeatableRank(play.rank())).as("%s", cards).isTrue();
+            }
+        }
+
+        /** The five-card shapes are ranked on their set, so the padding is free. */
+        @Test
+        void aFiveCardShapeBuiltOnSevensIsUnbeatableWhateverThePaddingIs() {
+            Play fullHouse = CardDeck.detectShape(List.of("7S", "7H", "7D", "4S", "4H")).orElseThrow();
+            assertThat(fullHouse.shape()).isEqualTo(CardDeck.SHAPE_FULL_HOUSE);
+            assertThat(CardDeck.isUnbeatableRank(fullHouse.rank())).isTrue();
+
+            Play quadPlusOne = CardDeck.detectShape(List.of("7S", "7H", "7D", "7C", "4S")).orElseThrow();
+            assertThat(quadPlusOne.shape()).isEqualTo(CardDeck.SHAPE_QUAD_PLUS_ONE);
+            assertThat(CardDeck.isUnbeatableRank(quadPlusOne.rank())).isTrue();
+        }
+
+        /**
+         * Why the rule reads the rank and not the cards: a full house whose 7s are only the
+         * padding is ranked on its triple, so a higher full house takes it. A selection merely
+         * containing a 7 proves nothing.
+         */
+        @Test
+        void sevensInThePaddingOfAFullHouseDoNotMakeItUnbeatable() {
+            Play weak = CardDeck.detectShape(List.of("4S", "4H", "4D", "7S", "7H")).orElseThrow();
+            assertThat(weak.shape()).isEqualTo(CardDeck.SHAPE_FULL_HOUSE);
+            assertThat(weak.rank()).isEqualTo(CardDeck.rankOf("4S"));
+            assertThat(CardDeck.isUnbeatableRank(weak.rank())).isFalse();
+            // And it really is answerable, by a full house that holds no 7 at all.
+            Play higher = CardDeck.detectShape(List.of("6S", "6H", "6D", "8S", "8H")).orElseThrow();
+            assertThat(CardDeck.beats(higher, weak.shape(), weak.rank())).isTrue();
+        }
+
+        @Test
+        void aJokerIsNotUnbeatableBecauseASevenTakesIt() {
+            Play joker = CardDeck.detectShape(List.of("XB")).orElseThrow();
+            assertThat(CardDeck.isUnbeatableRank(joker.rank())).isFalse();
+            Play seven = CardDeck.detectShape(List.of("7S")).orElseThrow();
+            assertThat(CardDeck.beats(seven, joker.shape(), joker.rank())).isTrue();
+        }
+
+        @Test
+        void nothingOnTheTableIsNotUnbeatable() {
+            assertThat(CardDeck.isUnbeatableRank(null)).isFalse();
+        }
     }
 
     @Nested

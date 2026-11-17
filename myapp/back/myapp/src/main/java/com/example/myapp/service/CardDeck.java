@@ -33,6 +33,12 @@ public final class CardDeck {
     /** Rank characters weakest to strongest; the index into this string is the strength rank. */
     public static final String RANK_ORDER = "4689TJQKA532X7";
 
+    /**
+     * The strongest rank there is — the 7. Derived from {@link #RANK_ORDER} rather than written
+     * as a number so the two cannot drift apart if the order is ever edited.
+     */
+    public static final int MAX_RANK = RANK_ORDER.length() - 1;
+
     /** Suits used for the 52 standard cards. */
     private static final String SUITS = "SHDC";
 
@@ -223,6 +229,27 @@ public final class CardDeck {
             return true; // leading a fresh trick: any legal shape goes
         }
         return beats(candidate.shape(), candidate.rank(), currentShape, currentRank);
+    }
+
+    /**
+     * Whether a play at this rank can be answered at all. Nothing beats {@link #MAX_RANK}:
+     * {@link #beats} demands a <em>strictly</em> higher rank, and there is none, so no shape and
+     * no hand can raise it. A table holding such a play is already decided.
+     *
+     * <p>Shape is not a parameter on purpose. Shapes never meet each other, so a raise must match
+     * the shape on the table and exceed its rank — at the top rank the second half is impossible
+     * whatever the first half is, which makes the rank the whole test.
+     *
+     * <p>Rank rather than cards, which is what makes this right for the five-card shapes:
+     * {@link #detectShape} ranks a full house on its triple and a quad-plus-one on its quad, so
+     * three 7s padded with junk is unbeatable while three 4s padded with a pair of 7s is not —
+     * a higher full house takes the latter. A selection merely <em>containing</em> a 7 proves
+     * nothing.
+     *
+     * <p>Null is false: no play is down, so there is nothing to answer.
+     */
+    public static boolean isUnbeatableRank(Integer rank) {
+        return rank != null && rank == MAX_RANK;
     }
 
     // ----- Strategy (CPU seats, and auto-play on turn timeout) -----------------------------

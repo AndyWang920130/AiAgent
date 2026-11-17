@@ -73,6 +73,7 @@ class CardGameShapeVerificationIT {
         game.setHostUsername(host);
         game.setCreatedBy(host);
         game.setLastModifiedBy(host);
+        game.setTrickNumber(1); // where a real deal starts it; the entity default of 0 is a state no dealt game is in
         CardGame saved = gameRepository.save(game);
 
         addSeat(saved, host, 0, false, hostHand);

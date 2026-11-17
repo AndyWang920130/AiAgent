@@ -870,14 +870,25 @@ public class CardGameService {
      * {@link #advanceTurn}.
      */
     private void applyPass(CardGame game, CardGamePlayer seat) {
-        String username = seat.getUsername();
+        recordPass(game, seat);
+        game.setLastActionDate(Instant.now());
+        game.setLastModifiedBy(seat.getUsername());
+        advanceTurn(game);
+    }
+
+    /**
+     * The bookkeeping of a pass, without handing the turn on: the seat joins the pass set and the
+     * trick log gains a {@code -} entry against it.
+     *
+     * <p>Separate from {@link #applyPass} so {@link #autoPassUnbeatable} can record a pass for a
+     * seat that was never asked, without recursing back into {@link #advanceTurn} — which is what
+     * called it.
+     */
+    private void recordPass(CardGame game, CardGamePlayer seat) {
         Set<String> passed = passedSet(game);
-        passed.add(username);
+        passed.add(seat.getUsername());
         game.setPassedUsernames(String.join(",", passed));
         appendTrickLog(game, seat, "-");
-        game.setLastActionDate(Instant.now());
-        game.setLastModifiedBy(username);
-        advanceTurn(game);
     }
 
     /**
@@ -894,10 +905,15 @@ public class CardGameService {
      *
      * <p>This terminates: a raise must be strictly higher than the play it answers, so the rank
      * on the table only ever climbs, and a full circuit of passes back to the holder ends it.
+     *
+     * <p>One case skips the circuit entirely — see {@link #autoPassUnbeatable}.
      */
     private void advanceTurn(CardGame game) {
         List<CardGamePlayer> seats = seatsOf(game);
         if (seats.isEmpty()) {
+            return;
+        }
+        if (autoPassUnbeatable(game, seats)) {
             return;
         }
         int from = indexOfSeat(seats, game.getCurrentTurnUsername());
@@ -913,6 +929,51 @@ public class CardGameService {
             return;
         }
         resolveTrick(game);
+    }
+
+    /**
+     * A 7 is the strongest rank in the game, so a play ranked on one cannot be answered — see
+     * {@link CardDeck#isUnbeatableRank}. Pass the seats that would have been asked and score the
+     * trick now, rather than walking the table collecting the only reply any of them can give.
+     *
+     * <p>Only the rank on the table is read, which every player can already see. Nobody's hand
+     * is inspected and nothing is inferred about what anyone holds.
+     *
+     * <p>For a CPU seat this changes nothing — it would have passed inside this same request. It
+     * is the human opponent it is for: being asked to click "Pass" on a play that cannot be
+     * beaten, with a turn clock running and everyone else waiting, up to four times before a
+     * settled trick is finally scored.
+     *
+     * <p>The passes are <em>recorded</em>, not skipped. They are part of the trick: the client
+     * shows them under each seat, and a trick whose opponents' rows were blank would read as
+     * though they had never acted. This also leaves the trick log identical to what the all-CPU
+     * path already produces.
+     *
+     * <p>Seats are walked in the same order and with the same two exclusions as the loop in
+     * {@link #advanceTurn} — stop at the holder of the play, skip anyone with no cards left —
+     * so the log reads in seat order and nobody is passed twice.
+     *
+     * @return true when the trick was resolved here and the caller should stop
+     */
+    private boolean autoPassUnbeatable(CardGame game, List<CardGamePlayer> seats) {
+        if (!CardDeck.isUnbeatableRank(game.getCurrentRank())) {
+            return false;
+        }
+        int from = indexOfSeat(seats, game.getCurrentTurnUsername());
+        for (int step = 1; step <= seats.size(); step++) {
+            CardGamePlayer candidate = seats.get((from + step) % seats.size());
+            if (candidate.getUsername().equals(game.getCurrentPlayUsername())) {
+                break; // back to the holder of the unbeatable play
+            }
+            if (CardDeck.parse(candidate.getHand()).isEmpty()) {
+                continue; // no cards left to answer with, so nothing to decline
+            }
+            recordPass(game, candidate);
+        }
+        LOG.debug("70235 game {} trick {}: {} played an unbeatable {}; the table passes",
+            game.getId(), game.getTrickNumber(), game.getCurrentPlayUsername(), game.getCurrentPlay());
+        resolveTrick(game);
+        return true;
     }
 
     /**

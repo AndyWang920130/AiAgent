@@ -110,7 +110,7 @@ export default {
       'As host, Start becomes available once every invitee has answered and at least two players are seated. The page tells you what it is still waiting for.',
     cardGameStep6Title: 'Taking your turn',
     cardGameStep6Body:
-      'Click a card to select it and click it again to play it, or select several cards and press "Play". You can also hold the left mouse button and drag across your hand to select several at once. "Pass" only declines the play in front of you — if someone after you raises it, your turn comes round again. Leave a turn for 30 seconds and it is played for you; miss two in a row and auto-play switches itself on until you switch it off.',
+      'Click a card to select it and click it again to play it, or select several cards and press "Play". You can also hold the left mouse button and drag across your hand to select several at once. "Pass" only declines the play in front of you — if someone after you raises it, your turn comes round again. You are never asked to pass a play of 7s: nothing beats a 7, so that trick is settled the moment it is played. Leave a turn for 30 seconds and it is played for you; miss two in a row and auto-play switches itself on until you switch it off.',
     cardGameStep7Title: 'Auto-play',
     cardGameStep7Body:
       'Switching auto-play on hands your turns to the server, which is handy if you need to step away. Switch it off to take control back — doing so does not cost you the turn you are on.',
@@ -761,7 +761,7 @@ export default {
     desc70235: 'A card game.',
     title70235: '70235',
     rulesHint:
-      'Beat the previous play with the same shape: single, pair, three of a kind, four of a kind, three-plus-two (the two must be a pair) or four-plus-one (any fifth card). Play goes round the table and the play on the table can be raised again and again, so a lead of 4 can be met with an 8, then a 9. Passing only declines the play in front of you — if someone behind you raises it, your turn comes round again and you can answer the new play or pass again. The trick ends when it comes back to whoever holds the top play, and they win it. The winner then draws first and everyone refills to 5. 5s, 10s and kings carry points, and whoever empties their hand first takes the points left in everybody else\'s.',
+      'Beat the previous play with the same shape: single, pair, three of a kind, four of a kind, three-plus-two (the two must be a pair) or four-plus-one (any fifth card). Play goes round the table and the play on the table can be raised again and again, so a lead of 4 can be met with an 8, then a 9. Passing only declines the play in front of you — if someone behind you raises it, your turn comes round again and you can answer the new play or pass again. The trick ends when it comes back to whoever holds the top play, and they win it. A 7 is the strongest rank, so nothing can answer a play of 7s: the rest of the table passes automatically and the trick is won on the spot. The winner then draws first and everyone refills to 5. 5s, 10s and kings carry points, and whoever empties their hand first takes the points left in everybody else\'s.',
     newTable: 'New table',
     inviteFollowers: 'Invite followers',
     selectFollowers: 'Pick followers to invite',
