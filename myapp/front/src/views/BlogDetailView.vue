@@ -43,6 +43,16 @@ const shareLink = computed(() =>
 const shareOpen = ref(false)
 
 onMounted(async () => {
+  // Drop the ?app=1 marker the server-rendered link preview adds when it forwards a real browser
+  // here (see BlogPreviewService). It has done its job by now — it only exists to stop nginx
+  // routing that redirect back to the preview — and leaving it in the address bar would put it
+  // into the next link someone copies from there.
+  if (route.query.app !== undefined) {
+    const clean = new URL(window.location.href)
+    clean.searchParams.delete('app')
+    window.history.replaceState(window.history.state, '', clean.pathname + clean.search + clean.hash)
+  }
+
   loading.value = true
   try {
     const id = Number(route.params.id)
@@ -96,7 +106,9 @@ async function handleShare() {
 
   if (navigator.share) {
     try {
-      await navigator.share({ title: post.value.title, url })
+      // text as well as title: a target that pastes the payload rather than crawling the URL —
+      // SMS, a note, a mail draft — has nothing but these two to show.
+      await navigator.share({ title: post.value.title, text: post.value.excerpt, url })
       return
     } catch (error: any) {
       // Dismissing the sheet rejects with AbortError. That is not a failure to report.

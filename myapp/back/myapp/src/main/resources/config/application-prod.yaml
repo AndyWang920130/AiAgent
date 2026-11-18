@@ -34,5 +34,12 @@ app:
     expiration: 86400000   # 1 day in ms
   cors:
     allowed-origins: http://localhost:5173
+  preview:
+    # The origin published in a shared post's link card (og:url, og:image). See application.yaml
+    # for why it is set rather than derived from the request's Host header.
+    #
+    # Override with APP_PREVIEW_BASE_URL to run the same image on another domain; the default
+    # here is the one the certs in deploy/docker/certs are issued for.
+    base-url: "${APP_PREVIEW_BASE_URL:https://twsny.cn}"
   mail:
     from: ${APP_MAIL_FROM:${spring.mail.username}}

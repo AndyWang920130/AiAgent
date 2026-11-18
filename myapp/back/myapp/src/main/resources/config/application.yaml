@@ -14,6 +14,19 @@ app:
     expiration: 86400000   # 1 day in ms
   cors:
     allowed-origins: http://localhost:5173
+  preview:
+    # Absolute origin the social link card points at, e.g. https://twsny.cn — no trailing slash.
+    # Used for og:url and og:image when a blog post is shared to WeChat and the like.
+    #
+    # Set in application-prod.yaml (https://twsny.cn, overridable with APP_PREVIEW_BASE_URL).
+    # Empty here, which means derive it from the request's Host header — right for dev, where
+    # the host is whatever address the phone or the browser reached, and there is no one name.
+    #
+    # The header is supplied by the caller: it is validated, but these two values end up
+    # published in the card, so the deployment's own name is the only fully reliable source.
+    # If neither is available the card keeps its title and description and drops the url and
+    # image, rather than point them at a host someone else chose.
+    base-url: ""
   gomoku:
     invite-timeout-seconds: 300   # a pending invite expires after 5 minutes
     game-timeout-seconds: 1800    # a game running longer than 30 minutes ends in a draw

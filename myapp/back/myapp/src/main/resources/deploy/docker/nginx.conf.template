@@ -1,3 +1,37 @@
+# Link-preview crawlers, for the /blog/<id> rule in both server blocks below.
+#
+# WeChat, Weibo, QQ, Telegram, Slack and the rest build a shared link's card by fetching the URL
+# with their own crawler and reading the og:* tags out of the reply. None of them run JavaScript,
+# so the SPA shell served from this root gives them an empty card — which is why a post shared to
+# WeChat arrives as a bare title. Those requests go to the backend's preview endpoint instead,
+# which renders the tags from the post itself.
+#
+# The list is deliberately generous, ending in a catch-all for bot/spider/crawler: a crawler not
+# matched here gets today's behaviour, so a miss costs a plain card and nothing worse.
+map ${DOLLAR}http_user_agent ${DOLLAR}is_link_crawler {
+    default                                                              0;
+    "~*micromessenger|weibo|qq/|qqbrowser|telegrambot|twitterbot"        1;
+    "~*facebookexternalhit|slackbot|discordbot|whatsapp|line/|skypeuri"  1;
+    "~*linkedinbot|pinterest|embedly|redditbot|googlebot|bingbot"        1;
+    "~*bot|spider|crawler|preview|curl|wget"                             1;
+}
+
+# Set by the preview page's own redirect. WeChat's in-app browser sends the same MicroMessenger
+# token as the crawler that built the card, so a person who taps the card is indistinguishable
+# from the robot that fetched it. The preview page sends real browsers on to /blog/<id>?app=1,
+# and this marker is what stops that redirect being routed straight back to the preview.
+map ${DOLLAR}arg_app ${DOLLAR}wants_app {
+    default  0;
+    "1"      1;
+}
+
+# nginx has no AND in `if`, so the two signals are paired into one key: only a crawler that has
+# not already been sent to the app is routed to the preview.
+map "${DOLLAR}is_link_crawler:${DOLLAR}wants_app" ${DOLLAR}serve_link_preview {
+    default  0;
+    "1:0"    1;
+}
+
 server {
     listen 80;
     server_name _;
@@ -59,6 +93,19 @@ server {
         add_header Cache-Control "no-store, must-revalidate";
     }
 
+    # A shared blog post. People get the app, as before; link crawlers get real meta tags.
+    #
+    # `last` re-runs the location search, so the rewritten URI falls into /api/ above and is
+    # proxied with the usual headers — the backend needs the forwarded Host and scheme to build
+    # the absolute og:url and og:image. Only /blog/<digits> is matched: /blog itself and
+    # /blog/<id>/edit are left to the SPA.
+    location ~ ^/blog/([0-9]+)/?${DOLLAR} {
+        if (${DOLLAR}serve_link_preview) {
+            rewrite ^/blog/([0-9]+)/?${DOLLAR} /api/v1/blogs/${DOLLAR}1/preview last;
+        }
+        try_files ${DOLLAR}uri ${DOLLAR}uri/ /index.html;
+    }
+
     location / {
         try_files ${DOLLAR}uri ${DOLLAR}uri/ /index.html;
     }
@@ -110,7 +157,7 @@ server {
         proxy_set_header X-Forwarded-Proto ${DOLLAR}scheme;
     }
 
-    # Same three rules as the HTTP block above, and for the same reasons. Duplicated because
+    # Same four rules as the HTTP block above, and for the same reasons. Duplicated because
     # these are two separate server blocks and nginx does not inherit locations between them;
     # a copy that drifts is the risk here, and an include file would be the answer if a third
     # block ever appears.
@@ -121,6 +168,15 @@ server {
 
     location = /index.html {
         add_header Cache-Control "no-store, must-revalidate";
+    }
+
+    # Same as the HTTP block's blog rule. This is the one that matters in practice: WeChat will
+    # not fetch a preview over plain HTTP.
+    location ~ ^/blog/([0-9]+)/?${DOLLAR} {
+        if (${DOLLAR}serve_link_preview) {
+            rewrite ^/blog/([0-9]+)/?${DOLLAR} /api/v1/blogs/${DOLLAR}1/preview last;
+        }
+        try_files ${DOLLAR}uri ${DOLLAR}uri/ /index.html;
     }
 
     location / {

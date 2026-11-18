@@ -62,6 +62,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 // Blog export is administrator-only; must precede the authenticated fallthrough.
                 .requestMatchers(HttpMethod.GET, "/api/v1/blogs/export").hasRole("ADMIN")
+                // Link previews are fetched by WeChat, Weibo, Telegram and the like, which carry
+                // no token — answering 401 is what leaves a shared post showing as a bare title.
+                // Both endpoints serve only PUBLIC, undeleted posts; see BlogPreviewResource.
+                .requestMatchers(HttpMethod.GET, "/api/v1/blogs/*/preview", "/api/v1/blogs/*/preview-image").permitAll()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex
